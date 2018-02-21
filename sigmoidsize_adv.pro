@@ -13,6 +13,7 @@ end
 function set_radii,inp_img,init_rad1=init_rad1,init_rad2=init_rad2
 ;guesses best input radii and reduce size until area is continous
 
+   print,'Not yet implimented'
 
 end
 
@@ -28,8 +29,9 @@ end
 function brute_force_max_dis,inds
 
 ;break the indices into x and y values
-ind_x = inds[0]
-ind_y = inds[1]
+ind_x = inds[0,*]
+ind_y = inds[1,*]
+
 
 ;set up variables for maximum distance
 max_d  = 0.
@@ -45,7 +47,8 @@ for i=0,n_elements(ind_x)-1 do begin
    t_diff = sqrt((ind_x[i]-ind_x)^2+(ind_y[i]-ind_y)^2)
 
    ;maximum difference for this point and the index location of maximum
-   m_diff = max(t_diff,max_subscript=i_diff)
+   m_diff = max(t_diff)
+   i_diff = where(t_diff eq m_diff)
 
    ;if maximum difference is greater than the current maximum set new points
    if m_diff gt max_d then begin
@@ -82,18 +85,24 @@ end
 ;###############################################
 function brute_force_min_dis,inds,nx1,ny1,nx2,ny2
 
+;get unique x values
+ind_x = inds[0,*]
+unq_x = sort(ind_x)
+unq_x = ind_x[unq_x]
+unq_x = unq_x[uniq(unq_x)]
+
 ;break the indices into x and y values and correct for maximum distance slope
-ind_x = inds[0]
-ind_y = inds[1]
-m1 = (y2-y1)/(x2-x1)
-b1 = y1-x1*b1
+ind_y = inds[1,*]
+m1 = (ny2-ny1)/(nx2-nx1)
+b1 = ny1-nx1*m1
 
 ;rotate cooridinates to be in x direction with the x center at 0
-ind_cx = ind_x-(x2+x1)/2.
+ind_cx = ind_x-(nx2+nx1)/2.
 ind_cy = ind_x*m1+b1
 
 ;set up variables for maximum distance
-max_d  = 0.
+max_da  = 0.
+max_db  = 0.
 max_x1a = 0
 max_x2a = 0
 max_y1a = 0
@@ -104,10 +113,54 @@ max_y1b = 0
 max_y2b = 0
 
 
-;Loop over all x-values to find the maximum distance for s
-for i=0,n_elements(ind_x)-1 do begin
+;Loop over all x-values to find the maximum distance for each small axis
+for i=0,n_elements(unq_x)-1 do begin
+
+   
+   ;get yvalues were x values equal to some value
+   x_use = where(ind_x eq unq_x[i])
+
+   ;get transformed xvalue
+   x_trn = unq_x[i]-(nx2+nx1)/2.
+
+   ;temporary diffrance array
+   t_diff = abs(ind_cy[i]-ind_cy[x_use])
+
+   ;maximum difference for this point and the index location of maximum
+   m_diff = max(t_diff)
+   i_diff = where(t_diff eq m_diff)
+
+   ;if maximum difference is greater than the current maximum set new points
+   case 1 of
+
+       (m_diff gt max_da) and (x_trn lt 0):  begin
+           ;update maximum differnce
+           max_da = m_diff
+           ;update initial axis points
+           max_x1a = unq_x[i]
+           max_y1a = ind_y[i]
+           ;update second axis points
+           max_x2a = ind_x[i_diff]
+           max_y2a = ind_y[i_diff]
+           end
+       (m_diff gt max_db) and (x_trn gt 0):  begin
+           ;update maximum differnce
+           max_db = m_diff
+           ;update initial axis points
+           max_x1b = unq_x[i]
+           max_y1b = ind_y[i]
+           ;update second axis points
+           max_x2b = ind_x[i_diff]
+           max_y2b = ind_y[i_diff]
+           end
+
+        else: v=1
+   endcase
 
 endfor
+
+
+return,[max_da,max_x1a,max_x2a,max_y1a,max_y2a,max_db,max_x1b,max_x2b,max_y1b,max_y2b]
 end
 
 
@@ -164,19 +217,28 @@ for xx=0,nfiles-1 do begin
   rescale_image=''
   while not(imgok) do begin
      window,5,xs=xwdw_size,ys=ywdw_size
-     ;tv,bytscl(rebin(data1,xwdw_size,ywdw_size),min=scmin,max=scmax)
+     tv,bytscl(rebin(data1,xwdw_size,ywdw_size),min=scmin,max=scmax)
 
 
      ;overlay image filter
      ;result = edge_dog(data1,radius1=6.0,radius2=20,threshold=15,zero_crossings=[0,255])
      ;radius help isolate the sigmoid
      result = edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
-     tv,bytscl(rebin(result,xwdw_size,ywdw_size))
+     ;tv,bytscl(rebin(result,xwdw_size,ywdw_size))
 
      ;index location of the sigmoid
      sig = where(result gt 254.5)
      ;create index array for the entire images for the sigmoid
      ind_loc = array_indices(result,sig)
+
+     ;get the location of the maximum axis
+     max_axis = brute_force_max_dis(ind_loc)
+
+     oplot,[max_axis[1],max_axis[2]],[max_axis[3],max_axis[4]],color=200,thick=3
+     min_axis = brute_force_min_dis(ind_loc,max_axis[1],max_axis[3],max_axis[2],max_axis[4])
+     oplot,[min_axis[1],min_axis[2]],[min_axis[3],min_axis[4]],color=255,thick=3
+     oplot,[min_axis[7],min_axis[8]],[min_axis[9],min_axis[10]],color=255,thick=3
+
 
      print,'Current image settings:'
      print,'Lower bound: ',scmin
