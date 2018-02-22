@@ -110,22 +110,11 @@ end
 ;Usage
 ;outp = brute_force_min_dis(inds,nx1,ny1,nx2,ny2)
 ;###############################################
-function brute_force_min_dis,inds,nx1,ny1,nx2,ny2
+function brute_force_min_dis,inds,xbox,ybox
 
-;get unique x values
+;get x and y indices
 ind_x = inds[0,*]
-unq_x = sort(ind_x)
-unq_x = ind_x[unq_x]
-unq_x = unq_x[uniq(unq_x)]
-
-;break the indices into x and y values and correct for maximum distance slope
 ind_y = inds[1,*]
-m1 = (ny2-ny1)/(nx2-nx1)
-b1 = ny1-nx1*m1
-
-;rotate cooridinates to be in x direction with the x center at 0
-ind_cx = ind_x-(nx2+nx1)/2.
-ind_cy = ind_x*m1+b1
 
 ;set up variables for maximum distance
 max_da  = 0.
@@ -139,54 +128,80 @@ max_x2b = 0
 max_y1b = 0
 max_y2b = 0
 
+;Compute x and y limit functions
+lims = comp_limits(xbox,ybox)
+
+;Create array of 1 and 0 for box
+xmin = ind_x ge lims[1]*ind_y+lims[0]
+xmax = ind_x le lims[3]*ind_y+lims[2]
+ymin = ind_y le lims[5]*ind_x+lims[4]
+ymax = ind_y ge lims[7]*ind_x+lims[6]
+vbox = xmin*xmax*ymin*ymax
+
+;fit a line through all sigmoid points
+use_fit = where(vbox eq 1) 
+sig_lin = linfit(ind_x[use_fit],ind_y[use_fit])
+
+;get transformed x and y values
+trn_y = ind_y-(sig_lin[1]*ind_x+sig_lin[0])
+trn_x = ind_x-mean(ind_x[use_fit])
+
+;use inverse of the slope to get tolerance on x pixel deviation allowed
+;However set up limits
+x_tol = 1./sig_lin[1]
+print,x_tol
+if x_tol lt  1 then x_tol = 1
+if x_tol gt 10 then x_tol = 10
+
+;Find the min and maximum values for the sigmoid ends
+;Use percentile range to store the results
+tmin=cgPercentiles(trn_x,percentiles=.05)
+tmax=cgPercentiles(trn_x,percentiles=.95)
 
 ;Loop over all x-values to find the maximum distance for each small axis
-for i=0,n_elements(unq_x)-1 do begin
+for i=0,n_elements(ind_x)-1 do begin
 
-   
-   ;get yvalues were x values equal to some value
-   x_use = where(ind_x eq unq_x[i])
+    ;leave right away if given point is outside box
+    if vbox[i] eq 0 then continue
 
-   ;get transformed xvalue
-   x_trn = unq_x[i]-(nx2+nx1)/2.
+    ;find values within x tolerance
+    x_pos = abs(ind_x-ind_x[i]) lt x_tol
 
-   ;interested yvalues=
-   ind_iy = ind_cy[x_use]
 
-   ;temporary diffrance array
-   t_diff = abs(max(ind_iy)-min(ind_iy))
+    ;temporary diffrance array
+    t_diff = abs(trn_y-trn_y[i])*vbox*x_pos
 
-   ;maximum difference for this point and the index location of maximum
-   m_diff = max(t_diff)
-   i_diff = where(t_diff eq m_diff)
+    ;maximum difference for this point and the index location of maximum
+    m_diff = max(t_diff)
+    i_diff = where(t_diff eq m_diff)
 
-   ;if maximum difference is greater than the current maximum set new points
-   case 1 of
+    ;if maximum difference is greater than the current maximum set new points
+    case 1 of
 
-       (m_diff gt max_da) and (x_trn lt 0):  begin
-           ;update maximum differnce
-           max_da = m_diff
-           ;update initial axis points
-           max_x1a = unq_x[i]
-           max_y1a = min(ind_iy)
-           ;update second axis points
-           max_x2a = unq_x[i]
-           max_y2a = max(ind_iy)
-           end
-       (m_diff gt max_db) and (x_trn gt 0):  begin
-           ;update maximum differnce
-           max_db = m_diff
-           ;update initial axis points
-           max_x1b = unq_x[i]
-           max_y1b = min(ind_iy)
-           ;update second axis points
-           max_x2b = unq_x[i]
-           max_y2b = max(ind_iy)
-           end
+        (m_diff gt max_da) and (trn_x[i] lt tmin):  begin
+            ;update maximum differnce
+            max_da = m_diff
+            ;update initial axis points
+            max_x1a = ind_x[i]
+            max_y1a = ind_y[i]
+            ;update second axis points
+            max_x2a = ind_x[i_diff]
+            max_y2a = ind_y[i_diff]
+            end
+        (m_diff gt max_db) and (trn_x[i] gt tmax):  begin
+            ;update maximum differnce
+            max_db = m_diff
+            ;update initial axis points
+            max_x1b = ind_x[i]
+            max_y1b = ind_y[i]
+            ;update second axis points
+            max_x2b = ind_x[i_diff]
+            max_y2b = ind_y[i_diff]
+            end
 
-        ;do whatever to just continue
-        else: v=1
-   endcase
+         ;do whatever to just continue
+         else: v=1
+    endcase
 
 endfor
 
@@ -302,7 +317,7 @@ for xx=0,nfiles-1 do begin
      ;overlay image filter
      ;result = edge_dog(data1,radius1=6.0,radius2=20,threshold=15,zero_crossings=[0,255])
      ;radius help isolate the sigmoid
-     ;Moved to after trapezoid 2018/02/28 J. Prchlik
+     ;Moved to after polygon 2018/02/28 J. Prchlik
      ;result = loop_edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
      ;tv,bytscl(rebin(result,xwdw_size,ywdw_size))
 
@@ -376,7 +391,7 @@ for xx=0,nfiles-1 do begin
      if (skipthis) then done=1 else done=0
   endif else done=0
   while not(done) do begin
-     ;Changed to create trapzoid around Sigmoid
+     ;Changed to create polygon around Sigmoid
      ;print,''
      ;print,"Click Along Sigmoid Axis (Point 1 of 7)"
      ;cursor,px1,py1,/down,/device
@@ -400,7 +415,7 @@ for xx=0,nfiles-1 do begin
      ;cursor,px7,py7,/down,/device
      ;xyouts,px7,py7,'X',/device,alignment=0.5
 
-     ;Changed to Trapaziod around sigmoid
+     ;Changed to polygon around sigmoid
      print,"Click Lower Left (Point 1 of 4)"
      cursor,px1,py1,/down,/device
      xyouts,px1,py1,'X',/device,alignment=0.5
@@ -416,9 +431,9 @@ for xx=0,nfiles-1 do begin
 
 
      ;Create line tracing the sigmoid
-     xvals = [px1,px2,px3,px4,px1];,px5,px6,px7] Changed to Trapaziod J. Prchlik 2018/02/22
-     yvals = [py1,py2,py3,py4,py1];,py5,py6,py7] Changed to Trapaziod J. Prchlik 2018/02/22
-     ;Changed to trapezoid 2018/02/22 J. Prchlik
+     xvals = [px1,px2,px3,px4,px1];,px5,px6,px7] Changed to polygon J. Prchlik 2018/02/22
+     yvals = [py1,py2,py3,py4,py1];,py5,py6,py7] Changed to polygon J. Prchlik 2018/02/22
+     ;Changed to polygon 2018/02/22 J. Prchlik
      ;samp = 100
      ;xgrid = findgen(samp)*(max(xvals)-min(xvals))/float(samp)+min(xvals)
 
@@ -438,22 +453,28 @@ for xx=0,nfiles-1 do begin
 
   
      ;Plot the edge image
-     tv,bytscl(rebin(result,xwdw_size,ywdw_size))
+     ;Put in and remove for testing purposes 2018/02/28 J. Prchlik
+     ;tv,bytscl(rebin(result,xwdw_size,ywdw_size))
 
      ;get the location of the maximum axis
-     ;Do after defining trapezoid 2018/02/22 J. Prchlik 
+     ;Do after defining polygon 2018/02/22 J. Prchlik 
      max_axis = brute_force_max_dis(ind_loc,adjxv,adjyv)
 
      plots,[max_axis[1],max_axis[2]]*scale_x,[max_axis[3],max_axis[4]]*scale_y,color=200,thick=3,/device
 
+     ;Get values for the minimum axis
+     ;Do after defining polygon 2018/02/22 J. Prchlik 
+     min_axis = brute_force_min_dis(ind_loc,adjxv,adjyv)
+     plots,[min_axis[1],min_axis[2]]*scale_x,[min_axis[3],min_axis[4]]*scale_y,color=25,thick=3,/device
+     plots,[min_axis[6],min_axis[7]]*scale_x,[min_axis[8],min_axis[9]]*scale_y,color=25,thick=3,/device
 
      ;interpolate quadratic
-     ;Changed to trapezoid 2018/02/22 J. Prchlik
+     ;Changed to polygon 2018/02/22 J. Prchlik
      ;py_inp = interpol(yvals,xvals,xgrid,/Quadratic)
 
      ;cgplot,xvals,yvals,color=255,thick=3,linestyle=1,/device,/noerase,xrange=[0,xwdw_size],yrange=[0,ywdw_size],xstyle=1,ystyle=1,/overplot
      ;plot quadratic interpolation
-     ;Changed to trapezoid 2018/02/22 J. Prchlik
+     ;Changed to polygon 2018/02/22 J. Prchlik
      ;plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
      plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
      
