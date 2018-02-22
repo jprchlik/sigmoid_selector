@@ -17,6 +17,20 @@ function set_radii,inp_img,init_rad1=init_rad1,init_rad2=init_rad2
 
 end
 
+;
+;Compute a series of slopes and intercepts the contain the simgoid
+;Usage
+;res = comp_limits(inx,iny)
+function comp_limits(inx,iny)
+
+lx1 = linfit(iny[0:1],inx[0:1])
+lx2 = linfit(iny[2:3],inx[2:3])
+ly1 = linfit(inx[1:2],iny[1:2])
+ly2 = linfit(inx[3:4],iny[3:4])
+
+return,[lx1,lx2,ly1,ly2]
+end
+
 ;###############################################
 ;
 ;Function to calculate the maximum distance and index locations of the maximum difference
@@ -26,7 +40,7 @@ end
 ;Usage
 ;outp = brute_force_max_dis(inds)
 ;###############################################
-function brute_force_max_dis,inds
+function brute_force_max_dis,inds,xbox,ybox
 
 ;break the indices into x and y values
 ind_x = inds[0,*]
@@ -40,6 +54,8 @@ max_x2 = 0
 max_y1 = 0
 max_y2 = 0
 
+;Compute x and y limit functions
+limits = comp_limits(xbox,ybox)
 
 ;Loop over all x-values to find the maximum distance for s
 for i=0,n_elements(ind_x)-1 do begin
@@ -406,8 +422,7 @@ for xx=0,nfiles-1 do begin
   
      ;get the location of the maximum axis
      ;Do after defining trapezoid 2018/02/22 J. Prchlik 
-     max_axis = brute_force_max_dis(ind_loc)
-     print,max_axis
+     max_axis = brute_force_max_dis(ind_loc,xvals,yvals)
      scale_x = float(xwdw_size)/float(img_xsize)
      scale_y = float(ywdw_size)/float(img_ysize)
 
