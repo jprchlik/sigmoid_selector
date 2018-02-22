@@ -167,6 +167,11 @@ endfor
 return,[max_da,max_x1a,max_x2a,max_y1a,max_y2a,max_db,max_x1b,max_x2b,max_y1b,max_y2b]
 end
 
+;Loop to find the best Edge values
+; Don't use 2018/02/22 J. Prchlik
+;
+;
+;;
 function loop_edge_dog,dat,radius1=radius1,radius2=radius2,threshold=threshold,zero_crossings=zero_crossings
 
 counter = 0
@@ -270,13 +275,9 @@ for xx=0,nfiles-1 do begin
      ;overlay image filter
      ;result = edge_dog(data1,radius1=6.0,radius2=20,threshold=15,zero_crossings=[0,255])
      ;radius help isolate the sigmoid
-     result = loop_edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
+     ;Moved to after trapezoid 2018/02/28 J. Prchlik
+     ;result = loop_edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
      ;tv,bytscl(rebin(result,xwdw_size,ywdw_size))
-
-     ;index location of the sigmoid
-     sig = where(result gt 254.5)
-     ;create index array for the entire images for the sigmoid
-     ind_loc = array_indices(result,sig)
 
      ;get the location of the maximum axis
      ;max_axis = brute_force_max_dis(ind_loc)
@@ -348,51 +349,86 @@ for xx=0,nfiles-1 do begin
      if (skipthis) then done=1 else done=0
   endif else done=0
   while not(done) do begin
-     print,''
-     print,"Click Along Sigmoid Axis (Point 1 of 7)"
+     ;Changed to create trapzoid around Sigmoid
+     ;print,''
+     ;print,"Click Along Sigmoid Axis (Point 1 of 7)"
+     ;cursor,px1,py1,/down,/device
+     ;xyouts,px1,py1,'X',/device,alignment=0.5
+     ;print,"Click Along Sigmoid Axis (Point 2 of 7)"
+     ;cursor,px2,py2,/down,/device
+     ;xyouts,px2,py2,'X',/device,alignment=0.5
+     ;print,"Click Along Sigmoid Axis (Point 3 of 7)"
+     ;cursor,px3,py3,/down,/device
+     ;xyouts,px3,py3,'X',/device,alignment=0.5
+     ;print,"Click Along Sigmoid Axis (Point 4 of 7)"
+     ;cursor,px4,py4,/down,/device
+     ;xyouts,px4,py4,'X',/device,alignment=0.5
+     ;print,"Click Along Sigmoid Axis (Point 5 of 7)"
+     ;cursor,px5,py5,/down,/device
+     ;xyouts,px5,py5,'X',/device,alignment=0.5
+     ;print,"Click Along Sigmoid Axis (Point 6 of 7)"
+     ;cursor,px6,py6,/down,/device
+     ;xyouts,px6,py6,'X',/device,alignment=0.5
+     ;print,"Click Along Sigmoid Axis (Point 7 of 7)"
+     ;cursor,px7,py7,/down,/device
+     ;xyouts,px7,py7,'X',/device,alignment=0.5
+
+     ;Changed to Trapaziod around sigmoid
+     print,"Click Lower Left (Point 1 of 4)"
      cursor,px1,py1,/down,/device
      xyouts,px1,py1,'X',/device,alignment=0.5
-     print,"Click Along Sigmoid Axis (Point 2 of 7)"
+     print,"Click Upper Left (Point 2 of 4)"
      cursor,px2,py2,/down,/device
      xyouts,px2,py2,'X',/device,alignment=0.5
-     print,"Click Along Sigmoid Axis (Point 3 of 7)"
+     print,"Click Upper Right (Point 3 of 4)"
      cursor,px3,py3,/down,/device
      xyouts,px3,py3,'X',/device,alignment=0.5
-     print,"Click Along Sigmoid Axis (Point 4 of 7)"
+     print,"Click Lower Right (Point 4 of 4)"
      cursor,px4,py4,/down,/device
      xyouts,px4,py4,'X',/device,alignment=0.5
-     print,"Click Along Sigmoid Axis (Point 5 of 7)"
-     cursor,px5,py5,/down,/device
-     xyouts,px5,py5,'X',/device,alignment=0.5
-     print,"Click Along Sigmoid Axis (Point 6 of 7)"
-     cursor,px6,py6,/down,/device
-     xyouts,px6,py6,'X',/device,alignment=0.5
-     print,"Click Along Sigmoid Axis (Point 7 of 7)"
-     cursor,px7,py7,/down,/device
-     xyouts,px7,py7,'X',/device,alignment=0.5
 
 
      ;Create line tracing the sigmoid
-     xvals = [px1,px2,px3,px4,px5,px6,px7]
-     yvals = [py1,py2,py3,py4,py5,py6,py7]
-     samp = 100
-     xgrid = findgen(samp)*(max(xvals)-min(xvals))/float(samp)+min(xvals)
-  
-     ;interpolate quadratic
-     py_inp = interpol(yvals,xvals,xgrid,/Quadratic)
+     xvals = [px1,px2,px3,px4,px1];,px5,px6,px7] Changed to Trapaziod J. Prchlik 2018/02/22
+     yvals = [py1,py2,py3,py4,py1];,py5,py6,py7] Changed to Trapaziod J. Prchlik 2018/02/22
+     ;Changed to trapezoid 2018/02/22 J. Prchlik
+     ;samp = 100
+     ;xgrid = findgen(samp)*(max(xvals)-min(xvals))/float(samp)+min(xvals)
 
-     print,px1,px6,min(xgrid),max(xgrid)
-     print,py1,py6,min(py_inp),max(py_inp)
+     ;Scale to find image edges 2018/02/28 J. Prchlik
+     result = edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
+
+     ;index location of the bright regions
+     sig = where(result gt 254.5)
+     ;create index array for the entire images for the sigmoid
+     ind_loc = array_indices(result,sig)
+
+  
+     ;get the location of the maximum axis
+     ;Do after defining trapezoid 2018/02/22 J. Prchlik 
+     max_axis = brute_force_max_dis(ind_loc)
+     print,max_axis
+     scale_x = float(xwdw_size)/float(img_xsize)
+     scale_y = float(ywdw_size)/float(img_ysize)
+
+     plots,[max_axis[1],max_axis[2]]*scale_x,[max_axis[3],max_axis[4]]*scale_y,color=200,thick=3,/device
+
+
+     ;interpolate quadratic
+     ;Changed to trapezoid 2018/02/22 J. Prchlik
+     ;py_inp = interpol(yvals,xvals,xgrid,/Quadratic)
 
      ;cgplot,xvals,yvals,color=255,thick=3,linestyle=1,/device,/noerase,xrange=[0,xwdw_size],yrange=[0,ywdw_size],xstyle=1,ystyle=1,/overplot
      ;plot quadratic interpolation
-     plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
+     ;Changed to trapezoid 2018/02/22 J. Prchlik
+     ;plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
+     plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
      
      ;temp quick answers
      lx1 = px1
-     lx2 = px6
+     lx2 = px3
      ly1 = py1
-     ly2 = py6
+     ly2 = py3
      sx1 = px1
      sx2 = px2
      sy1 = py1
@@ -415,7 +451,6 @@ for xx=0,nfiles-1 do begin
      short_axis_arc=sqrt((sx_arc^2)+(sy_arc^2))
 
      ;Get center pixel informaiton
-
      print,''
      print,'The long axis size in DEVICE-units is:'
      print,strcompress(string(long_axis_xy),/remove_all)
