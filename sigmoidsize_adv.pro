@@ -123,8 +123,11 @@ for i=0,n_elements(unq_x)-1 do begin
    ;get transformed xvalue
    x_trn = unq_x[i]-(nx2+nx1)/2.
 
+   ;interested yvalues=
+   ind_iy = ind_cy[x_use]
+
    ;temporary diffrance array
-   t_diff = abs(ind_cy[i]-ind_cy[x_use])
+   t_diff = abs(max(ind_iy)-min(ind_iy))
 
    ;maximum difference for this point and the index location of maximum
    m_diff = max(t_diff)
@@ -138,22 +141,23 @@ for i=0,n_elements(unq_x)-1 do begin
            max_da = m_diff
            ;update initial axis points
            max_x1a = unq_x[i]
-           max_y1a = ind_y[i]
+           max_y1a = min(ind_iy)
            ;update second axis points
-           max_x2a = ind_x[i_diff]
-           max_y2a = ind_y[i_diff]
+           max_x2a = unq_x[i]
+           max_y2a = max(ind_iy)
            end
        (m_diff gt max_db) and (x_trn gt 0):  begin
            ;update maximum differnce
            max_db = m_diff
            ;update initial axis points
            max_x1b = unq_x[i]
-           max_y1b = ind_y[i]
+           max_y1b = min(ind_iy)
            ;update second axis points
-           max_x2b = ind_x[i_diff]
-           max_y2b = ind_y[i_diff]
+           max_x2b = unq_x[i]
+           max_y2b = max(ind_iy)
            end
 
+        ;do whatever to just continue
         else: v=1
    endcase
 
@@ -163,7 +167,50 @@ endfor
 return,[max_da,max_x1a,max_x2a,max_y1a,max_y2a,max_db,max_x1b,max_x2b,max_y1b,max_y2b]
 end
 
+function loop_edge_dog,dat,radius1=radius1,radius2=radius2,threshold=threshold,zero_crossings=zero_crossings
 
+counter = 0
+looper = 1
+uponly = 0
+
+while looper gt 0.6 do begin
+
+    ;differen radius tolerence 
+    tol = 5
+
+    ;get +/- some resolution in radius for radius 1 make sure radius is always positive
+    tradius1 = 0.5*counter*(-1)^counter+radius1
+    if ((tradius1 gt 0)  and (uponly eq 0)) then begin 
+        radius1 = tradius1 
+    endif else begin
+        uponly = 1
+        radius1 = 0.5+radius1
+    endelse
+
+    ;calculate edge dog
+    result = edge_dog(dat,radius1=radius1,radius2=radius2,threshold=threshold,zero_crossings=zero_crossings)                 
+
+   
+    ;index location of the sigmoid
+    sig = where(result gt 254.5,cnts)
+    ;create index array for the entire images for the sigmoid
+    if cnts gt 0 then ind_loc = array_indices(result,sig) else continue
+
+    xs = transpose(ind_loc[0,*])
+    ys = transpose(ind_loc[1,*])
+
+    sortx = sort(xs)
+
+    fxs = xs[sortx]
+    fys = ys[sortx]
+
+    ds = sqrt((ts_diff(fxs,1))^2+ts_diff(fys,1)^2)
+    if ((mean(ts_diff(ds,1)) lt tol) ) or (counter gt 100) then looper = 0   
+    counter = counter+1
+   print,counter,radius1,mean(ts_diff(ds,1))
+endwhile
+return,result
+end
 
 pro sigmoidsize_adv
 ;scratch_path='/Volumes/Scratch/Users/ehanson/XRT_fits/'
@@ -210,7 +257,7 @@ for xx=0,nfiles-1 do begin
   loadct,3
   scmin=0.1
   scmin=cgPercentiles(data1,percentiles=.005)
-  scmax=cgPercentiles(data1,percentiles=.995)
+  scmax=cgPercentiles(data1,percentiles=.999)
   imgok=0
   expire=0
   rscl=0
@@ -223,7 +270,7 @@ for xx=0,nfiles-1 do begin
      ;overlay image filter
      ;result = edge_dog(data1,radius1=6.0,radius2=20,threshold=15,zero_crossings=[0,255])
      ;radius help isolate the sigmoid
-     result = edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
+     result = loop_edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
      ;tv,bytscl(rebin(result,xwdw_size,ywdw_size))
 
      ;index location of the sigmoid
@@ -232,12 +279,12 @@ for xx=0,nfiles-1 do begin
      ind_loc = array_indices(result,sig)
 
      ;get the location of the maximum axis
-     max_axis = brute_force_max_dis(ind_loc)
+     ;max_axis = brute_force_max_dis(ind_loc)
 
-     oplot,[max_axis[1],max_axis[2]],[max_axis[3],max_axis[4]],color=200,thick=3
-     min_axis = brute_force_min_dis(ind_loc,max_axis[1],max_axis[3],max_axis[2],max_axis[4])
-     oplot,[min_axis[1],min_axis[2]],[min_axis[3],min_axis[4]],color=255,thick=3
-     oplot,[min_axis[7],min_axis[8]],[min_axis[9],min_axis[10]],color=255,thick=3
+     ;oplot,[max_axis[1],max_axis[2]],[max_axis[3],max_axis[4]],color=200,thick=3
+     ;min_axis = brute_force_min_dis(ind_loc,max_axis[1],max_axis[3],max_axis[2],max_axis[4])
+     ;oplot,[min_axis[1],min_axis[2]],[min_axis[3],min_axis[4]],color=255,thick=3
+     ;oplot,[min_axis[6],min_axis[7]],[min_axis[8],min_axis[9]],color=255,thick=3
 
 
      print,'Current image settings:'
@@ -302,22 +349,54 @@ for xx=0,nfiles-1 do begin
   endif else done=0
   while not(done) do begin
      print,''
-     print,"Click on the endpoints of the sigmoid's longest axis."
-     print, 'Select Long Axis Lower Point'
-     cursor,lx1,ly1,/down,/device
-     xyouts,lx1,ly1,'.',/device,alignment=0.5
-     print, 'Select Long Axis Lower Point'
-     cursor,lx2,ly2,/down,/device
-     xyouts,lx2,ly2,'.',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 1 of 7)"
+     cursor,px1,py1,/down,/device
+     xyouts,px1,py1,'X',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 2 of 7)"
+     cursor,px2,py2,/down,/device
+     xyouts,px2,py2,'X',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 3 of 7)"
+     cursor,px3,py3,/down,/device
+     xyouts,px3,py3,'X',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 4 of 7)"
+     cursor,px4,py4,/down,/device
+     xyouts,px4,py4,'X',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 5 of 7)"
+     cursor,px5,py5,/down,/device
+     xyouts,px5,py5,'X',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 6 of 7)"
+     cursor,px6,py6,/down,/device
+     xyouts,px6,py6,'X',/device,alignment=0.5
+     print,"Click Along Sigmoid Axis (Point 7 of 7)"
+     cursor,px7,py7,/down,/device
+     xyouts,px7,py7,'X',/device,alignment=0.5
 
-     print,''
-     print,"Now click on the endpoints of the sigmoid's shortest axis."
-     print, 'Select Short Axis Lower Point'
-     cursor,sx1,sy1,/down,/device
-     xyouts,sx1,sy1,'.',/device,alignment=0.5
-     print, 'Select Short Axis Upper Point'
-     cursor,sx2,sy2,/down,/device
-     xyouts,sx2,sy2,'.',/device,alignment=0.5
+
+     ;Create line tracing the sigmoid
+     xvals = [px1,px2,px3,px4,px5,px6,px7]
+     yvals = [py1,py2,py3,py4,py5,py6,py7]
+     samp = 100
+     xgrid = findgen(samp)*(max(xvals)-min(xvals))/float(samp)+min(xvals)
+  
+     ;interpolate quadratic
+     py_inp = interpol(yvals,xvals,xgrid,/Quadratic)
+
+     print,px1,px6,min(xgrid),max(xgrid)
+     print,py1,py6,min(py_inp),max(py_inp)
+
+     ;cgplot,xvals,yvals,color=255,thick=3,linestyle=1,/device,/noerase,xrange=[0,xwdw_size],yrange=[0,ywdw_size],xstyle=1,ystyle=1,/overplot
+     ;plot quadratic interpolation
+     plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
+     
+     ;temp quick answers
+     lx1 = px1
+     lx2 = px6
+     ly1 = py1
+     ly2 = py6
+     sx1 = px1
+     sx2 = px2
+     sy1 = py1
+     sy2 = py2
 
      ;Get long Axis information
      lx_dev=abs(lx1-lx2)
