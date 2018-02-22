@@ -21,7 +21,7 @@ end
 ;Compute a series of slopes and intercepts the contain the simgoid
 ;Usage
 ;res = comp_limits(inx,iny)
-function comp_limits(inx,iny)
+function comp_limits,inx,iny
 
 lx1 = linfit(iny[0:1],inx[0:1])
 lx2 = linfit(iny[2:3],inx[2:3])
@@ -55,12 +55,23 @@ max_y1 = 0
 max_y2 = 0
 
 ;Compute x and y limit functions
-limits = comp_limits(xbox,ybox)
+lims = comp_limits(xbox,ybox)
+
+;Create array of 1 and 0 for box
+xmin = ind_x ge lims[1]*ind_y+lims[0]
+xmax = ind_x le lims[3]*ind_y+lims[2]
+ymin = ind_y le lims[5]*ind_x+lims[4]
+ymax = ind_y ge lims[7]*ind_x+lims[6]
+vbox = xmin*xmax*ymin*ymax
 
 ;Loop over all x-values to find the maximum distance for s
 for i=0,n_elements(ind_x)-1 do begin
+
+   ;leave right away if given point is outside box
+    if vbox[i] eq 0 then continue
    ;temporary diffrance array
-   t_diff = sqrt((ind_x[i]-ind_x)^2+(ind_y[i]-ind_y)^2)
+   ;Add box cut 2018/02/22 J. Prchlik
+   t_diff = sqrt((ind_x[i]-ind_x)^2+(ind_y[i]-ind_y)^2)*vbox
 
    ;maximum difference for this point and the index location of maximum
    m_diff = max(t_diff)
@@ -419,12 +430,19 @@ for xx=0,nfiles-1 do begin
      ;create index array for the entire images for the sigmoid
      ind_loc = array_indices(result,sig)
 
-  
-     ;get the location of the maximum axis
-     ;Do after defining trapezoid 2018/02/22 J. Prchlik 
-     max_axis = brute_force_max_dis(ind_loc,xvals,yvals)
+     ;adjust the input by the markup scale
      scale_x = float(xwdw_size)/float(img_xsize)
      scale_y = float(ywdw_size)/float(img_ysize)
+     adjxv = xvals/scale_x
+     adjyv = yvals/scale_y
+
+  
+     ;Plot the edge image
+     tv,bytscl(rebin(result,xwdw_size,ywdw_size))
+
+     ;get the location of the maximum axis
+     ;Do after defining trapezoid 2018/02/22 J. Prchlik 
+     max_axis = brute_force_max_dis(ind_loc,adjxv,adjyv)
 
      plots,[max_axis[1],max_axis[2]]*scale_x,[max_axis[3],max_axis[4]]*scale_y,color=200,thick=3,/device
 
@@ -439,6 +457,7 @@ for xx=0,nfiles-1 do begin
      ;plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
      plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
      
+
      ;temp quick answers
      lx1 = px1
      lx2 = px3
