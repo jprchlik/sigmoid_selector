@@ -40,7 +40,7 @@ end
 ;Usage
 ;outp = brute_force_max_dis(inds)
 ;###############################################
-function brute_force_max_dis,inds,xbox,ybox
+function brute_force_max_dis,inds,idat,xbox,ybox
 
 ;break the indices into x and y values
 ind_x = inds[0,*]
@@ -64,6 +64,10 @@ ymin = ind_y le lims[5]*ind_x+lims[4]
 ymax = ind_y ge lims[7]*ind_x+lims[6]
 vbox = xmin*xmax*ymin*ymax
 
+;fit a line through all sigmoid points
+use_fit = where(vbox eq 1) 
+sig_lin = linfit(ind_x[use_fit],ind_y[use_fit],measure_errors=1./idat[use_fit],sigma=sig_unc)
+
 ;Loop over all x-values to find the maximum distance for s
 for i=0,n_elements(ind_x)-1 do begin
 
@@ -71,7 +75,18 @@ for i=0,n_elements(ind_x)-1 do begin
     if vbox[i] eq 0 then continue
    ;temporary diffrance array
    ;Add box cut 2018/02/22 J. Prchlik
-   t_diff = sqrt((ind_x[i]-ind_x)^2+(ind_y[i]-ind_y)^2)*vbox
+   ;difference in x-value
+   x_diff = (ind_x[i]-ind_x)
+   ;difference in y-value
+   y_diff = (ind_y[i]-ind_y)
+
+   ;makesure distance has slope sim. to line regression slope
+   s_diff = y_diff/x_diff
+   ;only keep distances within 3 sigma of slope
+   cm = abs(s_diff-sig_lin[1]) lt 0.75
+
+   print,sig_lin[1],3.*sig_unc[1],mean(s_diff[use_fit]),max(cm),min(cm)
+   t_diff = sqrt((x_diff)^2+(y_diff)^2)*vbox*cm
 
    ;maximum difference for this point and the index location of maximum
    m_diff = max(t_diff)
@@ -108,9 +123,9 @@ end
 ;nx1,ny1 are the right x,y coordinates of the maximum distance in the sigmoid
 ;
 ;Usage
-;outp = brute_force_min_dis(inds,nx1,ny1,nx2,ny2)
+;outp = brute_force_min_dis(inds,idat,xbox,ybox)
 ;###############################################
-function brute_force_min_dis,inds,xbox,ybox
+function brute_force_min_dis,inds,idat,xbox,ybox
 
 ;get x and y indices
 ind_x = inds[0,*]
@@ -140,7 +155,7 @@ vbox = xmin*xmax*ymin*ymax
 
 ;fit a line through all sigmoid points
 use_fit = where(vbox eq 1) 
-sig_lin = linfit(ind_x[use_fit],ind_y[use_fit])
+sig_lin = linfit(ind_x[use_fit],ind_y[use_fit],measure_errors=1./idat[use_fit])
 
 ;get transformed x and y values
 trn_y = ind_y-(sig_lin[1]*ind_x+sig_lin[0])
@@ -149,14 +164,14 @@ trn_x = ind_x-mean(ind_x[use_fit])
 ;use inverse of the slope to get tolerance on x pixel deviation allowed
 ;However set up limits
 x_tol = 1./sig_lin[1]
-print,x_tol
 if x_tol lt  1 then x_tol = 1
-if x_tol gt 10 then x_tol = 10
+if x_tol gt 15 then x_tol = 15
 
 ;Find the min and maximum values for the sigmoid ends
 ;Use percentile range to store the results
-tmin=cgPercentiles(trn_x,percentiles=.05)
-tmax=cgPercentiles(trn_x,percentiles=.95)
+tmin=cgPercentiles(trn_x[use_fit],percentiles=.10)
+tmax=cgPercentiles(trn_x[use_fit],percentiles=.90)
+
 
 ;Loop over all x-values to find the maximum distance for each small axis
 for i=0,n_elements(ind_x)-1 do begin
@@ -254,7 +269,6 @@ while looper gt 0.6 do begin
     ds = sqrt((ts_diff(fxs,1))^2+ts_diff(fys,1)^2)
     if ((mean(ts_diff(ds,1)) lt tol) ) or (counter gt 100) then looper = 0   
     counter = counter+1
-   print,counter,radius1,mean(ts_diff(ds,1))
 endwhile
 return,result
 end
@@ -276,20 +290,27 @@ mreadfits,fits_files,index0
 ;help,index0,/st
 ;stop
 
-sigdat={sig_id:'',        $
+sigdat_mod={sig_id:'',        $
         NOAA_id:0,        $
         filename:'',      $
         date:'',          $
         size:0.0,         $
         aspect_ratio:0.0, $
+        fwhm:0.0,         $
+        bboxx:0.0,        $
+        bboxy:0.0,        $
         longx1:0.0,       $
         longy1:0.0,       $
         longx2:0.0,       $
         longy2:0.0,       $
-        shrtx1:0.0,       $
-        shrty1:0.0,       $
-        shrtx2:0.0,       $
-        shrty2:0.0}
+        shrtx1a:0.0,      $
+        shrty1a:0.0,      $
+        shrtx2a:0.0,      $
+        shrty2a:0.0,      $
+        shrtx1b:0.0,      $
+        shrty1b:0.0,      $
+        shrtx2b:0.0,      $
+        shrty2b:0.0}
 sigmoids=replicate(sigdat,nfiles)
 
 
@@ -311,7 +332,9 @@ for xx=0,nfiles-1 do begin
   rescale_image=''
   while not(imgok) do begin
      window,5,xs=xwdw_size,ys=ywdw_size
-     tv,bytscl(rebin(data1,xwdw_size,ywdw_size),min=scmin,max=scmax)
+
+     image = bytscl(rebin(data1,xwdw_size,ywdw_size),min=scmin,max=scmax)
+     tv,image
 
 
      ;overlay image filter
@@ -392,56 +415,69 @@ for xx=0,nfiles-1 do begin
   endif else done=0
   while not(done) do begin
      ;Changed to create polygon around Sigmoid
-     ;print,''
-     ;print,"Click Along Sigmoid Axis (Point 1 of 7)"
-     ;cursor,px1,py1,/down,/device
-     ;xyouts,px1,py1,'X',/device,alignment=0.5
-     ;print,"Click Along Sigmoid Axis (Point 2 of 7)"
-     ;cursor,px2,py2,/down,/device
-     ;xyouts,px2,py2,'X',/device,alignment=0.5
-     ;print,"Click Along Sigmoid Axis (Point 3 of 7)"
-     ;cursor,px3,py3,/down,/device
-     ;xyouts,px3,py3,'X',/device,alignment=0.5
-     ;print,"Click Along Sigmoid Axis (Point 4 of 7)"
-     ;cursor,px4,py4,/down,/device
-     ;xyouts,px4,py4,'X',/device,alignment=0.5
-     ;print,"Click Along Sigmoid Axis (Point 5 of 7)"
-     ;cursor,px5,py5,/down,/device
-     ;xyouts,px5,py5,'X',/device,alignment=0.5
-     ;print,"Click Along Sigmoid Axis (Point 6 of 7)"
-     ;cursor,px6,py6,/down,/device
-     ;xyouts,px6,py6,'X',/device,alignment=0.5
-     ;print,"Click Along Sigmoid Axis (Point 7 of 7)"
-     ;cursor,px7,py7,/down,/device
-     ;xyouts,px7,py7,'X',/device,alignment=0.5
+     ;Change back to manual can work with auto later
+     ; 2018/02/23 J. Prchlik
+     print,''
+     print,"Click Trailing Sigmoid Long Axis (Point 1 of 2)"
+     cursor,px1,py1,/down,/device
+     xyouts,px1,py1,'L',/device,alignment=0.5
+     print,"Click Leading Sigmoid Long Axis (Point 2 of 2)"
+     cursor,px2,py2,/down,/device
+     xyouts,px2,py2,'L',/device,alignment=0.5
+     print,"Click Sigmoid Southern Trailing Short Axis (Point 1 of 2)"
+     cursor,px3,py3,/down,/device
+     xyouts,px3,py3,'X',/device,alignment=0.5
+     print,"Click Sigmoid Northern Trailing Short Axis (Point 2 of 2)"
+     cursor,px4,py4,/down,/device
+     xyouts,px4,py4,'X',/device,alignment=0.5
+     print,"Click Sigmoid Southern Leading Short Axis (Point 1 of 2)"
+     cursor,px5,py5,/down,/device
+     xyouts,px5,py5,'X',/device,alignment=0.5
+     print,"Click Sigmoid Northern Leading Short Axis (Point 1 of 2)"
+     cursor,px6,py6,/down,/device
+     xyouts,px6,py6,'X',/device,alignment=0.5
 
      ;Changed to polygon around sigmoid
      print,"Click Lower Left (Point 1 of 4)"
-     cursor,px1,py1,/down,/device
-     xyouts,px1,py1,'X',/device,alignment=0.5
+     cursor,bx1,by1,/down,/device
+     xyouts,bx1,by1,'X',/device,alignment=0.5
      print,"Click Upper Left (Point 2 of 4)"
-     cursor,px2,py2,/down,/device
-     xyouts,px2,py2,'X',/device,alignment=0.5
+     cursor,bx2,by2,/down,/device
+     xyouts,bx2,by2,'X',/device,alignment=0.5
      print,"Click Upper Right (Point 3 of 4)"
-     cursor,px3,py3,/down,/device
-     xyouts,px3,py3,'X',/device,alignment=0.5
+     cursor,bx3,by3,/down,/device
+     xyouts,bx3,by3,'X',/device,alignment=0.5
      print,"Click Lower Right (Point 4 of 4)"
-     cursor,px4,py4,/down,/device
-     xyouts,px4,py4,'X',/device,alignment=0.5
+     cursor,bx4,by4,/down,/device
+     xyouts,bx4,by4,'X',/device,alignment=0.5
 
 
      ;Create line tracing the sigmoid
-     xvals = [px1,px2,px3,px4,px1];,px5,px6,px7] Changed to polygon J. Prchlik 2018/02/22
-     yvals = [py1,py2,py3,py4,py1];,py5,py6,py7] Changed to polygon J. Prchlik 2018/02/22
+     xvals = [bx1,bx2,bx3,bx4,bx1];,bx5,bx6,bx7] Changed to bolygon J. brchlik 2018/02/22
+     yvals = [by1,by2,by3,by4,by1];,by5,by6,by7] Changed to bolygon J. brchlik 2018/02/22
      ;Changed to polygon 2018/02/22 J. Prchlik
      ;samp = 100
      ;xgrid = findgen(samp)*(max(xvals)-min(xvals))/float(samp)+min(xvals)
 
+     ;radius to scale to select the sigmoid
+     ;rad_2 = abs(float(px3-px1))/abs(float(py3-py1))
+     rad_1 = 3.6
+     ;if rad_2 lt 1 then rad_2 = 1./rad_2
+     ;rad_2 = rad_1*rad_2
+     rad_2 = 15.
+
      ;Scale to find image edges 2018/02/28 J. Prchlik
-     result = edge_dog(data1,radius1=3.0,radius2=15.0,threshold=1,zero_crossings=[0,255])                 
+     result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+     ;result = roberts(data1)                 
+     ;result = sobel(data1)                 
+     ;result = prewitt(data1)                 
+     ;result = shift_diff(data1)                 
+     ;result = edge_dog(data1)                 
+     ;result = laplacian(data1)                 
+     ;result = emboss(data1)
 
      ;index location of the bright regions
-     sig = where(result gt 254.5)
+     sig = where(result gt .50)
      ;create index array for the entire images for the sigmoid
      ind_loc = array_indices(result,sig)
 
@@ -454,19 +490,22 @@ for xx=0,nfiles-1 do begin
   
      ;Plot the edge image
      ;Put in and remove for testing purposes 2018/02/28 J. Prchlik
-     ;tv,bytscl(rebin(result,xwdw_size,ywdw_size))
+     test_plot = [[[image]],[[image]],[[bytscl(rebin(result,xwdw_size,ywdw_size))]]]
+     tv,test_plot,true=3
 
      ;get the location of the maximum axis
      ;Do after defining polygon 2018/02/22 J. Prchlik 
-     max_axis = brute_force_max_dis(ind_loc,adjxv,adjyv)
+     ;Remove auto max length 2018/02/23 J. Prchlik
+     ;max_axis = brute_force_max_dis(ind_loc,data1,adjxv,adjyv)
 
-     plots,[max_axis[1],max_axis[2]]*scale_x,[max_axis[3],max_axis[4]]*scale_y,color=200,thick=3,/device
+     ;plots,[max_axis[1],max_axis[2]]*scale_x,[max_axis[3],max_axis[4]]*scale_y,color=200,thick=3,/device
 
      ;Get values for the minimum axis
      ;Do after defining polygon 2018/02/22 J. Prchlik 
-     min_axis = brute_force_min_dis(ind_loc,adjxv,adjyv)
-     plots,[min_axis[1],min_axis[2]]*scale_x,[min_axis[3],min_axis[4]]*scale_y,color=25,thick=3,/device
-     plots,[min_axis[6],min_axis[7]]*scale_x,[min_axis[8],min_axis[9]]*scale_y,color=25,thick=3,/device
+     ;min_axis = brute_force_min_dis(ind_loc,data1,adjxv,adjyv)
+     ;Remove automatic min values 2018/02/23 J. Prchlik
+     ;plots,[min_axis[1],min_axis[2]]*scale_x,[min_axis[3],min_axis[4]]*scale_y,color=240,thick=3,/device
+     ;plots,[min_axis[6],min_axis[7]]*scale_x,[min_axis[8],min_axis[9]]*scale_y,color=240,thick=3,/device
 
      ;interpolate quadratic
      ;Changed to polygon 2018/02/22 J. Prchlik
@@ -476,14 +515,15 @@ for xx=0,nfiles-1 do begin
      ;plot quadratic interpolation
      ;Changed to polygon 2018/02/22 J. Prchlik
      ;plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
-     plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
+     ;plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
      
 
      ;temp quick answers
+     ; Updated back with manual parameters 2018/02/23 J. Prchlik
      lx1 = px1
-     lx2 = px3
+     lx2 = px2
      ly1 = py1
-     ly2 = py3
+     ly2 = py2
      sx1 = px1
      sx2 = px2
      sy1 = py1
