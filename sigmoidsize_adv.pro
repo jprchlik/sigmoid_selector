@@ -295,12 +295,12 @@ sigdat_mod={sig_id:'',        $
         filename:'',      $
         date:'',          $
         size:0.0,         $
-        sizea:0.0,         $
-        sizeb:0.0,         $
+        sizea:0.0,        $
+        sizeb:0.0,        $
         aspect_ratio:0.0, $
         fwhm:0.0,         $
-        bboxx:0.0,        $
-        bboxy:0.0,        $
+        bboxx:fltarr(5),  $
+        bboxy:fltarr(5),  $
         longx1:0.0,       $
         longy1:0.0,       $
         longx2:0.0,       $
@@ -440,16 +440,16 @@ for xx=0,nfiles-1 do begin
      xyouts,px6,py6,'X',/device,alignment=0.5
 
      ;Changed to polygon around sigmoid
-     print,"Click Lower Left (Point 1 of 4)"
+     print,"Click Lower Left Bounding Box (Point 1 of 4)"
      cursor,bx1,by1,/down,/device
      xyouts,bx1,by1,'X',/device,alignment=0.5
-     print,"Click Upper Left (Point 2 of 4)"
+     print,"Click Upper Left Bounding Box (Point 2 of 4)"
      cursor,bx2,by2,/down,/device
      xyouts,bx2,by2,'X',/device,alignment=0.5
-     print,"Click Upper Right (Point 3 of 4)"
+     print,"Click Upper Right Bounding Box (Point 3 of 4)"
      cursor,bx3,by3,/down,/device
      xyouts,bx3,by3,'X',/device,alignment=0.5
-     print,"Click Lower Right (Point 4 of 4)"
+     print,"Click Lower Right Bounding Box (Point 4 of 4)"
      cursor,bx4,by4,/down,/device
      xyouts,bx4,by4,'X',/device,alignment=0.5
 
@@ -468,8 +468,12 @@ for xx=0,nfiles-1 do begin
      ;rad_2 = rad_1*rad_2
      rad_2 = 15.
 
-     ;Scale to find image edges 2018/02/28 J. Prchlik
+     ;Scale to find image edges 2018/02/22 J. Prchlik
+     ;result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+     ;Changed to 0 1 for mask 2018/02/23 J. Prchlik
      result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+
+      
      ;result = roberts(data1)                 
      ;result = sobel(data1)                 
      ;result = prewitt(data1)                 
@@ -478,22 +482,76 @@ for xx=0,nfiles-1 do begin
      ;result = laplacian(data1)                 
      ;result = emboss(data1)
 
-     ;index location of the bright regions
-     sig = where(result gt .50)
-     ;create index array for the entire images for the sigmoid
-     ind_loc = array_indices(result,sig)
-
      ;adjust the input by the markup scale
      scale_x = float(xwdw_size)/float(img_xsize)
      scale_y = float(ywdw_size)/float(img_ysize)
      adjxv = xvals/scale_x
      adjyv = yvals/scale_y
 
+     ;store the shape of the array so you can reform the indices after creating mask
+     ar_sp = size(result)
+
+     ;index location of the bright regions
+     ; Get indices for full array 2018/02/23 J. Prchlik
+     sig = where(result gt -.50)
+     ;create index array for the entire images for the sigmoid
+     ind_loc = array_indices(result,sig)
+
+     ;break into x and y indices
+     ind_x = ind_loc[0,*]
+     ind_y = ind_loc[1,*]
+     ;Compute x and y limit functions
+     lims = comp_limits(adjxv,adjyv)
+     ;Create array of 1 and 0 for box
+     xmin = ind_x ge lims[1]*ind_y+lims[0]
+     xmax = ind_x le lims[3]*ind_y+lims[2]
+     ymin = ind_y le lims[5]*ind_x+lims[4]
+     ymax = ind_y ge lims[7]*ind_x+lims[6]
+     vbox = xmin*xmax*ymin*ymax
+     ibox = reform(vbox,ar_sp[1],ar_sp[2])
+
+     ;Idea stems from /Applications/exelis/idl81/help/pdf/image.pdf Chapter 6 working with ROIs
+     ;Programmatically Defining ROIs 2018/02/23 J. Prchlik
+     ;Create a mask which highlights interior sigmoid region and is inside bounding box
+     mask = ibox*result
+
+     ;Get boundary of created countour
+     CONTOUR, mask, LEVEL = 1,  $
+            XMARGIN = [0, 0], YMARGIN = [0, 0], $
+            /NOERASE, PATH_INFO = pathInfo, PATH_XY = pathXY, $
+            XSTYLE = 5, YSTYLE = 5, /PATH_DATA_COORDS
+
+
+
+     ;Create new ROI obejct using contour
+      line = [LINDGEN(PathInfo(0).N), 0] & $
+      roi_obj = OBJ_NEW('IDLanROI', $
+         (scale_x*pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
+         (scale_y*pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
+      ;Draw ROI on plot
+      DRAW_ROI, roi_obj, COLOR = 80,/device
+
+
+     ;Create image object
+     ;img_obj = OBJ_NEW( 'IDLanROI',ind_x*vbox,ind_y*vbox)  
+
+     ;Compute image stats from region
+     ;area = pixel area
+     ;cent = centriod
+     ;peri = perimeter distance in pixels
+     geo_comp = roi_obj.ComputeGeometry(AREA = area,$
+                      CENTROID=cent, PERIMETER=peri,$ 
+                      SPATIAL_OFFSET=soff, SPATIAL_SCALE=sscl)
+
+
+
+
   
      ;Plot the edge image
      ;Put in and remove for testing purposes 2018/02/28 J. Prchlik
      test_plot = [[[image]],[[image]],[[bytscl(rebin(result,xwdw_size,ywdw_size))]]]
-     tv,test_plot,true=3
+     ;Not using Test plot for now
+     ;tv,test_plot,true=3
 
      ;get the location of the maximum axis
      ;Do after defining polygon 2018/02/22 J. Prchlik 
@@ -517,7 +575,11 @@ for xx=0,nfiles-1 do begin
      ;plot quadratic interpolation
      ;Changed to polygon 2018/02/22 J. Prchlik
      ;plots,xgrid,py_inp,color=255,thick=5,linestyle=0,/device
-     ;plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
+     ;Keep Bounding box plot and add axis plots
+     plots,xvals,yvals,color=255,thick=5,linestyle=0,/device
+     plots,[px1,px2],[py1,py2],color=255,thick=2,linestyle=2,/device
+     plots,[px3,px4],[py3,py4],color=255,thick=2,linestyle=2,/device
+     plots,[px5,px6],[py5,py6],color=255,thick=2,linestyle=2,/device
      
 
      ;temp quick answers
@@ -566,17 +628,17 @@ for xx=0,nfiles-1 do begin
      print,'The long axis size in DEVICE-units is:'
      print,strcompress(string(long_axis_xy),/remove_all)
      print,'The short axis size in DEVICE-units is:'
-     print,strcompress(string(short_axis_xy),/remove_all)
+     print,strcompress(string(short_axisa_xy),/remove_all),' ',strcompress(string(short_axisb_xy),/remove_all)
      print,'The aspect ratio is:'
-     print,strcompress(string(long_axis_xy/(short_axisa_xy+short_axisb_xy)/2.),/remove_all)
+     print,strcompress(string(long_axis_xy/(short_axisa_xy+short_axisb_xy)*2.),/remove_all)
 
      print,''
      print,'The long axis size in ARCSEC is:'
      print,strcompress(string(long_axis_arc),/remove_all)
      print,'The short axis size in ARCSEC is:'
-     print,strcompress(string(short_axis_arc),/remove_all)
+     print,strcompress(string(short_axisa_arc),/remove_all),' ',strcompress(string(short_axisb_arc),/remove_all)
      print,'The aspect ratio should be the same as above:'
-     print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_xy)/2.),/remove_all)
+     print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.),/remove_all)
 
      continue=''
      print,''
@@ -600,8 +662,8 @@ for xx=0,nfiles-1 do begin
      sigmoids[xx].size=long_axis_arc
      sigmoids[xx].sizea=short_axisa_arc
      sigmoids[xx].sizeb=short_axisb_arc
-     sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)/2.
-     sigmoids[xx].fwhm=0.0,         
+     sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.
+     sigmoids[xx].fwhm=0.0         
      sigmoids[xx].bboxx=xvals       
      sigmoids[xx].bboxy=yvals       
      sigmoids[xx].shrtx1a=sx1a      
