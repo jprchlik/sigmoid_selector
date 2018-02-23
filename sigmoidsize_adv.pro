@@ -273,9 +273,9 @@ endwhile
 return,result
 end
 
-pro sigmoidsize_adv
+pro sigmoidsize_adv,dir=dir
 ;scratch_path='/Volumes/Scratch/Users/ehanson/XRT_fits/'
-scratch_path='examples/'
+if keyword_set(dir) then scratch_path = dir else  scratch_path='examples/'
 xwdw_size=1024
 ywdw_size=1024
 fits_files=find_file(scratch_path+'*.fits')
