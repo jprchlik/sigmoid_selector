@@ -326,7 +326,7 @@ for xx=0,nfiles-1 do begin
   filesplit=strsplit(fits_files[xx],'/',/extract)
   flnm=filesplit[n_elements(filesplit)-1]
   sigmoids[xx].filename=flnm
-  sigmoids[xx].date=strmid(flnm,3,15)
+  sigmoids[xx].date=index1[0].DATE_OBS ;strmid(flnm,3,15)
   print,'Current file: '+sigmoids[xx].filename
   print,'Current date: '+sigmoids[xx].date
   loadct,3
@@ -708,9 +708,14 @@ for xx=0,nfiles-1 do begin
      sigmoids[xx].sig_id=sig_id
 
      ;Added best guess of NOAA number
+     query=ssw_her_make_query(strmid(index1[0].DATE_OBS,0,10),strmid(index1[0].DATE_OBS,0,10),/ar,x1=cal_cent[0],x2=cal_cent[1])
+     her=ssw_her_query(query,/str) 
+     if n_elements(size(her)) gt 3 then $
+         ar_guess = her.ar.optional.AR_NOAANUM
 
      print,'What is the NOAA active region number of the sigmoid?'
      print,'(If there is no NOAA #, just hit enter.)'
+     if n_elements(size(her)) gt 3 then print,string(ar_guess,format='("Best Guess = ",I5)')
      read,noaa_id
      sigmoids[xx].NOAA_id=noaa_id
      save,filename=scratch_path+'sigmoid_sizedata.sav',sigmoids
