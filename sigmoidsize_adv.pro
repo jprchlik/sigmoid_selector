@@ -369,9 +369,10 @@ rot_img = rot(m_img,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
 
 ;Sum image a long axis
 sum_img = total(rot_img,1)
-min_img = min(sum_img)
+good = sum_img gt 0
+min_img = min(sum_img*good)
 lev_img = sum_img-min_img
-max_img = min(lev_img)
+max_img = max(lev_img)
 
 xgrid = findgen(n_elements(sum_img))
 
