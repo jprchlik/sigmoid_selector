@@ -290,28 +290,33 @@ mreadfits,fits_files,index0
 ;help,index0,/st
 ;stop
 
-sigdat_mod={sig_id:'',        $
-        NOAA_id:0,        $
-        filename:'',      $
-        date:'',          $
-        size:0.0,         $
-        sizea:0.0,        $
-        sizeb:0.0,        $
-        aspect_ratio:0.0, $
-        fwhm:0.0,         $
-        bboxx:fltarr(5),  $
-        bboxy:fltarr(5),  $
-        longx1:0.0,       $
-        longy1:0.0,       $
-        longx2:0.0,       $
-        longy2:0.0,       $
-        shrtx1a:0.0,      $
-        shrty1a:0.0,      $
-        shrtx2a:0.0,      $
-        shrty2a:0.0,      $
-        shrtx1b:0.0,      $
-        shrty1b:0.0,      $
-        shrtx2b:0.0,      $
+sigdat_mod={sig_id:'',           $
+        NOAA_id:0,               $
+        filename:'',             $
+        date:'',                 $
+        size:0.0,                $
+        sizea:0.0,               $
+        sizeb:0.0,               $
+        aspect_ratio:0.0,        $
+        cx:0.0,                  $ 
+        cy:0.0,                  $
+        peri:0.0,                $
+        area:0.0,                $
+        roi:OBJ_NEW('IDLanROI'), $
+        fwhm:0.0,                $
+        bboxx:fltarr(5),         $
+        bboxy:fltarr(5),         $
+        longx1:0.0,              $
+        longy1:0.0,              $
+        longx2:0.0,              $
+        longy2:0.0,              $
+        shrtx1a:0.0,             $
+        shrty1a:0.0,             $
+        shrtx2a:0.0,             $
+        shrty2a:0.0,             $
+        shrtx1b:0.0,             $
+        shrty1b:0.0,             $
+        shrtx2b:0.0,             $
         shrty2b:0.0}
 sigmoids=replicate(sigdat_mod,nfiles)
 
@@ -681,6 +686,11 @@ for xx=0,nfiles-1 do begin
      sigmoids[xx].sizeb=short_axisb_arc
      sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.
      sigmoids[xx].fwhm=0.0         
+     sigmoids[xx].area=area        
+     sigmoids[xx].peri=peri      
+     sigmoids[xx].roi=roi_obj      
+     sigmoids[xx].cx=float(cal_cent[0])
+     sigmoids[xx].cy=float(cal_cent[1])
      sigmoids[xx].bboxx=xvals       
      sigmoids[xx].bboxy=yvals       
      sigmoids[xx].shrtx1a=sx1a      
