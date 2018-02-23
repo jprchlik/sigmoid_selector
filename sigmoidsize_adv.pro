@@ -295,6 +295,8 @@ sigdat_mod={sig_id:'',        $
         filename:'',      $
         date:'',          $
         size:0.0,         $
+        sizea:0.0,         $
+        sizeb:0.0,         $
         aspect_ratio:0.0, $
         fwhm:0.0,         $
         bboxx:0.0,        $
@@ -311,7 +313,7 @@ sigdat_mod={sig_id:'',        $
         shrty1b:0.0,      $
         shrtx2b:0.0,      $
         shrty2b:0.0}
-sigmoids=replicate(sigdat,nfiles)
+sigmoids=replicate(sigdat_mod,nfiles)
 
 
 for xx=0,nfiles-1 do begin
@@ -524,10 +526,15 @@ for xx=0,nfiles-1 do begin
      lx2 = px2
      ly1 = py1
      ly2 = py2
-     sx1 = px1
-     sx2 = px2
-     sy1 = py1
-     sy2 = py2
+     ;Trailing is a leading is b
+     sx1a = px3
+     sx2a = px4
+     sy1a = py3
+     sy2a = py4
+     sx1b = px5
+     sx2b = px6
+     sy1b = py5
+     sy2b = py6
 
      ;Get long Axis information
      lx_dev=abs(lx1-lx2)
@@ -537,14 +544,23 @@ for xx=0,nfiles-1 do begin
      long_axis_xy=sqrt((lx_dev^2)+(ly_dev^2))
      long_axis_arc=sqrt((lx_arc^2)+(ly_arc^2))
 
-     ;Get short Axis information
-     sx_dev=abs(sx1-sx2)
-     sy_dev=abs(sy1-sy2)
-     sx_arc=arcsec_per_devicex*sx_dev
-     sy_arc=arcsec_per_devicey*sy_dev
-     short_axis_xy=sqrt((sx_dev^2)+(sy_dev^2))
-     short_axis_arc=sqrt((sx_arc^2)+(sy_arc^2))
+     ;Get short Axis information Trailing
+     sxa_dev=abs(sx1a-sx2a)
+     sya_dev=abs(sy1a-sy2a)
+     sxa_arc=arcsec_per_devicex*sxa_dev
+     sya_arc=arcsec_per_devicey*sya_dev
+     short_axisa_xy =sqrt((sxa_dev^2)+(sya_dev^2))
+     short_axisa_arc=sqrt((sxa_arc^2)+(sya_arc^2))
 
+     ;Get short Axis information Trailing
+     sxb_dev=abs(sx1a-sx2a)
+     syb_dev=abs(sy1a-sy2a)
+     sxb_arc=arcsec_per_devicex*sxb_dev
+     syb_arc=arcsec_per_devicey*syb_dev
+     short_axisb_xy =sqrt((sxb_dev^2)+(syb_dev^2))
+     short_axisb_arc=sqrt((sxb_arc^2)+(syb_arc^2))
+
+     ;Get center pixel informaiton
      ;Get center pixel informaiton
      print,''
      print,'The long axis size in DEVICE-units is:'
@@ -552,7 +568,7 @@ for xx=0,nfiles-1 do begin
      print,'The short axis size in DEVICE-units is:'
      print,strcompress(string(short_axis_xy),/remove_all)
      print,'The aspect ratio is:'
-     print,strcompress(string(long_axis_xy/short_axis_xy),/remove_all)
+     print,strcompress(string(long_axis_xy/(short_axisa_xy+short_axisb_xy)/2.),/remove_all)
 
      print,''
      print,'The long axis size in ARCSEC is:'
@@ -560,7 +576,7 @@ for xx=0,nfiles-1 do begin
      print,'The short axis size in ARCSEC is:'
      print,strcompress(string(short_axis_arc),/remove_all)
      print,'The aspect ratio should be the same as above:'
-     print,strcompress(string(long_axis_arc/short_axis_arc),/remove_all)
+     print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_xy)/2.),/remove_all)
 
      continue=''
      print,''
@@ -581,12 +597,21 @@ for xx=0,nfiles-1 do begin
      sigmoids[xx].longy1=ly1
      sigmoids[xx].longx2=lx2
      sigmoids[xx].longy2=ly2
-     sigmoids[xx].shrtx1=sx1
-     sigmoids[xx].shrty1=sy1
-     sigmoids[xx].shrtx2=sx2
-     sigmoids[xx].shrty2=sy2
      sigmoids[xx].size=long_axis_arc
-     sigmoids[xx].aspect_ratio=long_axis_arc/short_axis_arc
+     sigmoids[xx].sizea=short_axisa_arc
+     sigmoids[xx].sizeb=short_axisb_arc
+     sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)/2.
+     sigmoids[xx].fwhm=0.0,         
+     sigmoids[xx].bboxx=xvals       
+     sigmoids[xx].bboxy=yvals       
+     sigmoids[xx].shrtx1a=sx1a      
+     sigmoids[xx].shrty1a=sy1a      
+     sigmoids[xx].shrtx2a=sx2a      
+     sigmoids[xx].shrty2a=sy2a      
+     sigmoids[xx].shrtx1b=sx1b      
+     sigmoids[xx].shrty1b=sy1b      
+     sigmoids[xx].shrtx2b=sx2b
+     sigmoids[xx].shrty2b=sy2b
      sig_id=''
      noaa_id=''
      print,'What is the ID of the sigmoid you just identified?'
