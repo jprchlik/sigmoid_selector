@@ -273,6 +273,131 @@ endwhile
 return,result
 end
 
+
+;Function to get the FWHM of the sigmoid
+;Guassian not a good assumpting as discussed by Antonia on 2018/02/23
+function gauss_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2
+
+;create index array for the entire images for the sigmoid
+ind_loc = array_indices(img,sig)
+
+;get image shape
+shp_img = size(img)
+
+;break into x and y indices
+ind_x = ind_loc[0,*]
+ind_y = ind_loc[1,*]
+
+;Compute x and y limit functions
+lims = comp_limits(xbox,ybox)
+
+;Create array of 1 and 0 for box
+xmin = ind_x ge lims[1]*ind_y+lims[0]
+xmax = ind_x le lims[3]*ind_y+lims[2]
+ymin = ind_y le lims[5]*ind_x+lims[4]
+ymax = ind_y ge lims[7]*ind_x+lims[6]
+vbox = xmin*xmax*ymin*ymax
+
+;create new image with stuff outside the box removed
+ibox = reform(vbox,shp_img[1],shp_img[2])
+;zero out information outside box
+m_img = img*vbox
+
+
+;rotate the angle of the long axis
+;first get the rotation angle
+;rot_deg = atan2,ay2-ay1,ax2-ax1,/deg
+;rotate image by that ange
+rot_img = rot(m_img,rot_deg,x0=ax1,y0=ay1,/interp)
+
+;Sum image a long axis
+sum_img = total(rot_img,1)
+
+
+return,fwhm
+end
+
+;Function to get the FWHM of the sigmoid
+function real_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y
+
+sig = where(img gt -9e31)
+;create index array for the entire images for the sigmoid
+ind_loc = array_indices(img,sig)
+
+;get image shape
+shp_img = size(img)
+
+;break into x and y indices
+ind_x = ind_loc[0,*]
+ind_y = ind_loc[1,*]
+
+;Compute x and y limit functions
+lims = comp_limits(xbox,ybox)
+
+;Create array of 1 and 0 for box
+xmin = ind_x ge lims[1]*ind_y+lims[0]
+xmax = ind_x le lims[3]*ind_y+lims[2]
+ymin = ind_y le lims[5]*ind_x+lims[4]
+ymax = ind_y ge lims[7]*ind_x+lims[6]
+
+;get slope of FWHM line
+fwhm_line = linfit([ax1,ax2]/sc_x,[ay1,ay2]/sc_y)
+perp_slop = -1./fwhm_line[1]
+perp_int1 = ay1/sc_y-perp_slop*ax1/sc_x
+perp_int2 = ay2/sc_y-perp_slop*ax2/sc_x
+
+;get interior limits
+imin = ind_y ge perp_slop*ind_x+perp_int1
+imax = ind_y le perp_slop*ind_x+perp_int2
+
+;create large array of interior slopes
+vbox = xmin*xmax*ymin*ymax*imax*imin
+print,max(vbox)
+
+;create new image with stuff outside the box removed
+ibox = reform(vbox,shp_img[1],shp_img[2])
+;zero out information outside box
+m_img = img*vbox
+print,max(m_img)
+
+;rotate the angle of the long axis
+;first get the rotation angle
+rot_rad = atan(ay2-ay1,ax2-ax1)
+rot_deg = rot_rad*180./!PI
+;rotate image by that ange
+rot_img = rot(m_img,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
+
+;Sum image a long axis
+sum_img = total(rot_img,1)
+min_img = min(sum_img)
+lev_img = sum_img-min_img
+max_img = min(lev_img)
+
+xgrid = findgen(n_elements(sum_img))
+
+;Plot line core
+plots,xgrid,sum_img,/device,color=255
+plots,xgrid,fltarr(n_elements(xgrid))+0.5*max_img+min_img,/device,color=200
+
+
+;p_deg = 6
+;p_six = poly_fit(xgrid,sum_img,p_deg)
+;y_out = fltarr(n_elements(xgrid))+p_six[0]
+;for i=1,p_deg-1 do y_out=y_out+p_six[i]*xgrid^i
+
+;plots,xgrid,y_out,/device,color=200
+
+
+
+
+;return,[fwhm,h]
+return,0
+end
+
+;Program to compute sigmoid properties of image
+;
+;USAGE
+;sigmoidsize_ave,dir='exammples/'
 pro sigmoidsize_adv,dir=dir
 ;scratch_path='/Volumes/Scratch/Users/ehanson/XRT_fits/'
 if keyword_set(dir) then scratch_path = dir else  scratch_path='examples/'
@@ -403,11 +528,12 @@ for xx=0,nfiles-1 do begin
   arcsec_per_pixel=1.0286  ;; Conversion for XRT data
   arcsec_per_pixel_x=index1[0].cdelt1  ;; any data with reasonable headers
   arcsec_per_pixel_y=index1[0].cdelt2  ;; any data with reasonable headers
-  binscale=index1[0].chip_sum
+  ;Remove binscale because it is not need with proper cdelt keywords
+  ;binscale=index1[0].chip_sum
   img_xsize=index1[0].naxis1
   img_ysize=index1[0].naxis2
-  devicex_to_imgx=float(xwdw_size)/(img_xsize*binscale)
-  devicey_to_imgy=float(ywdw_size)/(img_ysize*binscale)
+  devicex_to_imgx=float(xwdw_size)/(img_xsize);*binscale)
+  devicey_to_imgy=float(ywdw_size)/(img_ysize);*binscale)
   arcsec_per_devicex=arcsec_per_pixel_x/devicex_to_imgx
   arcsec_per_devicey=arcsec_per_pixel_y/devicey_to_imgy
 
@@ -458,17 +584,25 @@ for xx=0,nfiles-1 do begin
      ;Changed to polygon around sigmoid
      print,"Click Lower Left Bounding Box (Point 1 of 4)"
      cursor,bx1,by1,/down,/device
-     xyouts,bx1,by1,'X',/device,alignment=0.5
+     xyouts,bx1,by1,'B',/device,alignment=0.5
      print,"Click Upper Left Bounding Box (Point 2 of 4)"
      cursor,bx2,by2,/down,/device
-     xyouts,bx2,by2,'X',/device,alignment=0.5
+     xyouts,bx2,by2,'B',/device,alignment=0.5
      print,"Click Upper Right Bounding Box (Point 3 of 4)"
      cursor,bx3,by3,/down,/device
-     xyouts,bx3,by3,'X',/device,alignment=0.5
+     xyouts,bx3,by3,'B',/device,alignment=0.5
      print,"Click Lower Right Bounding Box (Point 4 of 4)"
      cursor,bx4,by4,/down,/device
-     xyouts,bx4,by4,'X',/device,alignment=0.5
+     xyouts,bx4,by4,'B',/device,alignment=0.5
 
+     ;Create sigmoid region where to calculate the FWHM
+     print,''
+     print,"Click Bottom FWHM Point (Point 1 of 2)"
+     cursor,sx1,sy1,/down,/device
+     xyouts,sx1,sy1,'F',/device,alignment=0.5
+     print,"Click Top FWHM Point (Point 2 of 2)"
+     cursor,sx2,sy2,/down,/device
+     xyouts,sx2,sy2,'F',/device,alignment=0.5
 
      ;Create line tracing the sigmoid
      xvals = [bx1,bx2,bx3,bx4,bx1];,bx5,bx6,bx7] Changed to bolygon J. brchlik 2018/02/22
@@ -602,6 +736,9 @@ for xx=0,nfiles-1 do begin
      plots,[px5,px6],[py5,py6],color=255,thick=2,linestyle=2,/device
      
 
+     ;Get the FWHM Value J. Prchlik 2018/02/23
+     fwhm = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y)
+
      ;temp quick answers
      ; Updated back with manual parameters 2018/02/23 J. Prchlik
      lx1 = px1
@@ -685,7 +822,7 @@ for xx=0,nfiles-1 do begin
      sigmoids[xx].sizea=short_axisa_arc
      sigmoids[xx].sizeb=short_axisb_arc
      sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.
-     sigmoids[xx].fwhm=0.0         
+     sigmoids[xx].fwhm=fwhm         
      sigmoids[xx].area=area        
      sigmoids[xx].peri=peri      
      sigmoids[xx].roi=roi_obj      
