@@ -396,13 +396,19 @@ for xx=0,nfiles-1 do begin
   endwhile
 ;;  arcsec_per_pixel=0.6  ;; Conversion for AIA data
   arcsec_per_pixel=1.0286  ;; Conversion for XRT data
+  arcsec_per_pixel_x=index[0].xscale  ;; any data with reasonable headers
+  arcsec_per_pixel_y=index[0].yscale  ;; any data with reasonable headers
   binscale=index1[0].chip_sum
   img_xsize=index1[0].naxis1
   img_ysize=index1[0].naxis2
   devicex_to_imgx=float(xwdw_size)/(img_xsize*binscale)
   devicey_to_imgy=float(ywdw_size)/(img_ysize*binscale)
-  arcsec_per_devicex=arcsec_per_pixel/devicex_to_imgx
-  arcsec_per_devicey=arcsec_per_pixel/devicey_to_imgy
+  arcsec_per_devicex=arcsec_per_pixel_x/devicex_to_imgx
+  arcsec_per_devicey=arcsec_per_pixel_y/devicey_to_imgy
+
+  ;convert pixel to absolute x,y values
+  xc0
+  yc0
 
   skp=''
   skipthis=0
@@ -539,9 +545,11 @@ for xx=0,nfiles-1 do begin
      ;area = pixel area
      ;cent = centriod
      ;peri = perimeter distance in pixels
+     ;SPATIAL OFFSET is the zero point scale is the input pixel to arcsecond conversion
+     ;SPATIAL scale is the input pixel to arcsecond conversion
      geo_comp = roi_obj.ComputeGeometry(AREA = area,$
                       CENTROID=cent, PERIMETER=peri,$ 
-                      SPATIAL_OFFSET=soff, SPATIAL_SCALE=sscl)
+                      SPATIAL_OFFSET=soff, SPATIAL_SCALE=[arcsec_per_pixel_x,arcsec_per_pixel_y])
 
 
 
