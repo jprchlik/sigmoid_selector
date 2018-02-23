@@ -396,8 +396,8 @@ for xx=0,nfiles-1 do begin
   endwhile
 ;;  arcsec_per_pixel=0.6  ;; Conversion for AIA data
   arcsec_per_pixel=1.0286  ;; Conversion for XRT data
-  arcsec_per_pixel_x=index[0].xscale  ;; any data with reasonable headers
-  arcsec_per_pixel_y=index[0].yscale  ;; any data with reasonable headers
+  arcsec_per_pixel_x=index1[0].cdelt1  ;; any data with reasonable headers
+  arcsec_per_pixel_y=index1[0].cdelt2  ;; any data with reasonable headers
   binscale=index1[0].chip_sum
   img_xsize=index1[0].naxis1
   img_ysize=index1[0].naxis2
@@ -407,8 +407,13 @@ for xx=0,nfiles-1 do begin
   arcsec_per_devicey=arcsec_per_pixel_y/devicey_to_imgy
 
   ;convert pixel to absolute x,y values
-  xc0
-  yc0
+  xr0 = index1[0].crval1
+  yr0 = index1[0].crval2
+  xp0 = index1[0].crpix1
+  yp0 = index1[0].crpix2
+  ;offset if the lower left cornern so 
+  xoff = xr0-arcsec_per_pixel_x*xp0
+  yoff = yr0-arcsec_per_pixel_y*yp0
 
   skp=''
   skipthis=0
@@ -535,7 +540,7 @@ for xx=0,nfiles-1 do begin
          (scale_x*pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
          (scale_y*pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
       ;Draw ROI on plot
-      DRAW_ROI, roi_obj, COLOR = 80,/device
+      DRAW_ROI, roi_obj, COLOR = 0,/device,/LINE_FILL
 
 
      ;Create image object
@@ -549,15 +554,17 @@ for xx=0,nfiles-1 do begin
      ;SPATIAL scale is the input pixel to arcsecond conversion
      geo_comp = roi_obj.ComputeGeometry(AREA = area,$
                       CENTROID=cent, PERIMETER=peri,$ 
-                      SPATIAL_OFFSET=soff, SPATIAL_SCALE=[arcsec_per_pixel_x,arcsec_per_pixel_y])
+                      SPATIAL_SCALE=[arcsec_per_pixel_x,arcsec_per_pixel_y])
 
 
+     ;calibrated centriod
+     cal_cent = (cent/[scale_x,scale_y,1]-[xp0,yp0,0])*[arcsec_per_pixel_x,arcsec_per_pixel_y,1]+[xr0,yr0,0]
 
 
   
      ;Plot the edge image
      ;Put in and remove for testing purposes 2018/02/28 J. Prchlik
-     test_plot = [[[image]],[[image]],[[bytscl(rebin(result,xwdw_size,ywdw_size))]]]
+     ;test_plot = [[[image]],[[image]],[[bytscl(rebin(result,xwdw_size,ywdw_size))]]]
      ;Not using Test plot for now
      ;tv,test_plot,true=3
 
@@ -647,6 +654,8 @@ for xx=0,nfiles-1 do begin
      print,strcompress(string(short_axisa_arc),/remove_all),' ',strcompress(string(short_axisb_arc),/remove_all)
      print,'The aspect ratio should be the same as above:'
      print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.),/remove_all)
+
+     print,string(cal_cent[0:1],format='("x = ",F6.1," y = ",F6.1)')
 
      continue=''
      print,''
