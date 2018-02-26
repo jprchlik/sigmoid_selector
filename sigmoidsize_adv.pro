@@ -318,7 +318,22 @@ return,fwhm
 end
 
 ;Function to get the FWHM of the sigmoid
-function real_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y
+;
+;Usage
+;fwhm =  real_fwhm(img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y)
+; img = Input 2d Image with sigmoid
+; xbox = x-coordinates containing the sigmoid (pixels)
+; ybol = y-coordinates containint the sigmoid (pixels)
+; ax1 = trailing fwhm x-point
+; ay1 = trailing fwhm y-point
+; ax2 = leading fwhm x-point
+; ay2 = leading fwhm y-point
+; sc_x = device coorinates to pixels x-axis
+; sc_y = device coorinates to pixels y-axis
+; da_x = arcseconds to pixels x-axis
+; da_y = arcseconds to pixels y-axis
+
+function real_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y
 
 sig = where(img gt -9e31)
 ;create index array for the entire images for the sigmoid
@@ -367,6 +382,16 @@ rot_deg = rot_rad*180./!PI
 ;rotate image by that ange
 rot_img = rot(m_img,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
 
+;create rotation maxtrix
+rot_mat = [ [ cos(rot_rad), sin(rot_rad)],$
+            [-sin(rot_rad), cos(rot_rad)]]
+;create new delta keyword parameters from rotation
+ccd = [[ax1*da_x,da_x],$ ; x-coordinates from pixel to arcsec
+       [ay1*da_y,da_y]] $ ; y-coordinates from pixel to arcsec
+
+;new coordinates of after the rotation
+ccd_new = ccd # rot_mat
+
 ;Sum image a long axis
 sum_img = total(rot_img,1)
 good = sum_img gt 0
@@ -374,11 +399,13 @@ min_img = min(sum_img*good)
 lev_img = sum_img-min_img
 max_img = max(lev_img)
 
-xgrid = findgen(n_elements(sum_img))
+;Get a grid of y-values (i.e. perpendicualr to the Central Sigmoid axis)
+xgrid = findgen(n_elements(sum_img))*ccd_new[1,1] ; scale the index by the new delta-y coordinate system
 
-;Plot line core
-plots,xgrid,sum_img,/device,color=255
-plots,xgrid,fltarr(n_elements(xgrid))+0.5*max_img+min_img,/device,color=200
+;Plot line core in new window
+window,2,retain=0,xsize=600,ysize=600
+plot,xgrid,sum_img,/device,color=255,xtitle='Distance from Center [``]',ytitle='Counts [#/s]'
+oplot,xgrid,fltarr(n_elements(xgrid))+0.5*max_img+min_img,color=200
 
 
 ;p_deg = 6
@@ -735,10 +762,10 @@ for xx=0,nfiles-1 do begin
      plots,[px1,px2],[py1,py2],color=255,thick=2,linestyle=2,/device
      plots,[px3,px4],[py3,py4],color=255,thick=2,linestyle=2,/device
      plots,[px5,px6],[py5,py6],color=255,thick=2,linestyle=2,/device
-     
-
+ 
+ 
      ;Get the FWHM Value J. Prchlik 2018/02/23
-     fwhm = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y)
+     fwhm = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y,arcsec_per_pixel_x,arcsec_per_pixel_y)
 
      ;temp quick answers
      ; Updated back with manual parameters 2018/02/23 J. Prchlik
