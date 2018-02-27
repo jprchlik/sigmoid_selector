@@ -379,6 +379,8 @@ rot_rad = atan(ay2-ay1,ax2-ax1)
 rot_deg = rot_rad*180./!PI
 ;rotate image by that angle
 rot_img = rot(m_img,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
+;rotate full image by that angle
+rot_fmg = rot(img,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
 ;rotate the mask by that angle
 rot_ibox = rot(ibox,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
 
@@ -405,6 +407,31 @@ min_img = min(sum_img*good)
 lev_img = sum_img-min_img
 max_img = max(lev_img)
 max_arg = where(lev_img eq max_img,cnt_max)
+;Indices of the sum
+ind_sum = findgen(n_elements(sum_img))
+
+;Get the half maximum width value
+;first get value of half max
+hlf_max = max_img*0.5
+;Split into array above and below the maximum
+upp_hlf = ind_sum gt max_arg
+low_hlf = ind_sum lt max_arg
+
+;get the index closest to the half maximum on either side of the max
+upp_fun = abs(sum_img*upp_hlf-hlf_max)
+upp_ind = where(upp_fun eq min(upp_fun))
+low_fun = abs(sum_img*low_hlf-hlf_max)
+low_ind = where(low_fun eq min(low_fun))
+
+;check sizes of array for more than one index and if so get the average index value
+upp_sze = size(upp_ind)
+low_sze = size(low_ind)
+
+if upp_sze[2] gt 1 then upp_ind = mean(upp_ind) else upp_ind = fix(upp_ind[0])
+if low_sze[2] gt 1 then low_ind = mean(low_ind) else low_ind = fix(low_ind[0])
+
+;store fwhm value
+fwhm = (upp_sze+low_sze)*ccd[1,1]
 
 ;Use the first maximum value
 if cnt_max gt 1 then max_arg = fix(max_arg[0]) else max_arg= fix(max_arg[0])
@@ -418,11 +445,13 @@ xsize = isize[1]*2
 ysize = isize[2]*2
 useg = where(finite(alog10(rot_img)))
 
-scmin=cgPercentiles(alog10(rot_img[useg]),percentiles=.010)
-scmax=cgPercentiles(alog10(rot_img[useg]),percentiles=.999)
+;Add factor of 4 to really accent selected region
+scmin=cgPercentiles(alog10(rot_fmg[useg]+4.*rot_img[useg]),percentiles=.010)
+scmax=cgPercentiles(alog10(rot_fmg[useg]+4.*rot_img[useg]),percentiles=.999)
 ;Plot image
 window,2,retain=0,xsize=xsize,ysize=ysize,xpos=0,ypos=1200
-tv,bytscl(rebin(alog10(rot_img),xsize,ysize),min=scmin,max=scmax)
+;tv,bytscl(rebin(alog10(rot_img),xsize,ysize),min=scmin,max=scmax)
+tv,bytscl(rebin(alog10(rot_fmg+4.*rot_img),xsize,ysize),min=scmin,max=scmax)
 
 ;Plot Histogram of normalixed counts
 window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
@@ -536,6 +565,27 @@ for xx=0,nfiles-1 do begin
   rescale_image=''
   while not(imgok) do begin
      window,5,xs=xwdw_size,ys=ywdw_size
+
+
+
+     ;Calculate edgedog right away and use to set the minimum for plotting and image background subtraction
+     ;radius to scale to select the sigmoid
+     ;rad_2 = abs(float(px3-px1))/abs(float(py3-py1))
+     rad_1 = 3.6
+     ;if rad_2 lt 1 then rad_2 = 1./rad_2
+     ;rad_2 = rad_1*rad_2
+     rad_2 = 15.
+
+     ;Scale to find image edges 2018/02/22 J. Prchlik
+     ;result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+     ;Changed to 0 1 for mask 2018/02/23 J. Prchlik
+     ;Multiplied exptime time back in because edge_dog is abs number dependent for some reason
+     result = edge_dog(data1*index1[0].exptime,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+
+     ;Create mask to remove ARs
+     armask = abs(result-255)/255
+
+      
 
      image = bytscl(rebin(alog10(data1),xwdw_size,ywdw_size),min=scmin,max=scmax)
      tv,image
@@ -683,19 +733,6 @@ for xx=0,nfiles-1 do begin
      ;samp = 100
      ;xgrid = findgen(samp)*(max(xvals)-min(xvals))/float(samp)+min(xvals)
 
-     ;radius to scale to select the sigmoid
-     ;rad_2 = abs(float(px3-px1))/abs(float(py3-py1))
-     rad_1 = 3.6
-     ;if rad_2 lt 1 then rad_2 = 1./rad_2
-     ;rad_2 = rad_1*rad_2
-     rad_2 = 15.
-
-     ;Scale to find image edges 2018/02/22 J. Prchlik
-     ;result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
-     ;Changed to 0 1 for mask 2018/02/23 J. Prchlik
-     result = edge_dog(data1*index1[0].exptime,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
-
-      
      ;result = roberts(data1)                 
      ;result = sobel(data1)                 
      ;result = prewitt(data1)                 
@@ -879,6 +916,7 @@ for xx=0,nfiles-1 do begin
      print,'Enter 1 for yes, any other key for no.'
      read,continue
      if (continue ne '1') then done=1 else begin
+       window,5,xs=xwdw_size,ys=ywdw_size
        tv,image
      endelse
   endwhile
