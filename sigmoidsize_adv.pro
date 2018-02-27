@@ -440,8 +440,7 @@ oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
 
 
 
-;return,[fwhm,h]
-return,0
+return,[fwhm,max_img]
 end
 
 ;Program to compute sigmoid properties of image
@@ -481,6 +480,7 @@ sigdat_mod={sig_id:'',           $
         area:0.0,                $
         roi:OBJ_NEW('IDLanROI'), $
         fwhm:0.0,                $
+        hght:0.0,                $
         bboxx:fltarr(5),         $
         bboxy:fltarr(5),         $
         fwlin:fltarr(2),         $
@@ -504,7 +504,7 @@ for xx=0,nfiles-1 do begin
   mreadfits,fits_files[xx],index1,data1,/verbose
 
   ;normalize data by exposure time
-  data1 = temporary(data1)/index1.
+  data1 = temporary(data1)/index1.exptime
 
   filesplit=strsplit(fits_files[xx],'/',/extract)
   flnm=filesplit[n_elements(filesplit)-1]
@@ -872,30 +872,33 @@ for xx=0,nfiles-1 do begin
   print,'for this date and time: '+sigmoids[xx].date
 
   if not(skipthis) then begin
-     sigmoids[xx].longx1=lx1
-     sigmoids[xx].longy1=ly1
-     sigmoids[xx].longx2=lx2
-     sigmoids[xx].longy2=ly2
+     sigmoids[xx].longx1=lx1/scale_x
+     sigmoids[xx].longx2=lx2/scale_x
+     sigmoids[xx].longy1=ly1/scale_y
+     sigmoids[xx].longy2=ly2/scale_y
      sigmoids[xx].size=long_axis_arc
      sigmoids[xx].sizea=short_axisa_arc
      sigmoids[xx].sizeb=short_axisb_arc
      sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.
      sigmoids[xx].fwhm=fwhm         
+     sigmoids[xx].hght=hght         
      sigmoids[xx].area=area        
      sigmoids[xx].peri=peri      
      sigmoids[xx].roi=roi_obj      
      sigmoids[xx].cx=float(cal_cent[0])
      sigmoids[xx].cy=float(cal_cent[1])
-     sigmoids[xx].bboxx=xvals       
-     sigmoids[xx].bboxy=yvals       
-     sigmoids[xx].shrtx1a=sx1a      
-     sigmoids[xx].shrty1a=sy1a      
-     sigmoids[xx].shrtx2a=sx2a      
-     sigmoids[xx].shrty2a=sy2a      
-     sigmoids[xx].shrtx1b=sx1b      
-     sigmoids[xx].shrty1b=sy1b      
-     sigmoids[xx].shrtx2b=sx2b
-     sigmoids[xx].shrty2b=sy2b
+     sigmoids[xx].fwlin1=[sx1,sy1]/[scale_x,scale_y]         
+     sigmoids[xx].fwlin2=[sx2,sy2]/[scale_x,scale_y]         
+     sigmoids[xx].bboxx=xvals/scale_x       
+     sigmoids[xx].bboxy=yvals/scale_y       
+     sigmoids[xx].shrtx1a=sx1a/scale_x      
+     sigmoids[xx].shrtx2a=sx2a/scale_x      
+     sigmoids[xx].shrtx1b=sx1b/scale_x      
+     sigmoids[xx].shrtx2b=sx2b/scale_x
+     sigmoids[xx].shrty1a=sy1a/scale_y      
+     sigmoids[xx].shrty2a=sy2a/scale_y      
+     sigmoids[xx].shrty1b=sy1b/scale_y      
+     sigmoids[xx].shrty2b=sy2b/scale_y
      sig_id=''
      noaa_id=''
      print,'What is the ID of the sigmoid you just identified?'
