@@ -514,8 +514,8 @@ for xx=0,nfiles-1 do begin
   print,'Current date: '+sigmoids[xx].date
   loadct,3
   scmin=0.1
-  scmin=cgPercentiles(data1,percentiles=.005)
-  scmax=cgPercentiles(data1,percentiles=.999)
+  scmin=cgPercentiles(alog10(data1),percentiles=.005)
+  scmax=cgPercentiles(alog10(data1),percentiles=.999)
   imgok=0
   expire=0
   rscl=0
@@ -523,7 +523,7 @@ for xx=0,nfiles-1 do begin
   while not(imgok) do begin
      window,5,xs=xwdw_size,ys=ywdw_size
 
-     image = bytscl(rebin(data1,xwdw_size,ywdw_size),min=scmin,max=scmax)
+     image = bytscl(rebin(alog10(data1),xwdw_size,ywdw_size),min=scmin,max=scmax)
      tv,image
 
 
@@ -795,7 +795,9 @@ for xx=0,nfiles-1 do begin
  
  
      ;Get the FWHM Value J. Prchlik 2018/02/23
-     fwhm = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y,arcsec_per_pixel_x,arcsec_per_pixel_y)
+     outp = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y,arcsec_per_pixel_x,arcsec_per_pixel_y)
+     fwhm = outp[0]
+     hght = outp[1]
 
      ;temp quick answers
      ; Updated back with manual parameters 2018/02/23 J. Prchlik
@@ -863,7 +865,7 @@ for xx=0,nfiles-1 do begin
      print,'Enter 1 for yes, any other key for no.'
      read,continue
      if (continue ne '1') then done=1 else begin
-       tv,bytscl(rebin(data1,xwdw_size,ywdw_size),min=scmin,max=scmax)
+       tv,image
      endelse
   endwhile
 
