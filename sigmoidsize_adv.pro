@@ -418,7 +418,7 @@ xsize = isize[1]*2
 ysize = isize[2]*2
 useg = where(finite(alog10(rot_img)))
 
-scmin=cgPercentiles(alog10(rot_img[useg]),percentiles=.005)
+scmin=cgPercentiles(alog10(rot_img[useg]),percentiles=.010)
 scmax=cgPercentiles(alog10(rot_img[useg]),percentiles=.999)
 ;Plot image
 window,2,retain=0,xsize=xsize,ysize=ysize,xpos=0,ypos=1200
@@ -441,6 +441,19 @@ oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
 
 
 return,[fwhm,max_img]
+end
+
+pro input_quantity,parvl,error=error,qname=qname,qmin=qmin
+
+    error = 0
+
+    print,'Enter paramater for ',qname
+    read,parvl
+
+    parvl = float(parvl)
+
+    if parvl lt qmin then error=1
+
 end
 
 ;Program to compute sigmoid properties of image
@@ -483,8 +496,8 @@ sigdat_mod={sig_id:'',           $
         hght:0.0,                $
         bboxx:fltarr(5),         $
         bboxy:fltarr(5),         $
-        fwlin:fltarr(2),         $
-        fwlin:fltarr(2),         $
+        fwlin1:fltarr(2),         $
+        fwlin2:fltarr(2),         $
         longx1:0.0,              $
         longy1:0.0,              $
         longx2:0.0,              $
@@ -514,8 +527,9 @@ for xx=0,nfiles-1 do begin
   print,'Current date: '+sigmoids[xx].date
   loadct,3
   scmin=0.1
-  scmin=cgPercentiles(alog10(data1),percentiles=.005)
-  scmax=cgPercentiles(alog10(data1),percentiles=.999)
+  useg = where(finite(alog10(data1)))
+  scmin=cgPercentiles(alog10(data1[useg]),percentiles=.010)
+  scmax=cgPercentiles(alog10(data1[useg]),percentiles=.999)
   imgok=0
   expire=0
   rscl=0
@@ -560,7 +574,7 @@ for xx=0,nfiles-1 do begin
          if (rscl) then begin
            oldmin=scmin
            oldmax=scmax
-           input_quantity,scmin,error=err,qname='lower bound',qmin=0
+           input_quantity,scmin,error=err,qname='lower bound',qmin=-3.0
            if (err) then begin
              message,'Invalid inputs. The lower bound will not be changed.',/cont
              scmin=oldmin
@@ -679,7 +693,7 @@ for xx=0,nfiles-1 do begin
      ;Scale to find image edges 2018/02/22 J. Prchlik
      ;result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
      ;Changed to 0 1 for mask 2018/02/23 J. Prchlik
-     result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+     result = edge_dog(data1*index1[0].exptime,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
 
       
      ;result = roberts(data1)                 
