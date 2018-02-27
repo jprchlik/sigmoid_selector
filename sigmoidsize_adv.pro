@@ -367,46 +367,68 @@ imax = ind_y le perp_slop*ind_x+perp_int2
 
 ;create large array of interior slopes
 vbox = xmin*xmax*ymin*ymax*imax*imin
-print,max(vbox)
 
 ;create new image with stuff outside the box removed
 ibox = reform(vbox,shp_img[1],shp_img[2])
 ;zero out information outside box
 m_img = img*vbox
-print,max(m_img)
 
 ;rotate the angle of the long axis
 ;first get the rotation angle
 rot_rad = atan(ay2-ay1,ax2-ax1)
 rot_deg = rot_rad*180./!PI
-;rotate image by that ange
+;rotate image by that angle
 rot_img = rot(m_img,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
+;rotate the mask by that angle
+rot_ibox = rot(ibox,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
+
+
 
 ;create rotation maxtrix
 rot_mat = [ [ cos(rot_rad), sin(rot_rad)],$
             [-sin(rot_rad), cos(rot_rad)]]
 ;create new delta keyword parameters from rotation
-ccd = [[ax1*da_x,da_x],$ ; x-coordinates from pixel to arcsec
-       [ay1*da_y,da_y]] $ ; y-coordinates from pixel to arcsec
+ccd = [[0.,da_x,ax1],$ ; x-coordinates from pixel to arcsec
+       [0.,da_y,ay1]]  ; y-coordinates from pixel to arcsec
 
 ;new coordinates of after the rotation
 ccd_new = ccd # rot_mat
 
 ;Sum image a long axis
 sum_img = total(rot_img,1)
-good = sum_img gt 0
+;Sum good pixels along long axis
+sum_pix = total(rot_ibox,1)
+
+;Set sum values to 0 outsize box region
+good = finite(sum_img)
 min_img = min(sum_img*good)
 lev_img = sum_img-min_img
 max_img = max(lev_img)
+max_arg = where(lev_img eq max_img,cnt_max)
+
+;Use the first maximum value
+if cnt_max gt 1 then max_arg = fix(max_arg[0]) else max_arg= fix(max_arg[0])
 
 ;Get a grid of y-values (i.e. perpendicualr to the Central Sigmoid axis)
-xgrid = findgen(n_elements(sum_img))*ccd_new[1,1] ; scale the index by the new delta-y coordinate system
+xgrid = (findgen(n_elements(sum_img))-max_arg)*ccd_new[1,1] ; scale the index by the new delta-y coordinate system
 
 ;Plot line core in new window
-window,2,retain=0,xsize=600,ysize=600
-plot,xgrid,sum_img,/device,color=255,xtitle='Distance from Center [``]',ytitle='Counts [#/s]'
-oplot,xgrid,fltarr(n_elements(xgrid))+0.5*max_img+min_img,color=200
+isize = size(rot_img)
+xsize = isize[1]*2
+ysize = isize[2]*2
+useg = where(finite(alog10(rot_img)))
 
+scmin=cgPercentiles(alog10(rot_img[useg]),percentiles=.005)
+scmax=cgPercentiles(alog10(rot_img[useg]),percentiles=.999)
+;Plot image
+window,2,retain=0,xsize=xsize,ysize=ysize,xpos=0,ypos=1200
+tv,bytscl(rebin(alog10(rot_img),xsize,ysize),min=scmin,max=scmax)
+
+;Plot Histogram of normalixed counts
+window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
+plot,sum_img,xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/pixel]'
+oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
+;oplot,xgrid,fltarr(n_elements(xgrid))+min_img,color=100,linestyle=2
 
 ;p_deg = 6
 ;p_six = poly_fit(xgrid,sum_img,p_deg)
@@ -427,6 +449,8 @@ end
 ;USAGE
 ;sigmoidsize_ave,dir='exammples/'
 pro sigmoidsize_adv,dir=dir
+;set up plot as X plot
+set_plot,'X'
 ;scratch_path='/Volumes/Scratch/Users/ehanson/XRT_fits/'
 if keyword_set(dir) then scratch_path = dir else  scratch_path='examples/'
 xwdw_size=1024
@@ -459,6 +483,8 @@ sigdat_mod={sig_id:'',           $
         fwhm:0.0,                $
         bboxx:fltarr(5),         $
         bboxy:fltarr(5),         $
+        fwlin:fltarr(2),         $
+        fwlin:fltarr(2),         $
         longx1:0.0,              $
         longy1:0.0,              $
         longx2:0.0,              $
@@ -476,6 +502,10 @@ sigmoids=replicate(sigdat_mod,nfiles)
 
 for xx=0,nfiles-1 do begin
   mreadfits,fits_files[xx],index1,data1,/verbose
+
+  ;normalize data by exposure time
+  data1 = temporary(data1)/index1.
+
   filesplit=strsplit(fits_files[xx],'/',/extract)
   flnm=filesplit[n_elements(filesplit)-1]
   sigmoids[xx].filename=flnm
