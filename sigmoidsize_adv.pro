@@ -467,6 +467,8 @@ oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
 ;plots,xgrid,y_out,/device,color=200
 
 
+;scale max_img by pixel size
+max_img = max_img*da_x*da_y
 
 
 return,[fwhm,max_img]
@@ -906,6 +908,8 @@ for xx=0,nfiles-1 do begin
      print,'The short axis size in ARCSEC is:'
      print,strcompress(string(short_axisa_arc),/remove_all),' ',strcompress(string(short_axisb_arc),/remove_all)
      print,'The aspect ratio should be the same as above:'
+     print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.),/remove_all)
+     print,string([fwhm,hght,area],format='("The FWHM =",F6.2,arcsec``, Height = ",F11.1,"#/s/arcsec^2, Area = ",F15.1,"arcsec^2")')
      print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.),/remove_all)
 
      print,string(cal_cent[0:1],format='("x = ",F6.1," y = ",F6.1)')
