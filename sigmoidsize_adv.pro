@@ -411,14 +411,14 @@ lev_img = sum_img-min_img
 max_img = max(lev_img)
 max_arg = where(lev_img eq max_img,cnt_max)
 ;Indices of the sum
-ind_sum = findgen(n_elements(sum_img))
+ind_sum = fix(dindgen(n_elements(sum_img)))
 
 ;Get the half maximum width value
 ;first get value of half max
 hlf_max = max_img*0.5
 ;Split into array above and below the maximum
-upp_hlf = ind_sum gt max_arg
-low_hlf = ind_sum lt max_arg
+upp_hlf = ind_sum gt mean(max_arg)
+low_hlf = ind_sum lt mean(max_arg)
 
 ;get the index closest to the half maximum on either side of the max
 upp_fun = abs(sum_img*upp_hlf-hlf_max)
@@ -430,8 +430,17 @@ low_ind = where(low_fun eq min(low_fun))
 upp_sze = size(upp_ind)
 low_sze = size(low_ind)
 
+
+print,'BEFORE'
+print,upp_ind,upp_sze
+print,low_ind,low_sze
+
 if upp_sze[2] gt 1 then upp_ind = mean(upp_ind) else upp_ind = fix(upp_ind[0])
 if low_sze[2] gt 1 then low_ind = mean(low_ind) else low_ind = fix(low_ind[0])
+print,'AFTER'
+print,upp_ind,upp_sze
+print,low_ind,low_sze
+
 
 ;store fwhm value
 fwhm = (upp_sze+low_sze)*da_y
@@ -440,6 +449,7 @@ fwhm = (upp_sze+low_sze)*da_y
 if cnt_max gt 1 then max_arg = fix(max_arg[0]) else max_arg= fix(max_arg[0])
 
 ;Get a grid of y-values (i.e. perpendicualr to the Central Sigmoid axis)
+;Assume square pixels when binning 2018/02/28 J. Prchlik
 xgrid = (findgen(n_elements(sum_img))-max_arg)*da_y ; scale the index by the new delta-y coordinate system
 
 ;Plot line core in new window
@@ -458,7 +468,7 @@ tv,bytscl(rebin(alog10(rot_fmg+4.*rot_img),xsize,ysize),min=scmin,max=scmax)
 
 ;Plot Histogram of normalixed counts
 window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
-plot,sum_img,xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/pixel]'
+plot,sum_img/(da_x*da_y),xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/arcsec^2]'
 oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
 ;oplot,xgrid,fltarr(n_elements(xgrid))+min_img,color=100,linestyle=2
 
@@ -471,7 +481,7 @@ oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
 
 
 ;scale max_img by pixel size
-max_img = max_img*da_x*da_y
+max_img = max_img/(da_x*da_y)
 
 
 return,[fwhm,max_img]
@@ -912,7 +922,7 @@ for xx=0,nfiles-1 do begin
      print,strcompress(string(short_axisa_arc),/remove_all),' ',strcompress(string(short_axisb_arc),/remove_all)
      print,'The aspect ratio should be the same as above:'
      print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.),/remove_all)
-     print,string([fwhm,hght,area],format='("The FWHM =",F6.2,arcsec``, Height = ",F11.1,"#/s/arcsec^2, Area = ",F15.1,"arcsec^2")')
+     print,string([fwhm,hght,area],format='("The FWHM =",F6.2,"arcsec, Height = ",F11.1,"#/s/arcsec^2, Area = ",F15.1,"arcsec^2")')
      print,strcompress(string(long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.),/remove_all)
 
      print,string(cal_cent[0:1],format='("x = ",F6.1," y = ",F6.1)')
