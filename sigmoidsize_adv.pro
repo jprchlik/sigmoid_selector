@@ -536,6 +536,7 @@ sigdat_mod={sig_id:'',           $
         peri:0.0,                $
         area:0.0,                $
         roi:OBJ_NEW('IDLanROI'), $
+        bkgd:0.0,                $
         fwhm:0.0,                $
         hght:0.0,                $
         bboxx:fltarr(5),         $
@@ -624,6 +625,7 @@ for xx=0,nfiles-1 do begin
 
          ;Quit after 6 tries
          if counter gt 5 then looper = 0 
+         counter = counter+1
      endwhile
 
  
