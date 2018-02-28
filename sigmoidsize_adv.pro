@@ -332,8 +332,9 @@ end
 ; sc_y = device coorinates to pixels y-axis
 ; da_x = arcseconds to pixels x-axis
 ; da_y = arcseconds to pixels y-axis
+; bkgd = background level in #/s/arcsec^2
 
-function real_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y
+function real_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y,bkgd
 
 sig = where(img gt -9e31)
 ;create index array for the entire images for the sigmoid
@@ -401,13 +402,17 @@ ccd = [[0.,da_x],$ ; x-coordinates from pixel to arcsec
 
 ;Sum image a long axis
 sum_img = total(rot_img,1)
-;Sum good pixels along long axis
-sum_pix = total(rot_ibox,1)
+;Sum good pixels along long axis and convert to square arcsec
+sum_pix = total(rot_ibox,1)*(da_x*da_y)
+
+
+;normalize the sum image by pixel area
+sum_img = sum_img/sum_pix
 
 ;Set sum values to 0 outsize box region
 good = finite(sum_img)
 min_img = min(sum_img*good)
-lev_img = sum_img-min_img
+lev_img = sum_img-bkgd
 max_img = max(lev_img)
 max_arg = where(lev_img eq max_img,cnt_max)
 ;Indices of the sum
@@ -437,7 +442,7 @@ if low_sze[2] gt 1 then low_ind = mean(low_ind) else low_ind = fix(low_ind[0])
 
 
 ;store fwhm value
-fwhm = (upp_ind+low_ind)*da_y
+fwhm = (upp_ind-low_ind)*da_y
 
 ;Use the first maximum value
 if cnt_max gt 1 then max_arg = fix(max_arg[0]) else max_arg= fix(max_arg[0])
@@ -462,8 +467,9 @@ tv,bytscl(rebin(alog10(rot_fmg+4.*rot_img),xsize,ysize),min=scmin,max=scmax)
 
 ;Plot Histogram of normalixed counts
 window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
-plot,sum_img/(da_x*da_y),xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/arcsec^2]'
-oplot,fltarr(n_elements(xgrid))+0.5*max_img+min_img,xgrid,color=200
+plot,sum_img,xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/arcsec^2]'
+oplot,fltarr(n_elements(xgrid))+0.5*max_img+bkgd,xgrid,color=200
+oplot,fltarr(n_elements(xgrid))+bkgd,xgrid,color=200
 ;oplot,xgrid,fltarr(n_elements(xgrid))+min_img,color=100,linestyle=2
 
 ;p_deg = 6
@@ -593,6 +599,34 @@ for xx=0,nfiles-1 do begin
 
      ;Create mask to remove ARs
      armask = abs(result-255)/255
+
+     ;Get the median where ar does exists
+     med_bkgd = median(data1[where(armask)])
+     med_stdd = stddev(data1[where(armask)]-med_bkgd) 
+
+     ;loop a couple times to find the best background
+     looper = 1
+     counter= 0
+
+     while looper eq 1 do begin
+         ;cut out points more than 3 sigma from the median and are in ARs
+         good = where(armask and abs(data1-med_bkgd) lt 3.*med_stdd)
+
+         ; Calculate the new backgroudn and standard deviation
+         datat = data1[good]
+         med_bkgd = median(datat)
+         med_stdd = stddev(datat-med_bkgd) 
+
+         ;if 95% percent of points are within 2 standard deviations compute the background level
+         sigm = abs(datat-med_bkgd) lt 2.*med_stdd
+         pert = float(total(sigm))/float(n_elements(datat)) 
+         if pert gt 0.94 then looper = 0
+
+         ;Quit after 6 tries
+         if counter gt 5 then looper = 0 
+     endwhile
+
+ 
 
       
 
@@ -818,6 +852,8 @@ for xx=0,nfiles-1 do begin
      cal_cent = (cent/[scale_x,scale_y,1]-[xp0,yp0,0])*[arcsec_per_pixel_x,arcsec_per_pixel_y,1]+[xr0,yr0,0]
 
 
+     ;Compute the background into per arcsec^2
+     med_bkgd = med_bkgd/(arcsec_per_pixel_x*arcsec_per_pixel_y)
   
      ;Plot the edge image
      ;Put in and remove for testing purposes 2018/02/28 J. Prchlik
@@ -855,7 +891,7 @@ for xx=0,nfiles-1 do begin
  
  
      ;Get the FWHM Value J. Prchlik 2018/02/23
-     outp = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y,arcsec_per_pixel_x,arcsec_per_pixel_y)
+     outp = real_fwhm(data1,adjxv,adjyv,sx1,sy1,sx2,sy2,scale_x,scale_y,arcsec_per_pixel_x,arcsec_per_pixel_y,med_bkgd)
      fwhm = outp[0]
      hght = outp[1]
 
