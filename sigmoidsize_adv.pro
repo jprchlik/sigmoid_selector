@@ -2,6 +2,17 @@
 ;; Use sswidl
 ;; This version only looks for data in the Scratch disk
 
+;###############################################
+;PURPOSE
+;    Checks whether input is a string
+;
+;INPUT
+;    input    -   ideally a string
+;
+;USAGE
+;    is_str = checkstring(input)
+;
+;###############################################
 function checkstring,input
 
     good = 0
@@ -33,12 +44,17 @@ end
 
 ;###############################################
 ;
-;Function to calculate the maximum distance and index locations of the maximum difference
+;PURPOSE
+;    Function to calculate the maximum distance and index locations of the maximum difference
 ;
-;ind is a 2D array of indices containing the location of the sigmoid
+;INPUT
+;    ind     -  a 2D array of indices containing the location of the sigmoid
+;    idat    -  a 2D array containing the image for analysis
+;    xbox      -       x-coordinates containing the sigmoid (pixels) 
+;    ybox      -       y-coordinates containint the sigmoid (pixels)
 ;
 ;Usage
-;outp = brute_force_max_dis(inds)
+;    outp = brute_force_max_dis(inds)
 ;###############################################
 function brute_force_max_dis,inds,idat,xbox,ybox
 
@@ -116,14 +132,18 @@ end
 
 ;###############################################
 ;
-;Function to calculate the maximum distance and index locations of the minimum axis difference
+;PURPOSE
+;    Function to calculate the maximum distance and index locations of the minimum axis difference
 ;
-;ind is a 2D array of indices containing the location of the sigmoid
-;nx1,ny1 are the left x,y coordinates of the maximum distance in the sigmoid
-;nx1,ny1 are the right x,y coordinates of the maximum distance in the sigmoid
+;INPUT
+;    ind     -  a 2D array of indices containing the location of the sigmoid
+;    idat    -  a 2D array containing the image for analysis
+;    xbox      -       x-coordinates containing the sigmoid (pixels) 
+;    ybox      -       y-coordinates containint the sigmoid (pixels)
 ;
 ;Usage
-;outp = brute_force_min_dis(inds,idat,xbox,ybox)
+;    outp = brute_force_min_dis(inds,idat,xbox,ybox)
+;
 ;###############################################
 function brute_force_min_dis,inds,idat,xbox,ybox
 
@@ -224,11 +244,17 @@ endfor
 return,[max_da,max_x1a,max_x2a,max_y1a,max_y2a,max_db,max_x1b,max_x2b,max_y1b,max_y2b]
 end
 
-;Loop to find the best Edge values
-; Don't use 2018/02/22 J. Prchlik
+;###############################################
+;PURPOSE
+;    Loop to find the best Edge values
+;     Don't use 2018/02/22 J. Prchlik
 ;
+;USAGE
+;    result = loop_edge_dog(dat,radius1=radius1,radius2=radius2,threshold=threshold,zero_crossings=zero_crossings)
 ;
+;INPUT 
 ;;
+;###############################################
 function loop_edge_dog,dat,radius1=radius1,radius2=radius2,threshold=threshold,zero_crossings=zero_crossings
 
 counter = 0
@@ -274,65 +300,27 @@ return,result
 end
 
 
-;Function to get the FWHM of the sigmoid
-;Guassian not a good assumpting as discussed by Antonia on 2018/02/23
-function gauss_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2
-
-;create index array for the entire images for the sigmoid
-ind_loc = array_indices(img,sig)
-
-;get image shape
-shp_img = size(img)
-
-;break into x and y indices
-ind_x = ind_loc[0,*]
-ind_y = ind_loc[1,*]
-
-;Compute x and y limit functions
-lims = comp_limits(xbox,ybox)
-
-;Create array of 1 and 0 for box
-xmin = ind_x ge lims[1]*ind_y+lims[0]
-xmax = ind_x le lims[3]*ind_y+lims[2]
-ymin = ind_y le lims[5]*ind_x+lims[4]
-ymax = ind_y ge lims[7]*ind_x+lims[6]
-vbox = xmin*xmax*ymin*ymax
-
-;create new image with stuff outside the box removed
-ibox = reform(vbox,shp_img[1],shp_img[2])
-;zero out information outside box
-m_img = img*vbox
-
-
-;rotate the angle of the long axis
-;first get the rotation angle
-;rot_deg = atan2,ay2-ay1,ax2-ax1,/deg
-;rotate image by that ange
-rot_img = rot(m_img,rot_deg,x0=ax1,y0=ay1,/interp)
-
-;Sum image a long axis
-sum_img = total(rot_img,1)
-
-
-return,fwhm
-end
-
-;Function to get the FWHM of the sigmoid
+;###############################################
+;PURPOSE
+;      Function to get the FWHM of the sigmoid
 ;
-;Usage
-;fwhm =  real_fwhm(img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y)
-; img = Input 2d Image with sigmoid
-; xbox = x-coordinates containing the sigmoid (pixels)
-; ybol = y-coordinates containint the sigmoid (pixels)
-; ax1 = trailing fwhm x-point
-; ay1 = trailing fwhm y-point
-; ax2 = leading fwhm x-point
-; ay2 = leading fwhm y-point
-; sc_x = device coorinates to pixels x-axis
-; sc_y = device coorinates to pixels y-axis
-; da_x = arcseconds to pixels x-axis
-; da_y = arcseconds to pixels y-axis
-; bkgd = background level in #/s/arcsec^2
+;USAGE
+;    fwhm =  real_fwhm(img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y,bkgd)
+;
+;INPUT
+;     img       -       Input 2d Image with sigmoid
+;     xbox      -       x-coordinates containing the sigmoid (pixels) 
+;     ybox      -       y-coordinates containint the sigmoid (pixels)
+;     ax1       -       trailing fwhm x-point
+;     ay1       -       trailing fwhm y-point
+;     ax2       -       leading fwhm x-point
+;     ay2       -       leading fwhm y-point
+;     sc_x      -       device coorinates to pixels x-axis
+;     sc_y      -       device coorinates to pixels y-axis
+;     da_x      -       arcseconds to pixels x-axis (float)
+;     da_y      -       arcseconds to pixels y-axis (float)
+;     bkgd      -       background level in #/s/arcsec^2 (float)
+;###############################################
 
 function real_fwhm,img,xbox,ybox,ax1,ay1,ax2,ay2,sc_x,sc_y,da_x,da_y,bkgd
 
@@ -436,6 +424,7 @@ low_sze = size(low_ind)
 
 
 
+;Get only 1 center point
 if upp_sze[2] gt 1 then upp_ind = mean(upp_ind) else upp_ind = fix(upp_ind[0])
 if low_sze[2] gt 1 then low_ind = mean(low_ind) else low_ind = fix(low_ind[0])
 
@@ -464,29 +453,28 @@ window,2,retain=0,xsize=xsize,ysize=ysize,xpos=0,ypos=1200
 ;tv,bytscl(rebin(alog10(rot_img),xsize,ysize),min=scmin,max=scmax)
 tv,bytscl(rebin(alog10(rot_fmg+4.*rot_img),xsize,ysize),min=scmin,max=scmax)
 
-;Plot Histogram of normalixed counts
+;Plot rotated image and  Histogram of normalixed counts
 window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
 plot,sum_img,xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/arcsec^2]'
 oplot,fltarr(n_elements(xgrid))+0.5*max_img+bkgd,xgrid,color=200
 oplot,fltarr(n_elements(xgrid))+bkgd,xgrid,color=200,linestyle=2
-;oplot,xgrid,fltarr(n_elements(xgrid))+min_img,color=100,linestyle=2
-
-;p_deg = 6
-;p_six = poly_fit(xgrid,sum_img,p_deg)
-;y_out = fltarr(n_elements(xgrid))+p_six[0]
-;for i=1,p_deg-1 do y_out=y_out+p_six[i]*xgrid^i
-
-;plots,xgrid,y_out,/device,color=200
-
-
-;scale max_img by pixel size
-;Changed image ti max in sq. arcsec upstream 2018/02/28 J. Prchlik
-;max_img = max_img;/(da_x*da_y)
 
 
 return,[fwhm,max_img]
 end
 
+;###############################################
+;PURPOSE
+;    Determine whether an input quantity is valid
+;
+;INPUT
+;    parvl    -  Input quantity (float)
+;    error    -  Whether the values is good (1 = good, 0 = bad) 
+;    qname    -  The name of the parameter you want to check (string) 
+;
+;USAGE
+;
+;###############################################
 pro input_quantity,parvl,error=error,qname=qname,qmin=qmin
 
     error = 0
@@ -500,10 +488,25 @@ pro input_quantity,parvl,error=error,qname=qname,qmin=qmin
 
 end
 
-;Program to compute sigmoid properties of image
+;
+;NAME:
+;    sigmoidsize_adv
+;
+;PURPOSE
+;    Program to compute sigmoid properties of image
+;
+;CATEGORY:
+;    Program, measurements
 ;
 ;USAGE
-;sigmoidsize_ave,dir='exammples/'
+;    sigmoidsize_ave,dir='exammples/'
+;
+;INPUTS
+;    dir        -   Directory containing Sigmoid fits files
+;
+;OUTPUTS
+;    A save file called called sigmoid_sizedata.sav in dir
+;    N.B. Currently clobbers existing save file
 pro sigmoidsize_adv,dir=dir
 ;set up plot as X plot
 set_plot,'X'
@@ -1041,6 +1044,7 @@ for xx=0,nfiles-1 do begin
              rot_p[*,j] = rot_xy(pos_x[j], pos_y[j], tstart=pos_t[j], tend=index1[0].DATE_OBS)
 
         
+         ;Store x,y in separate array
          rot_x = rot_p[0,*]
          rot_y = rot_p[1,*]
   
