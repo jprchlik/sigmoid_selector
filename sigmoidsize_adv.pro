@@ -411,9 +411,8 @@ sum_img = sum_img/sum_pix
 
 ;Set sum values to 0 outsize box region
 good = finite(sum_img)
-min_img = min(sum_img*good)
 lev_img = sum_img-bkgd
-max_img = max(lev_img)
+max_img = max(lev_img,/nan)
 max_arg = where(lev_img eq max_img,cnt_max)
 ;Indices of the sum
 ind_sum = fix(dindgen(n_elements(sum_img)))
@@ -427,9 +426,9 @@ low_hlf = ind_sum lt mean(max_arg)
 
 ;get the index closest to the half maximum on either side of the max
 upp_fun = abs(sum_img*upp_hlf-hlf_max)
-upp_ind = where(upp_fun eq min(upp_fun))
+upp_ind = where(upp_fun eq min(upp_fun,/nan))
 low_fun = abs(sum_img*low_hlf-hlf_max)
-low_ind = where(low_fun eq min(low_fun))
+low_ind = where(low_fun eq min(low_fun,/nan))
 
 ;check sizes of array for more than one index and if so get the average index value
 upp_sze = size(upp_ind)
@@ -469,7 +468,7 @@ tv,bytscl(rebin(alog10(rot_fmg+4.*rot_img),xsize,ysize),min=scmin,max=scmax)
 window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
 plot,sum_img,xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/arcsec^2]'
 oplot,fltarr(n_elements(xgrid))+0.5*max_img+bkgd,xgrid,color=200
-oplot,fltarr(n_elements(xgrid))+bkgd,xgrid,color=200
+oplot,fltarr(n_elements(xgrid))+bkgd,xgrid,color=200,linestyle=2
 ;oplot,xgrid,fltarr(n_elements(xgrid))+min_img,color=100,linestyle=2
 
 ;p_deg = 6
@@ -481,7 +480,8 @@ oplot,fltarr(n_elements(xgrid))+bkgd,xgrid,color=200
 
 
 ;scale max_img by pixel size
-max_img = max_img/(da_x*da_y)
+;Changed image ti max in sq. arcsec upstream 2018/02/28 J. Prchlik
+;max_img = max_img;/(da_x*da_y)
 
 
 return,[fwhm,max_img]
@@ -973,33 +973,34 @@ for xx=0,nfiles-1 do begin
   print,'for this date and time: '+sigmoids[xx].date
 
   if not(skipthis) then begin
-     sigmoids[xx].longx1=lx1/scale_x
-     sigmoids[xx].longx2=lx2/scale_x
-     sigmoids[xx].longy1=ly1/scale_y
-     sigmoids[xx].longy2=ly2/scale_y
-     sigmoids[xx].size=long_axis_arc
-     sigmoids[xx].sizea=short_axisa_arc
-     sigmoids[xx].sizeb=short_axisb_arc
-     sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)*2.
-     sigmoids[xx].fwhm=fwhm         
-     sigmoids[xx].hght=hght         
-     sigmoids[xx].area=area        
-     sigmoids[xx].peri=peri      
-     sigmoids[xx].roi=roi_obj      
-     sigmoids[xx].cx=float(cal_cent[0])
-     sigmoids[xx].cy=float(cal_cent[1])
-     sigmoids[xx].fwlin1=[sx1,sy1]/[scale_x,scale_y]         
-     sigmoids[xx].fwlin2=[sx2,sy2]/[scale_x,scale_y]         
-     sigmoids[xx].bboxx=xvals/scale_x       
-     sigmoids[xx].bboxy=yvals/scale_y       
-     sigmoids[xx].shrtx1a=sx1a/scale_x      
-     sigmoids[xx].shrtx2a=sx2a/scale_x      
-     sigmoids[xx].shrtx1b=sx1b/scale_x      
-     sigmoids[xx].shrtx2b=sx2b/scale_x
-     sigmoids[xx].shrty1a=sy1a/scale_y      
-     sigmoids[xx].shrty2a=sy2a/scale_y      
-     sigmoids[xx].shrty1b=sy1b/scale_y      
-     sigmoids[xx].shrty2b=sy2b/scale_y
+     sigmoids[xx].longx1=lx1/scale_x  ;Trailing Long Axis X coordinate in Pixels
+     sigmoids[xx].longx2=lx2/scale_x  ;Leading  Long Axis X coordinate in Pixels
+     sigmoids[xx].longy1=ly1/scale_y  ;Trailing Long Axis Y coordinate in Pixels
+     sigmoids[xx].longy2=ly2/scale_y  ;Leading  Long Axis Y coordinate in Pixels
+     sigmoids[xx].size=long_axis_arc  ;Length of long axis in Arcsec
+     sigmoids[xx].sizea=short_axisa_arc ;Length of trailing short axis in Arcsec
+     sigmoids[xx].sizeb=short_axisb_arc ;Length of leading short axis in Arcsec
+     sigmoids[xx].aspect_ratio=long_axis_arc/(short_axisa_arc+short_axisb_arc)*2. ;Aspect ratio
+     sigmoids[xx].bkgd=med_bkgd ;Median background in #/s/arcsec^2        
+     sigmoids[xx].fwhm=fwhm     ; Sigmoid FWHM in Arcsec    
+     sigmoids[xx].hght=hght     ; Sigmoid Height in #/s/arcsec^2    
+     sigmoids[xx].area=area     ; Sigmoid Area in arcsec^   
+     sigmoids[xx].peri=peri     ; Sigmoid Perimeter in arcsec 
+     sigmoids[xx].roi=roi_obj   ; ROI object of sigmoid 
+     sigmoids[xx].cx=float(cal_cent[0]) ; Centriod point of sigmoid in X in arcsec
+     sigmoids[xx].cy=float(cal_cent[1]) ; Centriod point of sigmoid in X in arcsec
+     sigmoids[xx].fwlin1=[sx1,sy1]/[scale_x,scale_y] ;FWHM line trailing points in pixels        
+     sigmoids[xx].fwlin2=[sx2,sy2]/[scale_x,scale_y] ;FWHM line leading  points in pixels        
+     sigmoids[xx].bboxx=xvals/scale_x  ;bounding box x-values of sigmoid in pixels     
+     sigmoids[xx].bboxy=yvals/scale_y  ;bounding box y-values of sigmoid in pixels     
+     sigmoids[xx].shrtx1a=sx1a/scale_x  ;X coordinate of Lower Trailing Sigmoid short axis in pixels    
+     sigmoids[xx].shrtx2a=sx2a/scale_x  ;X coordinate of Upper Trailing Sigmoid short axis in pixels    
+     sigmoids[xx].shrtx1b=sx1b/scale_x  ;X coordinate of Lower Leading  Sigmoid short axis in pixels    
+     sigmoids[xx].shrtx2b=sx2b/scale_x  ;X coordinate of Upper Leading  Sigmoid short axis in pixels
+     sigmoids[xx].shrty1a=sy1a/scale_y  ;Y coordinate of Lower Trailing Sigmoid short axis in pixels    
+     sigmoids[xx].shrty2a=sy2a/scale_y  ;Y coordinate of Upper Trailing Sigmoid short axis in pixels    
+     sigmoids[xx].shrty1b=sy1b/scale_y  ;Y coordinate of Lower Leading  Sigmoid short axis in pixels    
+     sigmoids[xx].shrty2b=sy2b/scale_y  ;Y coordinate of Upper Leading  Sigmoid short axis in pixels
      sig_id=''
      noaa_id=''
      print,'What is the ID of the sigmoid you just identified?'
