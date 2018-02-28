@@ -390,11 +390,14 @@ rot_ibox = rot(ibox,rot_deg,1.0,ax1/sc_x,ay1/sc_y)
 rot_mat = [ [ cos(rot_rad), sin(rot_rad)],$
             [-sin(rot_rad), cos(rot_rad)]]
 ;create new delta keyword parameters from rotation
-ccd = [[0.,da_x,ax1],$ ; x-coordinates from pixel to arcsec
-       [0.,da_y,ay1]]  ; y-coordinates from pixel to arcsec
+ccd = [[0.,da_x],$ ; x-coordinates from pixel to arcsec
+       [0.,da_y]]  ; y-coordinates from pixel to arcsec
 
 ;new coordinates of after the rotation
-ccd_new = ccd # rot_mat
+;Check program test_rotation.pro to understand why this is not need 
+; Because IDL does not rotate that way
+; standard way only works with square binning
+;ccd_new = ccd # rot_mat
 
 ;Sum image a long axis
 sum_img = total(rot_img,1)
@@ -431,13 +434,13 @@ if upp_sze[2] gt 1 then upp_ind = mean(upp_ind) else upp_ind = fix(upp_ind[0])
 if low_sze[2] gt 1 then low_ind = mean(low_ind) else low_ind = fix(low_ind[0])
 
 ;store fwhm value
-fwhm = (upp_sze+low_sze)*ccd[1,1]
+fwhm = (upp_sze+low_sze)*da_y
 
 ;Use the first maximum value
 if cnt_max gt 1 then max_arg = fix(max_arg[0]) else max_arg= fix(max_arg[0])
 
 ;Get a grid of y-values (i.e. perpendicualr to the Central Sigmoid axis)
-xgrid = (findgen(n_elements(sum_img))-max_arg)*ccd_new[1,1] ; scale the index by the new delta-y coordinate system
+xgrid = (findgen(n_elements(sum_img))-max_arg)*da_y ; scale the index by the new delta-y coordinate system
 
 ;Plot line core in new window
 isize = size(rot_img)
