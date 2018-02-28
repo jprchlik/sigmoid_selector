@@ -431,19 +431,13 @@ upp_sze = size(upp_ind)
 low_sze = size(low_ind)
 
 
-print,'BEFORE'
-print,upp_ind,upp_sze
-print,low_ind,low_sze
 
 if upp_sze[2] gt 1 then upp_ind = mean(upp_ind) else upp_ind = fix(upp_ind[0])
 if low_sze[2] gt 1 then low_ind = mean(low_ind) else low_ind = fix(low_ind[0])
-print,'AFTER'
-print,upp_ind,upp_sze
-print,low_ind,low_sze
 
 
 ;store fwhm value
-fwhm = (upp_sze+low_sze)*da_y
+fwhm = (upp_ind+low_ind)*da_y
 
 ;Use the first maximum value
 if cnt_max gt 1 then max_arg = fix(max_arg[0]) else max_arg= fix(max_arg[0])
