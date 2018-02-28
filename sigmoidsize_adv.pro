@@ -1009,8 +1009,20 @@ for xx=0,nfiles-1 do begin
      read,sig_id
      sigmoids[xx].sig_id=sig_id
 
+     ;Turn header obs time into anytime seconds
+     obs_tim = anytim(index1[0].DATE_OBS)
+     ;get +/- 7 Days
+     offset = 7.*24.*3600. ; days to seconds
+     obs_tim_s = anytim(obs_tim-offset,/ex)
+     obs_tim_e = anytim(obs_tim+offset,/ex)
+
+     ;covert to strings to pass to query
+     dat_fmt = '(I04,"-",I02,"-",I02)'
+     obs_str_s = string([obs_tim_s[6],obs_tim_s[1],obs_tim_s[0]],format=dat_fmt)
+     obs_str_e = string([obs_tim_e[6],obs_tim_e[1],obs_tim_e[0]],format=dat_fmt)
+
      ;Added best guess of NOAA number
-     query=ssw_her_make_query(strmid(index1[0].DATE_OBS,0,10),strmid(index1[0].DATE_OBS,0,10),/ar,x1=cal_cent[0],x2=cal_cent[1])
+     query=ssw_her_make_query(obs_str_s,obs_str_e,/ar,x1=cal_cent[0],x2=cal_cent[1])
      her=ssw_her_query(query,/str) 
      if n_elements(size(her)) gt 3 then $
          ar_guess = her.ar.optional.AR_NOAANUM
