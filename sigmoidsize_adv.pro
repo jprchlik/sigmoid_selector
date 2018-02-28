@@ -1018,14 +1018,35 @@ for xx=0,nfiles-1 do begin
 
      ;covert to strings to pass to query
      dat_fmt = '(I04,"-",I02,"-",I02)'
-     obs_str_s = string([obs_tim_s[6],obs_tim_s[1],obs_tim_s[0]],format=dat_fmt)
-     obs_str_e = string([obs_tim_e[6],obs_tim_e[1],obs_tim_e[0]],format=dat_fmt)
+     obs_str_s = string([obs_tim_s[6],obs_tim_s[5],obs_tim_s[4]],format=dat_fmt)
+     obs_str_e = string([obs_tim_e[6],obs_tim_e[5],obs_tim_e[4]],format=dat_fmt)
 
      ;Added best guess of NOAA number
      query=ssw_her_make_query(obs_str_s,obs_str_e,/ar,x1=cal_cent[0],x2=cal_cent[1])
      her=ssw_her_query(query,/str) 
-     if n_elements(size(her)) gt 3 then $
+     if n_elements(size(her)) gt 3 then begin 
+         ; Get time, postion and name
+         pos_x = her.ar.required.event_coord1
+         pos_y = her.ar.required.event_coord2
+         pos_t = her.ar.required.EVENT_STARTTIME
          ar_guess = her.ar.optional.AR_NOAANUM
+
+
+         rot_p = fltarr([2,n_elements(ar_guess)])
+
+         ;Rotate position to obs time
+         for j=0, n_elements(ar_guess)-1 do $
+             rot_p[*,j] = rot_xy(pos_x[j], pos_y[j], tstart=pos_t[j], tend=index1[0].DATE_OBS)
+
+        
+         rot_x = rot_p[0,*]
+         rot_y = rot_p[1,*]
+  
+         ;get the closest ar after rotation
+         dis_m = sqrt((rot_x-cal_cent[0])^2+(rot_y-cal_cent[1])^2)
+         min_i = where(dis_m eq min(dis_m[where(ar_guess gt 0)],/nan))
+         ar_guess = fix(ar_guess[min_i])
+     endif
 
      print,'What is the NOAA active region number of the sigmoid?'
      print,'(If there is no NOAA #, just hit enter.)'
