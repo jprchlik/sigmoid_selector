@@ -629,6 +629,8 @@ for xx=0,nfiles-1 do begin
      endwhile
 
  
+     ; guess scmin is the calculated background level
+     if med_bkgd gt 0 then scmin = alog10(med_bkgd)
 
       
 
@@ -1059,7 +1061,7 @@ for xx=0,nfiles-1 do begin
   endelse
 endfor
 
-stop
-
-return
+;stop
+;
+;return
 end
