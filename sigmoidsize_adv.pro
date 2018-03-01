@@ -598,6 +598,11 @@ for xx=start,nfiles-1 do begin
       else ywdw_size = x_rat*img_ysize 
   endif
 
+  ;Make sure scaling is an integer number 
+  xwdw_size = round(xwdw_size/float(img_xsize))*img_xsize
+  ywdw_size = round(ywdw_size/float(img_ysize))*img_ysize
+
+
   ;normalize data by exposure time
   data1 = temporary(data1)/index1.exptime
 
