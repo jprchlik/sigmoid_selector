@@ -512,8 +512,6 @@ pro sigmoidsize_adv,dir=dir
 set_plot,'X'
 ;scratch_path='/Volumes/Scratch/Users/ehanson/XRT_fits/'
 if keyword_set(dir) then scratch_path = dir else  scratch_path='examples/'
-xwdw_size=1024
-ywdw_size=1024
 fits_files=find_file(scratch_path+'*.fits')
 nfiles=n_elements(fits_files)
 if (nfiles eq 1) then begin
@@ -558,11 +556,47 @@ sigdat_mod={sig_id:'',           $
         shrty1b:0.0,             $
         shrtx2b:0.0,             $
         shrty2b:0.0}
+;Create new sigmoids array
 sigmoids=replicate(sigdat_mod,nfiles)
+;Init assume start counting from 0
+start = 0
 
+;Check if save file already exists
+f_chck = file_test(scratch_path+'sigmoid_sizedata.sav')
 
-for xx=0,nfiles-1 do begin
+;restart from last if file already exists
+if f_chck eq 1 then begin
+    restore,scratch_path+'sigmoid_sizedata.sav'
+    ;check to see filled sigmoid values
+    comp = where(sigmoids.filename ne '',cnt_chck)
+    start = cnt_chck
+endif
+
+print,'##########################'
+start_fmt = '("Starting at index ",I6)'
+print,string([start],format=start_fmt)
+print,'##########################'
+for xx=start,nfiles-1 do begin
   mreadfits,fits_files[xx],index1,data1,/verbose
+
+  ;Pick default window Size
+  xwdw_size=1024
+  ywdw_size=1024
+
+  ;Get axis size for the image
+  img_xsize=index1[0].naxis1
+  img_ysize=index1[0].naxis2
+
+  ;create new window size based on the image size if not square
+  if img_xsize ne img_ysize then begin
+      x_rat = xwdw_size/img_xsize
+      y_rat = ywdw_size/img_ysize
+
+      ;if X image size is smaller make x window size smaller
+      if img_xsize lt img_ysize then xwdw_size = y_rat*img_xsize $
+      ;If Y image sie is smaller make y window size smaller
+      else ywdw_size = x_rat*img_ysize 
+  endif
 
   ;normalize data by exposure time
   data1 = temporary(data1)/index1.exptime
