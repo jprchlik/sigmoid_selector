@@ -599,12 +599,14 @@ for xx=start,nfiles-1 do begin
   endif
 
   ;Make sure scaling is an integer number 
+  ; 2018/03/01 J. Prchlik
   xwdw_size = round(xwdw_size/float(img_xsize))*img_xsize
   ywdw_size = round(ywdw_size/float(img_ysize))*img_ysize
 
 
   ;normalize data by exposure time
-  data1 = temporary(data1)/index1.exptime
+  ;use actually normalization exp. time and convert from microseconds
+  data1 = temporary(data1)/index1.e_etim*1.e6
 
   filesplit=strsplit(fits_files[xx],'/',/extract)
   flnm=filesplit[n_elements(filesplit)-1]
@@ -638,7 +640,8 @@ for xx=start,nfiles-1 do begin
      ;result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
      ;Changed to 0 1 for mask 2018/02/23 J. Prchlik
      ;Multiplied exptime time back in because edge_dog is abs number dependent for some reason
-     result = edge_dog(data1*index1[0].exptime,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
+     ; Removed exposure time because XRT L1 is already normalized
+     result = edge_dog(data1,radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])                 
 
      ;Create mask to remove ARs
      armask = abs(result-255)/255
@@ -678,6 +681,14 @@ for xx=start,nfiles-1 do begin
 
      image = bytscl(rebin(alog10(data1),xwdw_size,ywdw_size),min=scmin,max=scmax)
      tv,image
+     ;show filter and time 
+     estr = strcompress(index1[0].exptime)+'s'
+     ;filter wheels
+     fw1 = index1[0].EC_FW1_
+     fw2 = index1[0].EC_FW2_
+     plt_lab = fw1+'/'+fw2+'/'+estr
+     xyouts,10,10,plt_lab,/device,charsize=2.0,charthick=2.0
+
 
 
      ;overlay image filter
@@ -1011,6 +1022,7 @@ for xx=start,nfiles-1 do begin
      if (continue ne '1') then done=1 else begin
        window,5,xs=xwdw_size,ys=ywdw_size
        tv,image
+       xyouts,10,10,plt_lab,/device,charsize=2.0,charthick=2.0
      endelse
   endwhile
 
