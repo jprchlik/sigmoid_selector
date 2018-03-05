@@ -646,6 +646,9 @@ for xx=start,nfiles-1 do begin
      ;Create mask to remove ARs
      armask = abs(result-255)/255
 
+     ;if AR mask is all 0 then set the entire mask array to 1
+     if total(armask) eq 0 then armask = armask+1
+
      ;Get the median where ar does exists
      med_bkgd = median(data1[where(armask)])
      med_stdd = stddev(data1[where(armask)]-med_bkgd) 
@@ -656,7 +659,7 @@ for xx=start,nfiles-1 do begin
 
      while looper eq 1 do begin
          ;cut out points more than 3 sigma from the median and are in ARs
-         good = where(armask and abs(data1-med_bkgd) lt 3.*med_stdd)
+         good = where(armask and abs(data1-med_bkgd) lt 3.*med_stdd,cnt_good)
 
          ; Calculate the new backgroudn and standard deviation
          datat = data1[good]
@@ -874,39 +877,52 @@ for xx=start,nfiles-1 do begin
      ;Create a mask which highlights interior sigmoid region and is inside bounding box
      mask = ibox*result
 
-     ;Get boundary of created countour
-     CONTOUR, mask, LEVEL = 1,  $
-            XMARGIN = [0, 0], YMARGIN = [0, 0], $
-            /NOERASE, PATH_INFO = pathInfo, PATH_XY = pathXY, $
-            XSTYLE = 5, YSTYLE = 5, /PATH_DATA_COORDS
+
+     ;if mask is empty do not try to autocompute AR properties
+     ; Added 2018/03/05 J. Prchlik
+     if total(mask) gt 0 then begin
+
+         ;Get boundary of created countour
+         CONTOUR, mask, LEVEL = 1,  $
+                XMARGIN = [0, 0], YMARGIN = [0, 0], $
+                /NOERASE, PATH_INFO = pathInfo, PATH_XY = pathXY, $
+                XSTYLE = 5, YSTYLE = 5, /PATH_DATA_COORDS
 
 
 
-     ;Create new ROI obejct using contour
-      line = [LINDGEN(PathInfo(0).N), 0] & $
-      roi_obj = OBJ_NEW('IDLanROI', $
-         (scale_x*pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
-         (scale_y*pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
-      ;Draw ROI on plot
-      DRAW_ROI, roi_obj, COLOR = 0,/device,/LINE_FILL
+         ;Create new ROI obejct using contour
+          line = [LINDGEN(PathInfo(0).N), 0] & $
+          roi_obj = OBJ_NEW('IDLanROI', $
+             (scale_x*pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
+             (scale_y*pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
+          ;Draw ROI on plot
+          DRAW_ROI, roi_obj, COLOR = 0,/device,/LINE_FILL
 
 
-     ;Create image object
-     ;img_obj = OBJ_NEW( 'IDLanROI',ind_x*vbox,ind_y*vbox)  
+         ;Create image object
+         ;img_obj = OBJ_NEW( 'IDLanROI',ind_x*vbox,ind_y*vbox)  
 
-     ;Compute image stats from region
-     ;area = pixel area
-     ;cent = centriod
-     ;peri = perimeter distance in pixels
-     ;SPATIAL OFFSET is the zero point scale is the input pixel to arcsecond conversion
-     ;SPATIAL scale is the input pixel to arcsecond conversion
-     geo_comp = roi_obj.ComputeGeometry(AREA = area,$
-                      CENTROID=cent, PERIMETER=peri,$ 
-                      SPATIAL_SCALE=[arcsec_per_pixel_x,arcsec_per_pixel_y])
+         ;Compute image stats from region
+         ;area = pixel area
+         ;cent = centriod
+         ;peri = perimeter distance in pixels
+         ;SPATIAL OFFSET is the zero point scale is the input pixel to arcsecond conversion
+         ;SPATIAL scale is the input pixel to arcsecond conversion
+         geo_comp = roi_obj.ComputeGeometry(AREA = area,$
+                          CENTROID=cent, PERIMETER=peri,$ 
+                          SPATIAL_SCALE=[arcsec_per_pixel_x,arcsec_per_pixel_y])
 
 
-     ;calibrated centriod
-     cal_cent = (cent/[scale_x,scale_y,1]-[xp0,yp0,0])*[arcsec_per_pixel_x,arcsec_per_pixel_y,1]+[xr0,yr0,0]
+         ;calibrated centriod
+         cal_cent = (cent/[scale_x,scale_y,1]-[xp0,yp0,0])*[arcsec_per_pixel_x,arcsec_per_pixel_y,1]+[xr0,yr0,0]
+     endif else begin
+
+         area = -9999.9
+         peri = -9999.9
+         ;Use FWHM points to compute center points
+         cal_cent = (([sx1+sx2,sy1+sy2]/2./[scale_x,scale_y])-[xp0,yp0])*[arcsec_per_pixel_x,arcsec_per_pixel_y]+[xr0,yr0]
+
+     endelse
 
 
      ;Compute the background into per arcsec^2
