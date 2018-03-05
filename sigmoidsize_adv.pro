@@ -1061,7 +1061,46 @@ for xx=start,nfiles-1 do begin
      sigmoids[xx].shrty2b=sy2b/scale_y  ;Y coordinate of Upper Leading  Sigmoid short axis in pixels
      sig_id=''
      noaa_id=''
+
+
+      
+      ;Guess the sigmoid ID based on rotation
+      ;2018/03/05 J. Prchlik
+      ;Get previous sigmoids
+      comp = where(sigmoids.sig_id ne '',cnt_chck)
+
      print,'What is the ID of the sigmoid you just identified?'
+     if cnt_chck gt 0 then begin 
+
+         ;get important values from sigmoid structure
+         pos_x = sigmoids[comp].cx
+         pos_y = sigmoids[comp].cy
+         pos_t = sigmoids[comp].date
+         pos_id= sigmoids[comp].sig_id
+         sig_guess = -100
+         
+         ;Create large array for storing rotation
+         rot_s = fltarr([2,cnt_chck])
+         ;Rotate position to obs time
+         for j=0, cnt_chck-1 do $
+             rot_s[*,j] = rot_xy(pos_x[j], pos_y[j], tstart=pos_t[j], tend=index1[0].DATE_OBS)
+
+         ;Store x,y in separate array
+         rot_x = rot_s[0,*]
+         rot_y = rot_s[1,*]
+  
+         ;get the closest ar after rotation
+         dis_m = sqrt((rot_x-cal_cent[0])^2+(rot_y-cal_cent[1])^2)
+         ;give 50 arcsec buffer and needs to be min
+         min_i = where((dis_m lt 100) and (dis_m eq min(dis_m,/nan)),min_cnt)
+  
+         ;Print rotated answer if found
+         if min_cnt gt 0 then begin 
+             sig_guess = fix(pos_id[min_i])
+             print,string(sig_guess,format='("Best Guess = ",I5)')
+         endif
+     endif
+
      read,sig_id
      sigmoids[xx].sig_id=sig_id
 
