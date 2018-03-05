@@ -606,7 +606,7 @@ for xx=start,nfiles-1 do begin
 
   ;normalize data by exposure time
   ;use actually normalization exp. time and convert from microseconds
-  data1 = temporary(data1)/index1.e_etim*1.e6
+  data1 = temporary(float(data1))/float(index1[0].e_etim)*1.e6
 
   filesplit=strsplit(fits_files[xx],'/',/extract)
   flnm=filesplit[n_elements(filesplit)-1]
@@ -914,7 +914,9 @@ for xx=start,nfiles-1 do begin
 
 
          ;calibrated centriod
-         cal_cent = (cent/[scale_x,scale_y,1]-[xp0,yp0,0])*[arcsec_per_pixel_x,arcsec_per_pixel_y,1]+[xr0,yr0,0]
+         ;Use FWHM for centriod for now
+         ;cal_cent = (cent/[scale_x,scale_y,1]-[xp0,yp0,0])*[arcsec_per_pixel_x,arcsec_per_pixel_y,1]+[xr0,yr0,0]
+         cal_cent = (([sx1+sx2,sy1+sy2]/2./[scale_x,scale_y])-[xp0,yp0])*[arcsec_per_pixel_x,arcsec_per_pixel_y]+[xr0,yr0]
      endif else begin
 
          area = -9999.9
