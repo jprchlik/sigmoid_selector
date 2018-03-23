@@ -14,10 +14,11 @@ end
 function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=cme
 
     ;Added best guess of NOAA number
-    if keyword_set(cme) then $
+    if keyword_set(cme) then begin 
         query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce,x1=cx,x2=cy)
-    else $
+    endif else begin
         query=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,x1=cx,x2=cy)
+    endelse
 
     her=ssw_her_query(query,/str) 
     if n_elements(size(her)) gt 3 then begin 
@@ -119,19 +120,20 @@ for i=0,n_elements(usig_id)-1 do begin
 
 
     ;Get maximum and minimum analysis data
-    min_date = min(sigmoids[this_sig].DATE)
-    max_date = max(sigmoids[this_sig].DATE)
+    min_date = min(sigmoids[where(this_sig)].DATE)
+    max_date = max(sigmoids[where(this_sig)].DATE)
 
     ;find where sigmoid nearest to center
     cntr_sig = abs(this_sig-1)*1e31+sigmoids.cx
-    cntr_idx = where(cntr_sig eq min(cntr_sig))
+    cntr_idx = where(cntr_sig eq min(cntr_sig),count)
     
     ;Get the time at central meridian
     cnt_date = sigmoids[cntr_idx].DATE
     cnt_x = sigmoids[cntr_idx].cx
     cnt_y = sigmoids[cntr_idx].cy
     ;Get the fits_header file information for the nearest to center sigmoid
-    hdr = headfits(sigloc+sigmoids[cntr_idx].filename)
+    if count eq 1 then hdr = headfits(sigloc+sigmoids[cntr_idx].filename) $
+    else continue
 
     ;get crval, crpix, cddelta keywords
     cdelt1 = sxpar(hdr,'cdelt1')
@@ -150,22 +152,39 @@ for i=0,n_elements(usig_id)-1 do begin
     ;Comment out since LOCKHEED MARTIN is down for the day
     ;outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y)
 
-    print,sig_id,min_date,cnt_date,max_date
+    print,'#############################################################'
+    print,sig_id,',',min_date,',',cnt_date,',',max_date
+    print,sigmoids[where(this_sig)].sig_id
     ;for m=0,n_elements(outvals[*,0])-1 do print,outvals[m,*]
 
     ;first guess of rotation time to center
-    fg = (0-cx)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
+    fg = (0-cnt_x)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
     ;find the closest value to when sigmoid is at the central meridian
-    cpos = [cx,cy]
-    spos = rot_xy(cx,cy,fg ,date=cnt_dat)
+    cpos = [cnt_x,cnt_y]
+    spos = rot_xy(cnt_x,cnt_y,fg ,date=cnt_date)
+    new_dat = anytim(cnt_date)+fg
 
 
     loop = 1
-    while loop:
-
-        if
-
+    counter = 0
+    while loop eq 1 do begin
+        case 1 of  
+           ( abs(cpos[0]) gt abs(spos[0])): begin
+               fg = (0-spos[0])/(10.)*3600.
+               new_dat = new_dat+fg
+               spos = rot_xy(spos[0],spos[1],fg ,date=new_dat)
+           end
+           ( abs(cpos[0]) lt abs(spos[0])): begin
+               fg = (0-cpos[0])/(10.)*3600./2.
+               spos = rot_xy(cpos[0],cpos[1],fg ,date=new_dat)
+           end
+        endcase
+        
+        if ((abs(spos[0]) lt 1.0) or (counter gt 100)) then loop = 0
+        counter = counter+1
     endwhile
+    print,spos[0],counter,'Date = 20',anytim(new_dat,/yymmdd)
+    print,'#############################################################'
 
 endfor
 
@@ -194,5 +213,5 @@ endfor
 
 
 
-stop
+;stop
 end
