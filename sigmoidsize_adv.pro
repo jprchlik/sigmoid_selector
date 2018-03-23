@@ -1003,8 +1003,8 @@ for xx=start,nfiles-1 do begin
      short_axisa_arc=sqrt((sxa_arc^2)+(sya_arc^2))
 
      ;Get short Axis information Trailing
-     sxb_dev=abs(sx1a-sx2a)
-     syb_dev=abs(sy1a-sy2a)
+     sxb_dev=abs(sx1b-sx2b)
+     syb_dev=abs(sy1b-sy2b)
      sxb_arc=arcsec_per_devicex*sxb_dev
      syb_arc=arcsec_per_devicey*syb_dev
      short_axisb_xy =sqrt((sxb_dev^2)+(syb_dev^2))
@@ -1064,7 +1064,7 @@ for xx=start,nfiles-1 do begin
      sigmoids[xx].peri=peri     ; Sigmoid Perimeter in arcsec 
      sigmoids[xx].roi=roi_obj   ; ROI object of sigmoid 
      sigmoids[xx].cx=float(cal_cent[0]) ; Centriod point of sigmoid in X in arcsec
-     sigmoids[xx].cy=float(cal_cent[1]) ; Centriod point of sigmoid in X in arcsec
+     sigmoids[xx].cy=float(cal_cent[1]) ; Centriod point of sigmoid in Y in arcsec
      sigmoids[xx].fwlin1=[sx1,sy1]/[scale_x,scale_y] ;FWHM line trailing points in pixels        
      sigmoids[xx].fwlin2=[sx2,sy2]/[scale_x,scale_y] ;FWHM line leading  points in pixels        
      sigmoids[xx].bboxx=xvals/scale_x  ;bounding box x-values of sigmoid in pixels     
