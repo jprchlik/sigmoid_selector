@@ -183,7 +183,7 @@ for i=0,n_elements(usig_id)-1 do begin
         if ((abs(spos[0]) lt 1.0) or (counter gt 100)) then loop = 0
         counter = counter+1
     endwhile
-    print,spos[0],counter,'Date = 20',anytim(new_dat,/yymmdd)
+    print,counter,' ,Date = 20',anytim(new_dat,/yymmdd), '(x,y) = ',string(spos,format='(F6.1)'),' AR = ',string(sigmoids[cntr_idx].NOAA_ID,format='(I7)')
     print,'#############################################################'
 
 endfor
