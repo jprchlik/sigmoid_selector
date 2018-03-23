@@ -147,11 +147,25 @@ for i=0,n_elements(usig_id)-1 do begin
     yvals = cdelt2*(sigmoids[cntr_idx].bboxy-crpix2)+crval2
 
     ;Get flares around sigmoid
-    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y)
+    ;Comment out since LOCKHEED MARTIN is down for the day
+    ;outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y)
 
     print,sig_id,min_date,cnt_date,max_date
-    for m=0,n_elements(outvals[*,0])-1 do print,outvals[m,*]
+    ;for m=0,n_elements(outvals[*,0])-1 do print,outvals[m,*]
 
+    ;first guess of rotation time to center
+    fg = (0-cx)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
+    ;find the closest value to when sigmoid is at the central meridian
+    cpos = [cx,cy]
+    spos = rot_xy(cx,cy,fg ,date=cnt_dat)
+
+
+    loop = 1
+    while loop:
+
+        if
+
+    endwhile
 
 endfor
 
