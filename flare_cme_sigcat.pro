@@ -51,7 +51,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
 
         ;Rotate position to obs time
         for j=0, n_elements(ar_guess)-1 do $
-            rot_p[*,j] = rot_xy(fl_x[j], fl_y[j], tstart=fl_t[j], tend=obs_time_c)
+            rot_p[*,j] = rot_xy(fl_x[j], fl_y[j], tstart=fl_tp[j], tend=obs_time_c)
 
        
         ;Store x,y in separate array
