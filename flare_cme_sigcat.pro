@@ -11,7 +11,8 @@ ly2 = linfit(inx[3:4],iny[3:4])
 return,[lx1,lx2,ly1,ly2]
 end
 
-function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=cme
+function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,$
+                            ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl,cme=cme
 
     ;Added best guess of NOAA number
     if keyword_set(cme) then begin 
@@ -62,6 +63,10 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
             WCS_CONV_FIND_DSUN, DSUN, RSUN, WCS=WCS,DATE_OBS=fl_tp[j] 
             ;If a heliographic projection convert to arcsec for consistency
             if fl_u[j] eq 'degrees' then WCS_CONV_HG_HPC,fl_x[j],fl_y[j],hpc_x,hpc_y,wcs=WCS ,/arcseconds
+ 
+            ;reset fl coordiantes to be in arcsec
+            fl_x[j] = hpc_x 
+            fl_y[j] = hpc_y 
 
             ;rotate to observed central sigmoid time
             rot_p[*,j] = rot_xy(hpc_x, hpc_y, tstart=fl_tp[j], tend=obs_time_c)
@@ -181,12 +186,12 @@ for i=0,n_elements(usig_id)-1 do begin
 
     ;Get flares around sigmoid
     ;Comment out since LOCKHEED MARTIN is down for the day
-    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y)
+    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,$
+                                 ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl)
 
     print,'#############################################################'
     print,sig_id,',',min_date,',',cnt_date,',',max_date
-    print,sigmoids[where(this_sig)].sig_id
-    for m=0,n_elements(outvals[*,0])-1 do print,outvals[m,*]
+    for m=0,n_elements(ffl_x)-1 do print,ffl_x[m],' ,',ffl_y[m],' ,',ffl_ts[m],' ,',ffl_te[m],' ,',ffl_tp[m],' ,',ffl_mx[m],' ,',ffl_cl[m]
 
     ;first guess of rotation time to center
     fg = (0-cnt_x)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
