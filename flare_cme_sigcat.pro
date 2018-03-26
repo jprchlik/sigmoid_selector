@@ -69,7 +69,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
                 getmin=min(abs(goes_t-asdo_t),imin)
   
                 ;Only update pointing GOES pointing with AIA pointing if within a minute
-                if min(abs(goes_t-asdo_t)) lt 1.*60. then begin
+                ; and GOES position is 0
+                if ((min(abs(goes_t-asdo_t)) lt 1.*10.) and ((abs(fl_x[j]) lt 1.) and (abs(fl_y[j] lt 1.)))) then begin
                     fl_x[j] = round(float(aia.fl[imin].event_coord1))
                     fl_y[j] = round(float(aia.fl[imin].event_coord2))
                     fl_u[j] = aia.fl[imin].event_coordunit
@@ -241,7 +242,7 @@ for i=0,n_elements(usig_id)-1 do begin
     max_date = anytim(new_dat+rng,/yymmdd)
     ;Get flares around sigmoid Use +/- 7 days around disk center
     ;Comment out since LOCKHEED MARTIN is down for the day
-    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,igmoids[cntr_idx].NOAA_ID,
+    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,sigmoids[cntr_idx].NOAA_ID,$
                                  ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl)
 
     ;Print test information
