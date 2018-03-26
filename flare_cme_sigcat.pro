@@ -15,9 +15,13 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
 
     ;Added best guess of NOAA number
     if keyword_set(cme) then begin 
-        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce,x1=cx,x2=cy)
+        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce,x1=cy-100.,x2=cy+100.)
     endif else begin
-        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,x1=cx,x2=cy)
+        search_goes = '&sparam0=OBS_Instrument&op0==&value0=GOES'
+        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,y1=cy-100.,y2=cy+100.)
+        
+        ;Add GOES class Instrument rescriction to query
+         query = query+search_goes
     endelse
 
     her=ssw_her_query(query,/str) 
@@ -43,7 +47,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
 
         endelse
 
-        rot_p = fltarr([2,n_elements(ar_guess)])
+        rot_p = fltarr([2,n_elements(fl_x)])
 
         ;Rotate position to obs time
         for j=0, n_elements(ar_guess)-1 do $
@@ -86,6 +90,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
 
     endelse
 
+    jlkjlk = jjlkjkl
     return,[[ffl_x],[ffl_y],[ffl_ts],[ffl_te],[ffl_tp],[ffl_mx],[ffl_cl]]
 end
 
@@ -150,12 +155,12 @@ for i=0,n_elements(usig_id)-1 do begin
 
     ;Get flares around sigmoid
     ;Comment out since LOCKHEED MARTIN is down for the day
-    ;outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y)
+    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y)
 
     print,'#############################################################'
     print,sig_id,',',min_date,',',cnt_date,',',max_date
     print,sigmoids[where(this_sig)].sig_id
-    ;for m=0,n_elements(outvals[*,0])-1 do print,outvals[m,*]
+    for m=0,n_elements(outvals[*,0])-1 do print,outvals[m,*]
 
     ;first guess of rotation time to center
     fg = (0-cnt_x)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
