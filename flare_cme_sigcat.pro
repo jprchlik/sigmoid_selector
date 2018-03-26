@@ -70,7 +70,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
   
                 ;Only update pointing GOES pointing with AIA pointing if within a minute
                 ; and GOES position is 0
-                if ((min(abs(goes_t-asdo_t)) lt 1.*10.) and ((abs(fl_x[j]) lt 1.) and (abs(fl_y[j] lt 1.)))) then begin
+                if ((min(abs(goes_t-asdo_t)) lt 1.*60.) and ((abs(fl_x[j]) lt 1.) and (abs(fl_y[j]) lt 1.))) then begin
                     fl_x[j] = round(float(aia.fl[imin].event_coord1))
                     fl_y[j] = round(float(aia.fl[imin].event_coord2))
                     fl_u[j] = aia.fl[imin].event_coordunit
