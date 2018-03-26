@@ -11,49 +11,71 @@ ly2 = linfit(inx[3:4],iny[3:4])
 return,[lx1,lx2,ly1,ly2]
 end
 
-function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,$
+function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum,$
                             ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl,cme=cme
 
     ;Added best guess of NOAA number
     if keyword_set(cme) then begin 
-        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce,x1=cy-100.,x2=cy+100.)
+        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce)
     endif else begin
-        search_goes = '&sparam0=OBS_Instrument&op0==&value0=GOES'
-        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,y1=cy-100.,y2=cy+100.)
+        ;search_goes = '&sparam0=OBS_Instrument&op0==&value0=GOES'
+        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,search_array=['obs_observatory=GOES'],result_limit=5000)
         
         ;Add GOES class Instrument rescriction to query
-         query = query+search_goes
+        ;query = query;search_goes
+        ;Get positions from AIA data 2018/03/26 J. Prchlik
+        q_aia=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,search_array=['obs_observatory=SDO','obs_channelid=171'],result_limit=5000)
+        aia=ssw_her_query(q_aia)
     endelse
 
-    her=ssw_her_query(query,/str) 
+    her=ssw_her_query(query) 
     if n_elements(size(her)) gt 3 then begin 
         ; Get time, postion and name
         if keyword_set(cme) then begin
-            fl_x  = her.ce.required.event_coord1
-            fl_y  = her.ce.required.event_coord2
-            fl_u  = her.fl.required.EVENT_COORDUNIT
-            fl_ts = her.ce.required.EVENT_STARTTIhME
-            fl_te = her.ce.required.EVENT_ENDTIME
-            fl_tp = her.ce.required.EVENT_PEAKTIME
-            fl_mx = her.ce.optional.FL_PEAKFLUX
-            fl_cl = her.ce.optional.FL_GOESCLS
+            fl_x  = her.ce.event_coord1
+            fl_y  = her.ce.event_coord2
+            fl_u  = her.fl.EVENT_COORDUNIT
+            fl_ts = her.ce.EVENT_STARTTIhME
+            fl_te = her.ce.EVENT_ENDTIME
+            fl_tp = her.ce.EVENT_PEAKTIME
+            fl_mx = her.ce.FL_PEAKFLUX
+            fl_cl = her.ce.FL_GOESCLS
 
         endif else begin
-            fl_x  = her.fl.required.event_coord1
-            fl_y  = her.fl.required.event_coord2
-            fl_u  = her.fl.required.EVENT_COORDUNIT 
-            fl_ts = her.fl.required.EVENT_STARTTIME
-            fl_te = her.fl.required.EVENT_ENDTIME
-            fl_tp = her.fl.required.EVENT_PEAKTIME
-            fl_mx = her.fl.optional.FL_PEAKFLUX
-            fl_cl = her.fl.optional.FL_GOESCLS
+            fl_x  = her.fl.event_coord1
+            fl_y  = her.fl.event_coord2
+            fl_u  = her.fl.EVENT_COORDUNIT 
+            fl_ts = her.fl.EVENT_STARTTIME
+            fl_te = her.fl.EVENT_ENDTIME
+            fl_tp = her.fl.EVENT_PEAKTIME
+            fl_mx = her.fl.FL_PEAKFLUX
+            fl_cl = her.fl.FL_GOESCLS
 
         endelse
 
+        ;Rotation array
         rot_p = fltarr([2,n_elements(fl_x)])
+
 
         ;Rotate position to obs time
         for j=0, n_elements(fl_x)-1 do begin
+
+
+            ;Update GOES flux with AIA coordinates if CME not set
+            if keyword_set(cme) eq 0 then begin
+                asdo_t=double(anytim(aia.fl.event_peaktime))
+                goes_t=double(anytim(her.fl[j].event_peaktime))
+                ;Get minimum time index
+                getmin=min(abs(goes_t-asdo_t),imin)
+  
+                ;Only update pointing GOES pointing with AIA pointing if within a minute
+                if min(abs(goes_t-asdo_t)) lt 1.*60. then begin
+                    fl_x[j] = round(float(aia.fl[imin].event_coord1))
+                    fl_y[j] = round(float(aia.fl[imin].event_coord2))
+                    fl_u[j] = aia.fl[imin].event_coordunit
+                endif
+
+            endif
 
             ;Set up coordinate information to pass to rotation
             hpc_x = fl_x[j]
@@ -65,8 +87,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,$
             if fl_u[j] eq 'degrees' then WCS_CONV_HG_HPC,fl_x[j],fl_y[j],hpc_x,hpc_y,wcs=WCS ,/arcseconds
  
             ;reset fl coordiantes to be in arcsec
-            fl_x[j] = hpc_x 
-            fl_y[j] = hpc_y 
+            fl_x[j] = round(float(hpc_x)) 
+            fl_y[j] = round(float(hpc_y)) 
 
             ;rotate to observed central sigmoid time
             rot_p[*,j] = rot_xy(hpc_x, hpc_y, tstart=fl_tp[j], tend=obs_time_c)
@@ -86,7 +108,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,$
         xmax = rot_x le lims[3]*rot_y+lims[2]
         ymin = rot_y le lims[5]*rot_x+lims[4]
         ymax = rot_y ge lims[7]*rot_x+lims[6]
-        vbox = where(xmin*xmax*ymin*ymax,cnt)
+        ;Add NOAA number deg along with inside box
+        vbox = where(((xmin*xmax*ymin*ymax) or (fix(her.fl.ar_noaanum) eq fix(arnum))),cnt)
 
         
         ;Get the flares inside the sigmoid box
@@ -122,7 +145,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,$
 
     endelse
 
-    return,[[ffl_x],[ffl_y],[ffl_ts],[ffl_te],[ffl_tp],[ffl_mx],[ffl_cl]]
+    return,0 ;[[ffl_x],[ffl_y],[ffl_ts],[ffl_te],[ffl_tp],[ffl_mx],[ffl_cl]]
 end
 
 ;sigloc is the directory location of save files and sigmoid analysis files
@@ -184,14 +207,6 @@ for i=0,n_elements(usig_id)-1 do begin
     xvals = cdelt1*(sigmoids[cntr_idx].bboxx-crpix1)+crval1
     yvals = cdelt2*(sigmoids[cntr_idx].bboxy-crpix2)+crval2
 
-    ;Get flares around sigmoid
-    ;Comment out since LOCKHEED MARTIN is down for the day
-    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,$
-                                 ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl)
-
-    print,'#############################################################'
-    print,sig_id,',',min_date,',',cnt_date,',',max_date
-    for m=0,n_elements(ffl_x)-1 do print,ffl_x[m],' ,',ffl_y[m],' ,',ffl_ts[m],' ,',ffl_te[m],' ,',ffl_tp[m],' ,',ffl_mx[m],' ,',ffl_cl[m]
 
     ;first guess of rotation time to center
     fg = (0-cnt_x)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
@@ -219,7 +234,24 @@ for i=0,n_elements(usig_id)-1 do begin
         if ((abs(spos[0]) lt 1.0) or (counter gt 100)) then loop = 0
         counter = counter+1
     endwhile
+    
+    ;Get +/- 7 days from disk center for sigmoid
+    rng = 7.*3600.*24.
+    min_date = anytim(new_dat-rng,/yymmdd)
+    max_date = anytim(new_dat+rng,/yymmdd)
+    ;Get flares around sigmoid Use +/- 7 days around disk center
+    ;Comment out since LOCKHEED MARTIN is down for the day
+    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,igmoids[cntr_idx].NOAA_ID,
+                                 ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl)
+
+    ;Print test information
+    print,'#############################################################'
+    print,'#############################################################'
+    print,sig_id,',',min_date,',',cnt_date,',',max_date
+    for m=0,n_elements(ffl_x)-1 do print,ffl_x[m],' ,',ffl_y[m],' ,',ffl_ts[m],' ,',ffl_te[m],' ,',ffl_tp[m],' ,',ffl_mx[m],' ,',ffl_cl[m]
+
     print,counter,' ,Date = 20',anytim(new_dat,/yymmdd), '(x,y) = ',string(spos,format='(F6.1)'),' AR = ',string(sigmoids[cntr_idx].NOAA_ID,format='(I7)')
+    print,'#############################################################'
     print,'#############################################################'
 
 endfor
