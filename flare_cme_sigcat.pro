@@ -30,7 +30,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
         if keyword_set(cme) then begin
             fl_x  = her.ce.required.event_coord1
             fl_y  = her.ce.required.event_coord2
-            fl_ts = her.ce.required.EVENT_STARTTIME
+            fl_u  = her.fl.required.EVENT_COORDUNIT
+            fl_ts = her.ce.required.EVENT_STARTTIhME
             fl_te = her.ce.required.EVENT_ENDTIME
             fl_tp = her.ce.required.EVENT_PEAKTIME
             fl_mx = her.ce.optional.FL_PEAKFLUX
@@ -39,6 +40,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
         endif else begin
             fl_x  = her.fl.required.event_coord1
             fl_y  = her.fl.required.event_coord2
+            fl_u  = her.fl.required.EVENT_COORDUNIT 
             fl_ts = her.fl.required.EVENT_STARTTIME
             fl_te = her.fl.required.EVENT_ENDTIME
             fl_tp = her.fl.required.EVENT_PEAKTIME
@@ -50,8 +52,20 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
         rot_p = fltarr([2,n_elements(fl_x)])
 
         ;Rotate position to obs time
-        for j=0, n_elements(fl_x)-1 do $
-            rot_p[*,j] = rot_xy(fl_x[j], fl_y[j], tstart=fl_tp[j], tend=obs_time_c)
+        for j=0, n_elements(fl_x)-1 do begin
+
+            ;Set up coordinate information to pass to rotation
+            hpc_x = fl_x[j]
+            hpc_y = fl_y[j]
+
+            ;Get coordinates WCS value to send to coordinate coversion 
+            WCS_CONV_FIND_DSUN, DSUN, RSUN, WCS=WCS,DATE_OBS=fl_tp[j] 
+            ;If a heliographic projection convert to arcsec for consistency
+            if fl_u[j] eq 'degrees' then WCS_CONV_HG_HPC,fl_x[j],fl_y[j],hpc_x,hpc_y,wcs=WCS ,/arcseconds
+
+            ;rotate to observed central sigmoid time
+            rot_p[*,j] = rot_xy(hpc_x, hpc_y, tstart=fl_tp[j], tend=obs_time_c)
+        endfor
 
        
         ;Store x,y in separate array
@@ -67,30 +81,42 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,cme=c
         xmax = rot_x le lims[3]*rot_y+lims[2]
         ymin = rot_y le lims[5]*rot_x+lims[4]
         ymax = rot_y ge lims[7]*rot_x+lims[6]
-        vbox = xmin*xmax*ymin*ymax
+        vbox = where(xmin*xmax*ymin*ymax,cnt)
+
         
-       ;Get the flares inside the sigmoid box
-       ffl_x  = fl_x [vbox]
-       ffl_y  = fl_y [vbox]
-       ffl_ts = fl_ts[vbox]
-       ffl_te = fl_te[vbox]
-       ffl_tp = fl_tp[vbox]
-       ffl_mx = fl_mx[vbox]
-       ffl_cl = fl_cl[vbox]
+        ;Get the flares inside the sigmoid box
+        if cnt gt 0 then begin
+            ffl_x  = fl_x [vbox]
+            ffl_y  = fl_y [vbox]
+            ffl_ts = fl_ts[vbox]
+            ffl_te = fl_te[vbox]
+            ffl_tp = fl_tp[vbox]
+            ffl_mx = fl_mx[vbox]
+            ffl_cl = fl_cl[vbox]
+        endif else begin
+            ffl_x  = -1.e30
+            ffl_y  = -1.e30
+            ffl_ts = 'None'
+            ffl_te = 'None'
+            ffl_tp = 'None'
+            ffl_mx = -1.e30
+            ffl_cl = 'None'
+ 
+
+        endelse
 
     endif else begin
        ffl_x  = -1.e30
        ffl_y  = -1.e30
-       ffl_ts = -1.e30
-       ffl_te = -1.e30
-       ffl_tp = -1.e30
+       ffl_ts = 'None'
+       ffl_te = 'None'
+       ffl_tp = 'None'
        ffl_mx = -1.e30
-       ffl_cl = -1.e30
+       ffl_cl = 'None'
 
 
     endelse
 
-    jlkjlk = jjlkjkl
     return,[[ffl_x],[ffl_y],[ffl_ts],[ffl_te],[ffl_tp],[ffl_mx],[ffl_cl]]
 end
 
