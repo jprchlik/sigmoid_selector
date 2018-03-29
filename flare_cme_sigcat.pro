@@ -178,12 +178,13 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
 end
 
 ;sigloc is the directory location of save files and sigmoid analysis files
-pro flare_cme_sigcat, sigloc,fname=fname
+pro flare_cme_sigcat, sigloc,fname=fname,odir=odir
 ; Give program active region lifetime start and end times to get out flares and associated cmes
 
 sigloc = sigloc+'/'
 
 if keyword_set(fname) then fname = fname else fname = 'sigmoid_sizedata.sav'
+if keyword_set(odir) then odir = odir else odir = sigloc
 ;Get save file in directory
 restore,sigloc+fname ;structure name is sigmoids
 
@@ -280,15 +281,15 @@ for i=0,n_elements(usig_id)-1 do begin
 
     ;Create dummy arrays to fill in structure
     cross_m = '20'+anytim(new_dat,/yymmdd);merdian crossing time
-    flare_x = fltarr(100);FLARE X POSITION
-    flare_y = fltarr(100);FLARE Y POSITION
+    flare_x = fltarr(100)-1.e31;FLARE X POSITION
+    flare_y = fltarr(100)-1.e31;FLARE Y POSITION
     flare_u = strarr(100);FLARE POSITION Units
     flare_s = strarr(100);FLARE Start time
     flare_e = strarr(100);FLARE End time
     flare_p = strarr(100);FLARE Peak time
     flare_c = strarr(100);FLARE GOES Class
-    cmevl_x = fltarr(100);CME X POSITION
-    cmevl_y = fltarr(100);CME Y POSITION
+    cmevl_x = fltarr(100)-1.e31;CME X POSITION
+    cmevl_y = fltarr(100)-1.e31;CME Y POSITION
     cmevl_u = strarr(100);CME POSITION Units
     cmevl_s = strarr(100);CME Start time
     cmevl_e = strarr(100);CME End time
