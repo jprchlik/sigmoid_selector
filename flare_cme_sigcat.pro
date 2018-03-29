@@ -350,7 +350,7 @@ endfor
 
 ;Save large structure to file and encopass the range of simoid IDs in save file
 outf = '("sigmoid_id_",I03,"_",I03,".sav")'
-save,big_str,string([fix(min(sigmoids.sig_id)),fix(max(float(sigmoids.sig_id)))],format=outf)
+save,big_str,filename=string([fix(min(sigmoids.sig_id)),fix(max(float(sigmoids.sig_id)))],format=outf)
 
 
 ;if count eq 0 then print, 'No Flare Events Found For This Region Within the Time Specified'
