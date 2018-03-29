@@ -16,7 +16,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
 
     ;Added best guess of NOAA number
     if keyword_set(cme) then begin 
-        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce)
+        ;Get LASCO CMES
+        query=ssw_her_make_query(obs_tim_s,obs_tim_e,/ce,search_array=['obs_observatory=LASCO','FRM_NAME=CACTus+(Computer+Aided+CME+Tracking)'])
     endif else begin
         ;search_goes = '&sparam0=OBS_Instrument&op0==&value0=GOES'
         query=ssw_her_make_query(obs_tim_s,obs_tim_e,/fl,search_array=['obs_observatory=GOES'],result_limit=5000)
@@ -32,14 +33,17 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
     if n_elements(size(her)) gt 3 then begin 
         ; Get time, postion and name
         if keyword_set(cme) then begin
-            fl_x  = her.ce.event_coord1
-            fl_y  = her.ce.event_coord2
-            fl_u  = her.fl.EVENT_COORDUNIT
-            fl_ts = her.ce.EVENT_STARTTIhME
-            fl_te = her.ce.EVENT_ENDTIME
-            fl_tp = her.ce.EVENT_PEAKTIME
-            fl_mx = her.ce.FL_PEAKFLUX
-            fl_cl = her.ce.FL_GOESCLS
+
+            ;Only get CME size greater than 45 Deg
+            cme_clip = where(her.ce.CME_ANGULARWIDTH gt 45)
+            ffl_x  = her.ce[cme_clip].HPC_X
+            ffl_y  = her.ce[cme_clip].HPC_Y
+            ffl_u  = her.ce[cme_clip].EVENT_COORDUNIT
+            ffl_ts = her.ce[cme_clip].EVENT_STARTTIME
+            ffl_te = her.ce[cme_clip].EVENT_ENDTIME
+            ffl_tp = her.ce[cme_clip].EVENT_STARTTIME
+            ffl_mx = her.ce[cme_clip].CME_ANGULARWIDTH
+            ffl_cl = her.ce[cme_clip].CME_RADIALLINVEL
 
         endif else begin
             fl_x  = her.fl.event_coord1
@@ -51,87 +55,88 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             fl_mx = her.fl.FL_PEAKFLUX
             fl_cl = her.fl.FL_GOESCLS
 
-        endelse
 
-        ;Rotation array
-        rot_p = fltarr([2,n_elements(fl_x)])
-
-
-        ;Rotate position to obs time
-        for j=0, n_elements(fl_x)-1 do begin
+            ; Moved inside flare loop only 2018/03/29 J. Prchlik
+            ;Rotation array
+            rot_p = fltarr([2,n_elements(fl_x)])
 
 
-            ;Update GOES flux with AIA coordinates if CME not set
-            if keyword_set(cme) eq 0 then begin
-                asdo_t=double(anytim(aia.fl.event_peaktime))
-                goes_t=double(anytim(her.fl[j].event_peaktime))
-                ;Get minimum time index
-                getmin=min(abs(goes_t-asdo_t),imin)
+            ;Rotate position to obs time
+            for j=0, n_elements(fl_x)-1 do begin
+
+
+                ;Update GOES flux with AIA coordinates if CME not set
+                if keyword_set(cme) eq 0 then begin
+                    asdo_t=double(anytim(aia.fl.event_peaktime))
+                    goes_t=double(anytim(her.fl[j].event_peaktime))
+                    ;Get minimum time index
+                    getmin=min(abs(goes_t-asdo_t),imin)
   
-                ;Only update pointing GOES pointing with AIA pointing if within a minute
-                ; and GOES position is 0
-                if ((min(abs(goes_t-asdo_t)) lt 1.*60.) and ((abs(fl_x[j]) lt 1.) and (abs(fl_y[j]) lt 1.))) then begin
-                    fl_x[j] = round(float(aia.fl[imin].event_coord1))
-                    fl_y[j] = round(float(aia.fl[imin].event_coord2))
-                    fl_u[j] = aia.fl[imin].event_coordunit
+                    ;Only update pointing GOES pointing with AIA pointing if within a minute
+                    ; and GOES position is 0
+                    if ((min(abs(goes_t-asdo_t)) lt 1.*60.) and ((abs(fl_x[j]) lt 1.) and (abs(fl_y[j]) lt 1.))) then begin
+                        fl_x[j] = round(float(aia.fl[imin].event_coord1))
+                        fl_y[j] = round(float(aia.fl[imin].event_coord2))
+                        fl_u[j] = aia.fl[imin].event_coordunit
+                    endif
+
                 endif
 
-            endif
+                ;Set up coordinate information to pass to rotation
+                hpc_x = fl_x[j]
+                hpc_y = fl_y[j]
 
-            ;Set up coordinate information to pass to rotation
-            hpc_x = fl_x[j]
-            hpc_y = fl_y[j]
-
-            ;Get coordinates WCS value to send to coordinate coversion 
-            WCS_CONV_FIND_DSUN, DSUN, RSUN, WCS=WCS,DATE_OBS=fl_tp[j] 
-            ;If a heliographic projection convert to arcsec for consistency
-            if fl_u[j] eq 'degrees' then WCS_CONV_HG_HPC,fl_x[j],fl_y[j],hpc_x,hpc_y,wcs=WCS ,/arcseconds
+                ;Get coordinates WCS value to send to coordinate coversion 
+                WCS_CONV_FIND_DSUN, DSUN, RSUN, WCS=WCS,DATE_OBS=fl_tp[j] 
+                ;If a heliographic projection convert to arcsec for consistency
+                if fl_u[j] eq 'degrees' then WCS_CONV_HG_HPC,fl_x[j],fl_y[j],hpc_x,hpc_y,wcs=WCS ,/arcseconds
  
-            ;reset fl coordiantes to be in arcsec
-            fl_x[j] = round(float(hpc_x)) 
-            fl_y[j] = round(float(hpc_y)) 
+                ;reset fl coordiantes to be in arcsec
+                fl_x[j] = round(float(hpc_x)) 
+                fl_y[j] = round(float(hpc_y)) 
 
-            ;rotate to observed central sigmoid time
-            rot_p[*,j] = rot_xy(hpc_x, hpc_y, tstart=fl_tp[j], tend=obs_time_c)
-        endfor
+                ;rotate to observed central sigmoid time
+                rot_p[*,j] = rot_xy(hpc_x, hpc_y, tstart=fl_tp[j], tend=obs_time_c)
+            endfor
 
        
-        ;Store x,y in separate array
-        rot_x = rot_p[0,*]
-        rot_y = rot_p[1,*]
+            ;Store x,y in separate array
+            rot_x = rot_p[0,*]
+            rot_y = rot_p[1,*]
  
-        ;get flares inside box after rotation
-        ;Compute x and y limit functions
-        lims = comp_limits(xbox,ybox)
-        
-        ;Create array of 1 and 0 for box
-        xmin = rot_x ge lims[1]*rot_y+lims[0]
-        xmax = rot_x le lims[3]*rot_y+lims[2]
-        ymin = rot_y le lims[5]*rot_x+lims[4]
-        ymax = rot_y ge lims[7]*rot_x+lims[6]
-        ;Add NOAA number deg along with inside box
-        vbox = where(((xmin*xmax*ymin*ymax) or (fix(her.fl.ar_noaanum) eq fix(arnum))),cnt)
+            ;get flares inside box after rotation
+            ;Compute x and y limit functions
+            lims = comp_limits(xbox,ybox)
+            
+            ;Create array of 1 and 0 for box
+            xmin = rot_x ge lims[1]*rot_y+lims[0]
+            xmax = rot_x le lims[3]*rot_y+lims[2]
+            ymin = rot_y le lims[5]*rot_x+lims[4]
+            ymax = rot_y ge lims[7]*rot_x+lims[6]
+            ;Add NOAA number deg along with inside box
+            vbox = where(((xmin*xmax*ymin*ymax) or (fix(her.fl.ar_noaanum) eq fix(arnum))),cnt)
 
-        
-        ;Get the flares inside the sigmoid box
-        if cnt gt 0 then begin
-            ffl_x  = fl_x [vbox]
-            ffl_y  = fl_y [vbox]
-            ffl_ts = fl_ts[vbox]
-            ffl_te = fl_te[vbox]
-            ffl_tp = fl_tp[vbox]
-            ffl_mx = fl_mx[vbox]
-            ffl_cl = fl_cl[vbox]
-        endif else begin
-            ffl_x  = -1.e30
-            ffl_y  = -1.e30
-            ffl_ts = 'None'
-            ffl_te = 'None'
-            ffl_tp = 'None'
-            ffl_mx = -1.e30
-            ffl_cl = 'None'
+            
+            ;Get the flares inside the sigmoid box
+            if cnt gt 0 then begin
+                ffl_x  = fl_x [vbox]
+                ffl_y  = fl_y [vbox]
+                ffl_ts = fl_ts[vbox]
+                ffl_te = fl_te[vbox]
+                ffl_tp = fl_tp[vbox]
+                ffl_mx = fl_mx[vbox]
+                ffl_cl = fl_cl[vbox]
+            endif else begin
+                ffl_x  = -1.e30
+                ffl_y  = -1.e30
+                ffl_ts = 'None'
+                ffl_te = 'None'
+                ffl_tp = 'None'
+                ffl_mx = -1.e30
+                ffl_cl = 'None'
  
 
+            endelse
         endelse
 
     endif else begin
@@ -245,13 +250,20 @@ for i=0,n_elements(usig_id)-1 do begin
     outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,sigmoids[cntr_idx].NOAA_ID,$
                                  ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl)
 
+    ;Get CME values
+    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,sigmoids[cntr_idx].NOAA_ID,$
+                                 cme_x,cme_y,cme_ts,cme_te,cme_tp,cme_da,cme_vl,/cme)
     ;Print test information
     print,'#############################################################'
     print,'#############################################################'
     print,sig_id,',',min_date,',',cnt_date,',',max_date
+    print,'Flares'
     for m=0,n_elements(ffl_x)-1 do print,ffl_x[m],' ,',ffl_y[m],' ,',ffl_ts[m],' ,',ffl_te[m],' ,',ffl_tp[m],' ,',ffl_mx[m],' ,',ffl_cl[m]
 
     print,counter,' ,Date = 20',anytim(new_dat,/yymmdd), '(x,y) = ',string(spos,format='(F6.1)'),' AR = ',string(sigmoids[cntr_idx].NOAA_ID,format='(I7)')
+
+    print,'CMEs'
+    for m=0,n_elements(cme_x)-1 do print,cme_x[m],' ,',cme_y[m],' ,',cme_ts[m],' ,',cme_te[m],' ,',cme_da[m],' ,',cme_vl[m]
     print,'#############################################################'
     print,'#############################################################'
 
