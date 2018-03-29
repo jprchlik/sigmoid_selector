@@ -1,3 +1,26 @@
+
+
+pro compile_structure
+
+    test_sig = CREATE_STRUCT('sigmoid_id',0,$
+                             'cross_m','                    ',$; Time flare crossed the meridian 
+                             'flare_x',fltarr(100),$;FLARE X POSITION
+                             'flare_y',fltarr(100),$;FLARE Y POSITION
+                             'flare_s',strarr(100),$;FLARE Start time
+                             'flare_e',strarr(100),$;FLARE End time
+                             'flare_p',strarr(100),$;FLARE Peak time
+                             'flare_c',strarr(100),$;FLARE GOES Class
+                             'cme_x',fltarr(100),$;CME X POSITION
+                             'cme_y',fltarr(100),$;CME Y POSITION
+                             'cme_s',strarr(100),$;CME Start time
+                             'cme_e',strarr(100),$;CME End time
+                             'cme_w',strarr(100),$;CME Angular Width
+                             'cme_v',strarr(100)) ;CME Velocity
+
+
+
+end
+
 ;Compute a series of slopes and intercepts the contain the simgoid
 ;Usage
 ;res = comp_limits(inx,iny)
@@ -253,21 +276,81 @@ for i=0,n_elements(usig_id)-1 do begin
     ;Get CME values
     outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,sigmoids[cntr_idx].NOAA_ID,$
                                  cme_x,cme_y,cme_ts,cme_te,cme_tp,cme_da,cme_vl,/cme)
+
+
+    ;Create dummy arrays to fill in structure
+    cross_m = '20'+anytim(new_dat,/yymmdd);merdian crossing time
+    flare_x = fltarr(100);FLARE X POSITION
+    flare_y = fltarr(100);FLARE Y POSITION
+    flare_u = strarr(100);FLARE POSITION Units
+    flare_s = strarr(100);FLARE Start time
+    flare_e = strarr(100);FLARE End time
+    flare_p = strarr(100);FLARE Peak time
+    flare_c = strarr(100);FLARE GOES Class
+    cmevl_x = fltarr(100);CME X POSITION
+    cmevl_y = fltarr(100);CME Y POSITION
+    cmevl_u = strarr(100);CME POSITION Units
+    cmevl_s = strarr(100);CME Start time
+    cmevl_e = strarr(100);CME End time
+    cmevl_w = strarr(100);CME Angular Width
+    cmevl_v = strarr(100) ;CME Velocity
+
+
     ;Print test information
-    print,'#############################################################'
-    print,'#############################################################'
-    print,sig_id,',',min_date,',',cnt_date,',',max_date
-    print,'Flares'
-    for m=0,n_elements(ffl_x)-1 do print,ffl_x[m],' ,',ffl_y[m],' ,',ffl_ts[m],' ,',ffl_te[m],' ,',ffl_tp[m],' ,',ffl_mx[m],' ,',ffl_cl[m]
+    ;print,'#############################################################'
+    ;print,'#############################################################'
+    ;print,sig_id,',',min_date,',',cnt_date,',',max_date
+    ;print,'Flares'
+    ;Create fixed width arrays containing flare info
+    for m=0,n_elements(ffl_x)-1 do begin
+        flare_x[m] = ffl_x[m]
+        flare_y[m] = ffl_y[m]
+        flare_s[m] = ffl_ts[m]
+        flare_e[m] = ffl_te[m]
+        flare_p[m] = ffl_tp[m]
+        flare_c[m] = ffl_cl[m]
+    endfor
 
-    print,counter,' ,Date = 20',anytim(new_dat,/yymmdd), '(x,y) = ',string(spos,format='(F6.1)'),' AR = ',string(sigmoids[cntr_idx].NOAA_ID,format='(I7)')
+    ;print,counter,' ,Date = 20',anytim(new_dat,/yymmdd), '(x,y) = ',string(spos,format='(F6.1)'),' AR = ',string(sigmoids[cntr_idx].NOAA_ID,format='(I7)')
 
-    print,'CMEs'
-    for m=0,n_elements(cme_x)-1 do print,cme_x[m],' ,',cme_y[m],' ,',cme_ts[m],' ,',cme_te[m],' ,',cme_da[m],' ,',cme_vl[m]
-    print,'#############################################################'
-    print,'#############################################################'
+    ;Create fixed width arrays containing CME info
+    for m=0,n_elements(cme_x)-1 do begin
+        cmevl_x[m] =cme_x[m]
+        cmevl_y[m] =cme_y[m]
+        cmevl_s[m] =cme_ts[m]
+        cmevl_e[m] =cme_te[m]
+        cmevl_w[m] =cme_da[m]
+        cmevl_v[m] =cme_vl[m]
+     endfor
+     ;stop
+     ;print,'#############################################################'
+     ;print,'#############################################################'
+     ;Create single row in structure
+     tmp = {test_sig,$
+         sigmoid_id:sig_id,$
+         cross_m:cross_m,$; Time flare crossed the meridian 
+         flare_x:flare_x,$;FLARE X POSITION
+         flare_y:flare_y,$;FLARE Y POSITION
+         flare_s:flare_s,$;FLARE Start time
+         flare_e:flare_e,$;FLARE End time
+         flare_p:flare_p,$;FLARE Peak time
+         flare_c:flare_c,$;FLARE GOES Class
+         cme_x:cmevl_x,$;CME X POSITION
+         cme_y:cmevl_y,$;CME Y POSITION
+         cme_s:cmevl_s,$;CME Start time
+         cme_e:cmevl_e,$;CME End time
+         cme_w:cmevl_w,$;CME Angular Width
+         cme_v:cmevl_v} ;CME Velocity
 
+
+     ;Create large structure
+     if i eq 0 then big_str = tmp $
+     else big_str = [big_str,tmp] 
 endfor
+
+;Save large structure to file and encopass the range of simoid IDs in save file
+outf = '("sigmoid_id_",I03,"_",I03,".sav")'
+save,big_str,string([fix(min(sigmoids.sig_id)),fix(max(float(sigmoids.sig_id)))],format=outf)
 
 
 ;if count eq 0 then print, 'No Flare Events Found For This Region Within the Time Specified'
