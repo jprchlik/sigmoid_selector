@@ -177,7 +177,31 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
     return,0 ;[[ffl_x],[ffl_y],[ffl_ts],[ffl_te],[ffl_tp],[ffl_mx],[ffl_cl]]
 end
 
-;sigloc is the directory location of save files and sigmoid analysis files
+;####################################################################
+;
+;NAME:
+;    flare_cme_sigcat
+;
+;PURPOSE:
+;    Program to determine CME and flare in the same time and space range 
+;    as the sigmoid. It uses the sigmoid box and AR number given in 
+;    sigmoidsize_adv.
+;
+;USAGE:
+;    flare_cme_sigcat, sigloc,fname=fname,odir=odir
+;
+;INPUTS:
+;    sigloc     - Directory containting a sav file exported from sigmoidsize_adv
+;    fname      - Filename of save file (Default = 'sigmoid_sizedata.sav')
+;    odir       - Output directory of save file created by flare_cme_sigcat (Default = sigloc)
+;
+;OUTPUTS:
+;    An IDL save file with the format '("sigmoid_id_",I03,"_",I03,".sav")', 
+;    where I03 are the first and last sigmoid ids in the list 
+;    (e.g. sigmoid_id_001_010.sav)
+;
+;
+;####################################################################
 pro flare_cme_sigcat, sigloc,fname=fname,odir=odir
 ; Give program active region lifetime start and end times to get out flares and associated cmes
 
