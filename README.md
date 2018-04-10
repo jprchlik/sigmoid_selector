@@ -17,6 +17,20 @@ The program stops searching for the minimum after 95% of the pixels are within 2
 Generally, the program finds the minimum level in less than three loops.
 
 
+Next, the program will ask the user to perform a series of tasks.
+First, it asks whether we should analyze the file in the command line. 
+Enter 1 if we should skip the file or enter nothing if we should analyze the file.
+Only enter 1 if the file does not contain a sigmiod you can analyze.
+If you enter 1 the program will give null values for ever parameters and go to the next file.
+If you enter nothing the program will ask you to click a number of places on the sigmoid.
+
+First, click the trailing end of the long axis as prompted in the command line. 
+Once you click the trailing end, 
+you should notice a L appears where you clicked.
+The command line prompt change will change to Click leading sigmoid long axis.
+Again click the leading edge of the long axis where a L will appear.
+
+
 
 
 #flare_cme_sigcat
