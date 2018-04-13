@@ -443,6 +443,11 @@ xgrid = (findgen(n_elements(sum_img))-max_arg)*da_y ; scale the index by the new
 isize = size(rot_img)
 xsize = isize[1]*2
 ysize = isize[2]*2
+
+;Scale down tow prevent images bigger than 1024x1024
+if xsize gt 1024 then xsize = fix(temporary(xsize)/float(temporary(xsize)/1024.))
+if ysize gt 1024 then ysize = fix(temporary(ysize)/float(temporary(ysize)/1024.))
+
 useg = where(finite(alog10(rot_img)))
 
 ;Add factor of 4 to really accent selected region
