@@ -53,6 +53,17 @@ If you notice any irregularities due to structures not a part of the sigmoid
  reclassify the sigmiod using a new box that exclues the structure.
 
 
+The calculation of the FWHM is a little tricky,
+so I will described it in some detail.
+The first problem is how does one compress a 2D sigmoid into a 1D
+shape. 
+My solution is to rotate the sigmoid about its core and sum pixels along the x-axis for a given rotated y position (you can see the idea in the rotated image).
+After you sum the pixels you must now divide by the total pixels used in the sum,
+since FWHM is over a small window of the image I sum a rotated mask created from the 
+sigmiod selection of the line core and the bounding box. 
+I then divide the total counts by the sum of the masked bounding box. 
+Then I need to compute the background.
+
 
 
 Struture of output save file
