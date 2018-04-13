@@ -24,12 +24,29 @@ Only enter 1 if the file does not contain a sigmiod you can analyze.
 If you enter 1 the program will give null values for ever parameters and go to the next file.
 If you enter nothing the program will ask you to click a number of places on the sigmoid.
 
+Then you will select the long axis of the sigmoid. 
+We define the long axis as the longest point on the sigmoid by eye using the following procedure.
 First, click the trailing end of the long axis as prompted in the command line. 
 Once you click the trailing end, 
 you should notice a L appears where you clicked.
 The command line prompt change will change to Click leading sigmoid long axis.
 Again click the leading edge of the long axis where a L will appear.
 
+After that, we then compute the short axis length of the sigmoid at the trailing and leading ends.
+Similar to the long axis, the short axes are defined by inspection.
+The program will ask you in order to click the southern trailing short axis, northern trailing
+short axis, southern leading short axis, and northern leading short axis.
+Everytime you click a new appears.
+
+Again the program asks for more human input. This time it is to put a box around the sigmiod.
+The box is important because it helps define the bounding box for the background in the
+Full Width Half Maximum (FWHM) calculation, and it helps the program flare_cme_sigcat locate nearby flares.
+
+Finally, the last of the human input. The program asks for the core of the sigmoid to determine the FWHM.
+Click first point in the trailing core of the sigmiod, and the second point in the leading core. 
+Those two point set the x boundary from which to calculate the FWHM.
+Once you select the leading edge of the sigmoid core,
+two new window will pop up in the upper left.
 
 
 
