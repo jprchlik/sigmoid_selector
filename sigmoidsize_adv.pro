@@ -444,9 +444,13 @@ isize = size(rot_img)
 xsize = isize[1]*2
 ysize = isize[2]*2
 
+;Value to scale down to if larger than 512x512
+bigx = xsize/512.
+bigy = ysize/512.
+
 ;Scale down tow prevent images bigger than 1024x1024
-if xsize gt 1024 then xsize = fix(temporary(xsize)/float(temporary(xsize)/1024.))
-if ysize gt 1024 then ysize = fix(temporary(ysize)/float(temporary(ysize)/1024.))
+if xsize gt 512 then xsize = fix(temporary(xsize)/bigx)
+if ysize gt 512 then ysize = fix(temporary(ysize)/bigy)
 
 useg = where(finite(alog10(rot_img)))
 
