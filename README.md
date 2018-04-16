@@ -76,7 +76,7 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         date:'',                 --> Date of observation from the fits header   
         size:0.0,                --> long axis size of the sigmiod in arcseconds   
         sizea:0.0,               --> trailing short axis size of the sigmoid in arcseconds.   
-        sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds (early versions duplicated the short axis length https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d ).   
+        sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds [early versions duplicated the short axis length](https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d).   
         aspect_ratio:0.0,        --> size/((sizea+sizeb)/2.)   
         cx:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)   
         cy:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)   
