@@ -82,8 +82,8 @@ The program usually converges in 3 iterations.
 Finally, to subtract from the image in physical units and derive the background for the FWHM the pixel size is converted to arcsec^2.
 
 
+All the information is saved in an IDL save file in same directory defined in the dir keyword. The stricture of the save file has the following format:
 
-Struture of output save file
 
 sigdat_mod={sig_id:'',           --> User defined Sigmoid ID   
         NOAA_id:0,               --> NOAA ID of closest AR.   
@@ -91,7 +91,8 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         date:'',                 --> Date of observation from the fits header   
         size:0.0,                --> long axis size of the sigmiod in arcseconds   
         sizea:0.0,               --> trailing short axis size of the sigmoid in arcseconds.   
-        sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds [early versions duplicated the short axis length](https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d).   
+        sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds 
+[early versions duplicated the short axis length](https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d).   
         aspect_ratio:0.0,        --> size/((sizea+sizeb)/2.)   
         cx:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)   
         cy:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)   
@@ -119,8 +120,44 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         shrty2b:0.0}             --> Y coordinate of Upper Leading  Sigmoid short axis in pixels   
 
 
-flare_cme_sigcat
+flare_cme_sigcat,sigloc,fname=fname,odir=odir
 ================
+flare_cmd_sigcat returns a save file with a list of CMEs and flares associated with the sigmiod. In addition,
+it computes the time the sigmiod is closest to disk center. The only required input is a directory (sigloc) with a 
+save file created by sigmoidsize_adv. The output of the program is a save file is in the same directory as
+ the sigloc, unless specified. 
+The output file outputs 1 row for all sigmiods of a given ID in hte output from sigmoidsize_adv
+
+The program first computes the time sigmoid is nearest to DC using the cx and cy parameters.
+Then the program uses the nearest DC point to find the time the sigmoid is at DC.
+To solve for the time there is a loop which rotates the cx and cy values.
+The program makes a guess of the time offset to DC by using a rough number that the sun
+rotates at about 10 arcsecs per hour. 
+The using the the guess time it computes the new coordinates. 
+If the coordinate is within 1 arcsec of DC then the program returns that as the time for the 
+sigmoid ad DC. If the distance is more than 1 arcsec then the program will try again under
+two conditions.
+If the new time guess is father than the original then cut down the time guess by a factor of 2
+, but if the new guess is closer then the original try another rotation from the update position.
+The program usually arrives at a solution after 1 or 2 iterations.   
+
+
+test_sig = CREATE_STRUCT(
+'sigmoid_id',0            , --> User specified sigmiod ID     
+'cross_m'   ,'           ', -->  Time flare crossed the meridian    
+'flare_x'   ,fltarr(100)  , --> FLARE X POSITION arcsec  
+'flare_y'   ,fltarr(100)  , --> FLARE Y POSITION arcsec  
+'flare_s'   ,strarr(100)  , --> FLARE Start time   
+'flare_e'   ,strarr(100)  , --> FLARE End time   
+'flare_p'   ,strarr(100)  , --> FLARE Peak time   
+'flare_c'   ,strarr(100)  , --> FLARE GOES Class   
+'cme_x'     ,fltarr(100)  , --> CME X POSITION   
+'cme_y'     ,fltarr(100)  , --> CME Y POSITION   
+'cme_s'     ,strarr(100)  , --> CME Start time   
+'cme_e'     ,strarr(100)  , --> CME End time   
+'cme_w'     ,strarr(100)  , --> CME Angular Width   
+'cme_v'     ,strarr(100))     --> CME Velocity   
+
 
 
 
