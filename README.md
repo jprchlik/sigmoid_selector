@@ -64,16 +64,22 @@ After you sum the pixels you must now divide by the total pixels used in the sum
 since FWHM is over a small window of the image I sum a rotated mask created from the 
 sigmiod selection of the line core and the bounding box. 
 I then divide the total counts by the sum of the masked bounding box. 
-Then I need to compute the background.
+After summation and normalization, 
+I find define the peak value in the rotated y direction of the sigmiod profile.
+Then I break the 1D sigmoid profile into two halves. 
+I then find the value closest to the half maximum for each half. 
+If a half contains more than 1 value close to the half maximum I use the mean of the values to set the width. 
 
 
+In order to get a consistent FWHM, 
+the program needs to subtract a background flux.
 The background finding algorithm uses the edge_dog AR mask of the sigmoid to mask out the bright regions and derive a first median background level.
 Then the program begins a loop to further restrict the background flux.
 First, it creates a new mask which includes pixels not in the AR mask and pixels less than three sigma (RMS) from the median value.
 From the new mask the program computes a new median background level and standard deviation. 
 The program exits with 95 percent of the "background" pixel are contained within two sigma or after 6 attempt to find the background value.
 The program usually converges in 3 iterations.
-Finaly, to subtract from the image in physical units the pixel size is converted to arcsec^2.
+Finally, to subtract from the image in physical units and derive the background for the FWHM the pixel size is converted to arcsec^2.
 
 
 
