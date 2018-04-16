@@ -467,6 +467,8 @@ window,6,retain=0,xsize=xsize,ysize=ysize,xpos=xsize,ypos=1200
 plot,sum_img,xgrid,/device,color=255,ytitle='Distance from Center [``]',xtitle='Counts [#/s/arcsec^2]'
 oplot,fltarr(n_elements(xgrid))+0.5*max_img+bkgd,xgrid,color=200
 oplot,fltarr(n_elements(xgrid))+bkgd,xgrid,color=200,linestyle=2
+oplot,[0,max_img],([upp_ind,upp_ind]-max_arg)*da_y,color=170,linestyle=1
+oplot,[0,max_img],([low_ind,low_ind]-max_arg)*da_y,color=170,linestyle=1
 
 
 return,[fwhm,max_img]
@@ -612,6 +614,14 @@ for xx=start,nfiles-1 do begin
   xwdw_size = round(xwdw_size/float(img_xsize))*img_xsize
   ywdw_size = round(ywdw_size/float(img_ysize))*img_ysize
 
+
+  ;scale down images larger than 1024 to 1024
+  bigx = img_xsize/1024.
+  bigy = img_ysize/1024.
+
+  ;Scale down tow prevent images bigger than 1024x1024
+  if xwdw_size gt 1024 then xwdw_size = fix(temporary(img_xsize)/bigx)
+  if ywdw_size gt 1024 then ywdw_size = fix(temporary(img_ysize)/bigy)
 
   ;normalize data by exposure time
   ;use actually normalization exp. time and convert from microseconds
