@@ -70,38 +70,38 @@ Then I need to compute the background.
 
 Struture of output save file
 
-sigdat_mod={sig_id:'',           --> User defined Sigmoid ID_
-        NOAA_id:0,               --> NOAA ID of closest AR._
-        filename:'',             --> Fits file name (without directory) of the file used for Sigmoid classification_
-        date:'',                 --> Date of observation from the fits header_
-        size:0.0,                --> long axis size of the sigmiod in arcseconds_
-        sizea:0.0,               --> trailing short axis size of the sigmoid in arcseconds._
-        sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds (early versions duplicated the short axis length https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d )._
-        aspect_ratio:0.0,        --> size/((sizea+sizeb)/2.)_
-        cx:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)_
-        cy:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)_
-        peri:0.0,                --> Perimeter distance in arcseconds from automatic region finding (BETA feature)_
-        area:0.0,                --> Area in square arcseconds from automatic region finding (BETA feature)_
-        roi:OBJ_NEW('IDLanROI'), --> Region object from automatic region finding (BETA feature)_
-        bkgd:0.0,                --> Background flux in ADU/s/pixel_
-        fwhm:0.0,                --> Half width of the sigmiod core in arcseconds_
-        hght:0.0,                --> Peak flux of the sigmiod in ADU/s/pixel_
-        bboxx:fltarr(5),         --> x-coordinates which make a bounding box for the observation in pixels_
-        bboxy:fltarr(5),         --> y-coordinates which make a bounding box for the observation in pixels_
-        fwlin1:fltarr(2),        --> x,y coordinates of the trailing end of the sigmiod core in pixels_
-        fwlin2:fltarr(2),        --> x,y coordiantes of the leading end of the sigmiod core in pixels_
-        longx1:0.0,              --> Trailing Long Axis X coordinate in Pixels    _
-        longy1:0.0,              --> Leading  Long Axis X coordinate in Pixels_
-        longx2:0.0,              --> Trailing Long Axis Y coordinate in Pixels_
-        longy2:0.0,              --> Leading  Long Axis Y coordinate in Pixels_
-        shrtx1a:0.0,             --> X coordinate of Lower Trailing Sigmoid short axis in pixels    _
-        shrty1a:0.0,             --> X coordinate of Upper Trailing Sigmoid short axis in pixels_
-        shrtx2a:0.0,             --> X coordinate of Lower Leading  Sigmoid short axis in pixels_
-        shrty2a:0.0,             --> X coordinate of Upper Leading  Sigmoid short axis in pixels_
-        shrtx1b:0.0,             --> Y coordinate of Lower Trailing Sigmoid short axis in pixels_
-        shrty1b:0.0,             --> Y coordinate of Upper Trailing Sigmoid short axis in pixels_
-        shrtx2b:0.0,             --> Y coordinate of Lower Leading  Sigmoid short axis in pixels_
-        shrty2b:0.0}             --> Y coordinate of Upper Leading  Sigmoid short axis in pixels_
+_sigdat_mod={sig_id:'',           --> User defined Sigmoid ID_
+_        NOAA_id:0,               --> NOAA ID of closest AR._
+_        filename:'',             --> Fits file name (without directory) of the file used for Sigmoid classification_
+_        date:'',                 --> Date of observation from the fits header_
+_        size:0.0,                --> long axis size of the sigmiod in arcseconds_
+_        sizea:0.0,               --> trailing short axis size of the sigmoid in arcseconds._
+_        sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds (early versions duplicated the short axis length https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d )._
+_        aspect_ratio:0.0,        --> size/((sizea+sizeb)/2.)_
+_        cx:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)_
+_        cy:0.0,                  --> Center of sigmoid in arcseconds from automatic region finding (BETA feature)_
+_        peri:0.0,                --> Perimeter distance in arcseconds from automatic region finding (BETA feature)_
+_        area:0.0,                --> Area in square arcseconds from automatic region finding (BETA feature)_
+_        roi:OBJ_NEW('IDLanROI'), --> Region object from automatic region finding (BETA feature)_
+_        bkgd:0.0,                --> Background flux in ADU/s/pixel_
+_        fwhm:0.0,                --> Half width of the sigmiod core in arcseconds_
+_        hght:0.0,                --> Peak flux of the sigmiod in ADU/s/pixel_
+_        bboxx:fltarr(5),         --> x-coordinates which make a bounding box for the observation in pixels_
+_        bboxy:fltarr(5),         --> y-coordinates which make a bounding box for the observation in pixels_
+_        fwlin1:fltarr(2),        --> x,y coordinates of the trailing end of the sigmiod core in pixels_
+_        fwlin2:fltarr(2),        --> x,y coordiantes of the leading end of the sigmiod core in pixels_
+_        longx1:0.0,              --> Trailing Long Axis X coordinate in Pixels    _
+_        longy1:0.0,              --> Leading  Long Axis X coordinate in Pixels_
+_        longx2:0.0,              --> Trailing Long Axis Y coordinate in Pixels_
+_        longy2:0.0,              --> Leading  Long Axis Y coordinate in Pixels_
+_        shrtx1a:0.0,             --> X coordinate of Lower Trailing Sigmoid short axis in pixels    _
+_        shrty1a:0.0,             --> X coordinate of Upper Trailing Sigmoid short axis in pixels_
+_        shrtx2a:0.0,             --> X coordinate of Lower Leading  Sigmoid short axis in pixels_
+_        shrty2a:0.0,             --> X coordinate of Upper Leading  Sigmoid short axis in pixels_
+_        shrtx1b:0.0,             --> Y coordinate of Lower Trailing Sigmoid short axis in pixels_
+_        shrty1b:0.0,             --> Y coordinate of Upper Trailing Sigmoid short axis in pixels_
+_        shrtx2b:0.0,             --> Y coordinate of Lower Leading  Sigmoid short axis in pixels_
+_        shrty2b:0.0}             --> Y coordinate of Upper Leading  Sigmoid short axis in pixels_
 
 
 flare_cme_sigcat
