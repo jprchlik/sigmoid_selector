@@ -67,6 +67,15 @@ I then divide the total counts by the sum of the masked bounding box.
 Then I need to compute the background.
 
 
+The background finding algorithm uses the edge_dog AR mask of the sigmoid to mask out the bright regions and derive a first median background level.
+Then the program begins a loop to further restrict the background flux.
+First, it creates a new mask which includes pixels not in the AR mask and pixels less than three sigma (RMS) from the median value.
+From the new mask the program computes a new median background level and standard deviation. 
+The program exits with 95 percent of the "background" pixel are contained within two sigma or after 6 attempt to find the background value.
+The program usually converges in 3 iterations.
+Finaly, to subtract from the image in physical units the pixel size is converted to arcsec^2.
+
+
 
 Struture of output save file
 
@@ -83,9 +92,9 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         peri:0.0,                --> Perimeter distance in arcseconds from automatic region finding (BETA feature)   
         area:0.0,                --> Area in square arcseconds from automatic region finding (BETA feature)   
         roi:OBJ_NEW('IDLanROI'), --> Region object from automatic region finding (BETA feature)   
-        bkgd:0.0,                --> Background flux in ADU/s/pixel   
+        bkgd:0.0,                --> Background flux in ADU/s/arcsec^2   
         fwhm:0.0,                --> Half width of the sigmiod core in arcseconds   
-        hght:0.0,                --> Peak flux of the sigmiod in ADU/s/pixel   
+        hght:0.0,                --> Peak flux of the sigmiod in ADU/s/arcsec^2   
         bboxx:fltarr(5),         --> x-coordinates which make a bounding box for the observation in pixels   
         bboxy:fltarr(5),         --> y-coordinates which make a bounding box for the observation in pixels   
         fwlin1:fltarr(2),        --> x,y coordinates of the trailing end of the sigmiod core in pixels   
