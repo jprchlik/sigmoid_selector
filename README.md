@@ -65,7 +65,7 @@ since FWHM is over a small window of the image I sum a rotated mask created from
 sigmiod selection of the line core and the bounding box. 
 I then divide the total counts by the sum of the masked bounding box. 
 After summation and normalization, 
-I find define the peak value in the rotated y direction of the sigmiod profile.
+I find define the peak value (stored as hght) in the rotated y direction of the sigmiod profile.
 Then I break the 1D sigmoid profile into two halves. 
 I then find the value closest to the half maximum for each half. 
 If a half contains more than 1 value close to the half maximum I use the mean of the values to set the width. 
@@ -79,7 +79,13 @@ First, it creates a new mask which includes pixels not in the AR mask and pixels
 From the new mask the program computes a new median background level and standard deviation. 
 The program exits with 95 percent of the "background" pixel are contained within two sigma or after 6 attempt to find the background value.
 The program usually converges in 3 iterations.
-Finally, to subtract from the image in physical units and derive the background for the FWHM the pixel size is converted to arcsec^2.
+Finally, to subtract from the image in physical units and derive the background for the FWHM the pixel size is converted to arcsec.
+
+
+After all computation are recorded, the program does some classification. First, the program asks for the sigmiod ID number. It will show you
+a best guess identification number based on previous identification, but you should verify it is correct before entering. In addtion,
+it will return an AR number based on the nearest AR from the HEK +/-7days. Again you should not blindly follow the returned number and 
+verify by eye especially if many AR are in the region. 
 
 
 All the information is saved in an IDL save file in same directory defined in the dir keyword. The stricture of the save file has the following format:
