@@ -122,24 +122,34 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
 
 flare_cme_sigcat,sigloc,fname=fname,odir=odir
 ================
-flare_cmd_sigcat returns a save file with a list of CMEs and flares associated with the sigmiod. In addition,
-it computes the time the sigmiod is closest to disk center. The only required input is a directory (sigloc) with a 
+flare_cme_sigcat returns a save file with a list of CMEs and flares associated with the sigmiod. In addition,
+it computes the time the sigmiod is closest to the central merdian (CM). The only required input is a directory (sigloc) with a 
 save file created by sigmoidsize_adv. The output of the program is a save file is in the same directory as
  the sigloc, unless specified. 
 The output file outputs 1 row for all sigmiods of a given ID in hte output from sigmoidsize_adv
 
-The program first computes the time sigmoid is nearest to DC using the cx and cy parameters.
-Then the program uses the nearest DC point to find the time the sigmoid is at DC.
+The program first computes the time sigmoid is nearest to CM using the cx and cy parameters.
+Then the program uses the nearest CM point to find the time the sigmoid is at CM.
 To solve for the time there is a loop which rotates the cx and cy values.
-The program makes a guess of the time offset to DC by using a rough number that the sun
+The program makes a guess of the time offset to CM by using a rough number that the sun
 rotates at about 10 arcsecs per hour. 
 The using the the guess time it computes the new coordinates. 
-If the coordinate is within 1 arcsec of DC then the program returns that as the time for the 
-sigmoid ad DC. If the distance is more than 1 arcsec then the program will try again under
+If the X coordinate is within 1 arcsec of CM then the program returns that as the time for the 
+sigmoid at the CM. If the distance is more than 1 arcsec then the program will try again under
 two conditions.
 If the new time guess is father than the original then cut down the time guess by a factor of 2
 , but if the new guess is closer then the original try another rotation from the update position.
 The program usually arrives at a solution after 1 or 2 iterations.   
+
+Next, the program finds all flares associated with a given sigmoid. The program queries the flares
+from the HEK for flares identified from the GOES satellites. When the GOES satellites do not return
+a position for the flare the program sees if any other coordinates for a flare are available within 
+1 minute, so the flares may be correlated with a particular sigmiod. The code correlates flares with
+a sigmoid two different ways. First, it uses the AR association of the flare. Then it checks whether
+the position of the flare is inside the box defined in sigmoidsize_adv. If either condition is met
+the flare is associated with the sigmiod and stored. The output file of the flare correlation has the 
+form '("sigmoid_id_",I03,"_",I03,".sav")'.
+
 
 
 test_sig = CREATE_STRUCT(
