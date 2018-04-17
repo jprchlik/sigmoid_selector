@@ -441,8 +441,8 @@ xgrid = (findgen(n_elements(sum_img))-max_arg)*da_y ; scale the index by the new
 
 ;Plot line core in new window
 isize = size(rot_img)
-xsize = isize[1]*2
-ysize = isize[2]*2
+xsize = isize[1];*2
+ysize = isize[2];*2
 
 ;Value to scale down to if larger than 512x512
 bigx = xsize/512.
@@ -611,17 +611,18 @@ for xx=start,nfiles-1 do begin
 
   ;Make sure scaling is an integer number 
   ; 2018/03/01 J. Prchlik
-  xwdw_size = round(xwdw_size/float(img_xsize))*img_xsize
-  ywdw_size = round(ywdw_size/float(img_ysize))*img_ysize
+  ;Added so 384 images work with new size logic
+  if img_xsize le 1024 then xwdw_size = round(xwdw_size/float(img_xsize))*img_xsize
+  if img_ysize le 1024 then ywdw_size = round(ywdw_size/float(img_ysize))*img_ysize
 
 
   ;scale down images larger than 1024 to 1024
   bigx = img_xsize/1024.
   bigy = img_ysize/1024.
 
-  ;Scale down tow prevent images bigger than 1024x1024
-  if xwdw_size gt 1024 then xwdw_size = fix(temporary(img_xsize)/bigx)
-  if ywdw_size gt 1024 then ywdw_size = fix(temporary(img_ysize)/bigy)
+  ;Scale down to prevent images bigger than 1024x1024
+  if img_xsize gt 1024 then xwdw_size = fix(temporary(img_xsize)/bigx)
+  if img_ysize gt 1024 then ywdw_size = fix(temporary(img_ysize)/bigy)
 
   ;normalize data by exposure time
   ;use actually normalization exp. time and convert from microseconds
