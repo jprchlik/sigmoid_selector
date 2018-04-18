@@ -51,6 +51,10 @@ for i=0,n_elements(goodt)-1 do begin
     ;Get all aia data in wavelength range
     s_f = vso_search(t1,t2,min_wav=strcompress(min(wavelnth),/remove_all),max_wav=strcompress(max(wavelnth),/remove_all),unit_wav='Angstrom',provider='jsoc')
 
+
+    ; Leave in there are no matches
+    if n_elements(size(s_f)) le 3 then continue
+
     ;Create large arrays to match indices with the same wavelenth as given in wavelnth array
     s_fi = fix(s_f.wave.min ## (-1+fltarr(n_elements(wavelnth))))
     a_fi = fix(wavelnth # (1+fltarr(n_elements(s_f.wave.min))))
@@ -66,8 +70,19 @@ for i=0,n_elements(goodt)-1 do begin
     ;get the indices that match wavelenth
     mat_i = col_i[1,*]
 
+    ;Check if files already exist locally
+    ;wavelength string
+    w_str = strcompress(fix(s_f[mat_i].wave.min),/remove_all)
+    ;time string
+    t_str = str_replace(s_f[mat_i].time.start,':','_')
+    ;searching string to see if files exist
+    s_str = file_test(aia_arch+'aia.lev1.'+w_str+'A_'+t_str+'*.image_lev1.fits')
+
+    ;files to get for download 
+    d_ind = where(s_str eq 0,d_cnt)
     ;Download files which have the same wavelength as the requested wavelength
-    s_r = vso_get(s_f[mat_i],out_dir=aia_arch)
+    if (d_cnt gt 0)  then s_r = vso_get(s_f[mat_i[d_ind]],out_dir=aia_arch)
+    stop
 
 
 endfor
