@@ -82,7 +82,6 @@ for i=0,n_elements(goodt)-1 do begin
     d_ind = where(s_str eq 0,d_cnt)
     ;Download files which have the same wavelength as the requested wavelength
     if (d_cnt gt 0)  then s_r = vso_get(s_f[mat_i[d_ind]],out_dir=aia_arch)
-    stop
 
 
 endfor
