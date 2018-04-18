@@ -21,7 +21,7 @@
 ;    A save file called called filament_sizedata.sav
 ;
 ;#############################################################
-pro filament_selector,times,wavelnth=wavelnth,aia_arch=aia_arch
+pro filament_selector,times,wavelnth=wavelnth,aia_arch=aia_arch,outf=outf
 
 
 ;Read in file containing TBEST
@@ -29,6 +29,9 @@ readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format=
 ;Set archive directory for download aia files
 if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = 'aia_arch/'
 aia_arch = aia_arch+'/'
+
+;if output file not set just use the same as the input file replaceing csv with sav
+if not(keyword_set(outf)) then outf = str_replace(times,'.csv','.sav')
 
 ;wavelengths to retrieve for analysis
 if not(keyword_set(wavelnth)) then wavelnth = [171,304]
@@ -60,8 +63,11 @@ for i=0,n_elements(goodt)-1 do begin
     ;get two columns of indices where values are 0
     col_i = array_indices(t_fi,good_wav)
 
+    ;get the indices that match wavelenth
+    mat_i = col_i[1,*]
+
     ;Download files which have the same wavelength as the requested wavelength
-    s_r = vso_get(s_f[col_i[1,*])
+    s_r = vso_get(s_f[mat_i],out_dir=aia_arch)
 
 
 endfor
