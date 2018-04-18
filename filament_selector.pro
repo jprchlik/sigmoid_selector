@@ -36,6 +36,36 @@ if not(keyword_set(wavelnth)) then wavelnth = [171,304]
 ;Good sigmoid tbest times
 goodt = where(strlen(tbest) eq 23)
 
+;Download AIA data for all the best times
+for i=0,n_elements(goodt)-1 do begin
+
+    ;get index for a good time
+    gi = goodt[i]
+    ;get time range to search over
+    t1 = tbest[gi]
+    t2 = anytim(anytim(t1)+20.,/ecs)  
+    
+    ;Get all aia data in wavelength range
+    s_f = vso_search(t1,t2,min_wav=strcompress(min(wavelnth),/remove_all),max_wav=strcompress(max(wavelnth),/remove_all),unit_wav='Angstrom',provider='jsoc')
+
+    ;Create large arrays to match indices with the same wavelenth as given in wavelnth array
+    s_fi = fix(s_f.wave.min ## (-1+fltarr(n_elements(wavelnth))))
+    a_fi = fix(wavelnth # (1+fltarr(n_elements(s_f.wave.min))))
+    ;Will produce zeros where wavelengths are the same as the requested ones
+    t_fi = a_fi+s_fi
+
+    ;Get where values are 0
+    good_wav = where(t_fi eq 0)
+
+    ;get two columns of indices where values are 0
+    col_i = array_indices(t_fi,good_wav)
+
+    ;Download files which have the same wavelength as the requested wavelength
+    s_r = vso_get(s_f[col_i[1,*])
+
+
+endfor
+
 ;Loop over all good tbest sigmoid times
 for i=0,n_elements(goodt)-1 do begin
     initialized=0
