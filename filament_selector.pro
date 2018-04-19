@@ -58,8 +58,6 @@ if not(keyword_set(wavelnth)) then wavelnth = [171,304]
 
 ;Good sigmoid tbest times (i.e. contains time string)
 goodt = where(strlen(tbest) eq 23)
-;for testing purposes
-goodt = [goodt[100]]
 
 ;matched files
 mat_f = strarr(n_elements(wavelnth))
@@ -71,14 +69,18 @@ for i=0,n_elements(goodt)-1 do begin
     gi = goodt[i]
     ;get time range to search over
     t1 = tbest[gi]
-    t2 = anytim(anytim(t1)+12.,/ecs)  
+    t2 = anytim(anytim(t1)+24.,/ecs)  
     
     ;Get all aia data in wavelength range
     s_f = vso_search(t1,t2,min_wav=strcompress(min(wavelnth),/remove_all),max_wav=strcompress(max(wavelnth),/remove_all),unit_wav='Angstrom',provider='jsoc')
 
 
     ; Leave in there are no matches
-    if n_elements(size(s_f)) le 3 then mat_f = [[mat_f],['None'+strarr(n_elements(wavelnth))]]
+    ; But fill with none values
+    if n_elements(size(s_f)) le 3 then begin
+         mat_f = [[mat_f],['None'+strarr(n_elements(wavelnth))]]
+         continue
+    endif
 
     ;Create large arrays to match indices with the same wavelenth as given in wavelnth array
     s_fi = fix(s_f.wave.min ## (-1+fltarr(n_elements(wavelnth))))
@@ -93,15 +95,23 @@ for i=0,n_elements(goodt)-1 do begin
     col_i = array_indices(t_fi,good_wav)
 
     ;get the indices that match wavelenth
-    mat_i = col_i[1,*]
+    chk_i = col_i[1,*]
+
+    ;Only get unique values for each wavelength
+    uni_i = UNIQ(s_f[chk_i].wave.min, SORT(s_f[chk_i].wave.min))
+    mat_i = chk_i[uni_i]
 
     ;Check if files already exist locally
     ;wavelength string
     w_str = strcompress(fix(s_f[mat_i].wave.min),/remove_all)
     ;time string
     t_str = str_replace(s_f[mat_i].time.start,':','_')
+
+
     ;searching string to see if files exist
     s_str = file_test(aia_arch+'aia.lev1.'+w_str+'A_'+t_str+'*.image_lev1.fits')
+
+    
 
     ;files to get for download 
     d_ind = where(s_str eq 0,d_cnt)
@@ -110,12 +120,16 @@ for i=0,n_elements(goodt)-1 do begin
 
     ;output files
     o_str = file_search(aia_arch+'aia.lev1.'+w_str+'A_'+t_str+'*.image_lev1.fits')
-    mat_f = [[mat_f],[o_str]] 
+
+    ;Make sure both files are found
+    if n_elements(o_str) eq 1 then mat_f = [[mat_f],['None',o_str]] $
+    else mat_f = [[mat_f],[o_str]] 
 
 endfor
 
 ;set window size
-wind_size = 1024
+wind_size = 512 ;1024
+scale = 2
 
 
 ;Create new filaments array
@@ -152,8 +166,8 @@ for i=start,n_elements(goodt)-1 do begin
     if ((nfiles eq 1) AND (fits_files[0] ne 'None')) then begin
        no_aia=1
     endif else begin
-       xwdw_size=wind_size
-       ywdw_size=wind_size
+       xwdw_size=wind_size*scale
+       ywdw_size=wind_size*scale
     endelse
     if (no_aia) then begin
        print,'There are no matching AIA files'
@@ -227,8 +241,8 @@ for i=start,n_elements(goodt)-1 do begin
              pymax = fix(pymax)
 
              ;device to physical cooridinates
-             devicex_to_imgx=float(xwdw_size)/(img_xsize*binscale)
-             devicey_to_imgy=float(ywdw_size)/(img_ysize*binscale)
+             devicex_to_imgx=float(xwdw_size)/(wind_size)
+             devicey_to_imgy=float(ywdw_size)/(wind_size)
              arcsec_per_devicex=arcsec_per_pixel/devicex_to_imgx
              arcsec_per_devicey=arcsec_per_pixel/devicey_to_imgy
         
