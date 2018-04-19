@@ -121,8 +121,9 @@ for i=0,n_elements(goodt)-1 do begin
     ;output files
     o_str = file_search(aia_arch+'aia.lev1.'+w_str+'A_'+t_str+'*.image_lev1.fits')
 
-    ;Make sure both files are found
-    if n_elements(o_str) eq 1 then mat_f = [[mat_f],['None',o_str]] $
+    ;Make sure all wavelengths  files are found
+    if n_elements(o_str) lt n_elements(wavelnth) then mat_f = [[mat_f],$
+        ['None'+strarr(n_elements(wavelnth)-n_elements(o_str)),o_str]] $
     else mat_f = [[mat_f],[o_str]] 
 
 endfor
