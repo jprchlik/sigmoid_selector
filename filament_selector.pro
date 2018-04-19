@@ -306,6 +306,7 @@ for i=start,n_elements(goodt)-1 do begin
                 print,''
                 print,"Click continuously along the filament (right click to end)"
                 print,"Right click once if no filament"
+                print,"Center click once to recenter window"
                 cursor,lx1,ly1,/down,/device
                 xyouts,lx1,ly1,'x',/device,alignment=0.5
                
