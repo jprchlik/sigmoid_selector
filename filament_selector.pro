@@ -242,8 +242,11 @@ for i=start,n_elements(goodt)-1 do begin
     endif
 
 
+    ;Only return good fits files
+    fits_files = fits_files[gfiles]
+
     ;Prep all wavelength images
-    aia_prep,fits_files,gfiles,index1,data1,/verbose
+    aia_prep,fits_files,findgen(n_elements(fits_files)),index1,data1,/verbose
 
     ;loop over all wavelengths for each time
     for j=0,nfiles-1 do begin
