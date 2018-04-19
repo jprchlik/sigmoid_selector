@@ -25,30 +25,35 @@ function select_cutout,px,py,img_size,img_xmax,img_ymax
     pymin = py-(img_size/2.) 
     pymax = py+(img_size/2.)-1 
     
-    ;make sure pixel values are within image limits
-    case 1 of 
-        (pxmin lt 0):  begin
-            offset = abs(pxmin)
-            pxmin = 0
-            pxmax = pxmax+offset
-        end
-        (pymin lt 0):  begin
-            offset = abs(pymin)
-            pymin = 0
-            pymax = pymax+offset
-        end
-        (pxmax gt img_xmax):  begin
-            offset = img_xmax-pxmax
-            pxmax = img_xmax-1
-            pxmin = pxmin+offset
-        end
-        (pymax gt img_ymax):  begin
-            offset = img_ymax-pymax
-            pymax = img_ymax-1
-            pymin = pymin+offset
-        end
-        else: square= 0
-    endcase 
+    square = 1
+    ;Make sure everything is squared array before returning
+    ;Prevents issues at the corners
+    while square do begin
+        ;make sure pixel values are within image limits
+        case 1 of 
+            (pxmin lt 0):  begin
+                offset = abs(pxmin)
+                pxmin = 0
+                pxmax = pxmax+offset
+            end
+            (pymin lt 0):  begin
+                offset = abs(pymin)
+                pymin = 0
+                pymax = pymax+offset
+            end
+            (pxmax gt img_xmax):  begin
+                offset = img_xmax-pxmax
+                pxmax = img_xmax-1
+                pxmin = pxmin+offset-1
+            end
+            (pymax gt img_ymax):  begin
+                offset = img_ymax-pymax
+                pymax = img_ymax-1
+                pymin = pymin+offset-1
+            end
+            else: square= 0
+        endcase 
+     endwhile
     
     ;force integers
     pxmin = fix(pxmin)
@@ -304,19 +309,34 @@ for i=start,n_elements(goodt)-1 do begin
                 cursor,lx1,ly1,/down,/device
                 xyouts,lx1,ly1,'x',/device,alignment=0.5
                
+                ;Right click to end
                 if !MOUSE.button eq 4 then click = 0
 
-                if !MOUSE.button eq 3 then begin
+                ;Middle click to recenter
+                if !MOUSE.button eq 2 then begin
                    ; Get coorinate limits for image plot from center click
-                   limits = select_cutout(lx1,ly1,wind_size,img_xsize,img_ysize)   
+                   ;correct for the previous center location 
+                   px = lx1/devicex_to_imgx+temporary(pxmin)
+                   py = ly1/devicey_to_imgy+temporary(pymin)
+
+                   ;Set limits for cutout
+                   limits = select_cutout(px,py,wind_size,img_xsize,img_ysize)   
                    pxmin = limits[0]
                    pxmax = limits[1]
                    pymin = limits[2]
                    pymax = limits[3]
+
+                   ;Get image limits
+                   lim = cgPercentiles(data1(pxmin:pxmax,pymin:pymax),percentiles=[0.01,0.99])
+        
+                   ;Plot image
+                   window,5,xs=xwdw_size,ys=ywdw_size
+                   img = bytscl(rebin(asinh(double(data1(pxmin:pxmax,pymin:pymax))),xwdw_size,ywdw_size),min=asinh(double(lim[0])),max=asinh(double(lim[1])))
+                   tv,img
  
                    ;reset filament length arrays
-                   lx =[]
-                   ly =[]
+                   lx = []
+                   ly = []
 
                    ;Exit current iteration without saving clicks
                    continue
