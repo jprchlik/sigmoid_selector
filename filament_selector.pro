@@ -37,8 +37,8 @@ fil_d={sig_id:'',                $
         leng:0.0,                $
         device_arcsecx:0.0,      $
         device_arcsecy:0.0,      $
-        devicex:fltarr(10),      $
-        devicey:fltarr(10)}
+        devicex:fltarr(100),      $
+        devicey:fltarr(100)}
 
 
 ;set plot to X Window
@@ -184,123 +184,136 @@ for i=start,n_elements(goodt)-1 do begin
         done=0
         ;Try to select filament
         while not(done) do begin
-             ;Load color table for wavelength
-             aia_lct,r,g,b,wavelnth=index1[j].wavelnth,/load
+            ;Load color table for wavelength
+            aia_lct,r,g,b,wavelnth=index1[j].wavelnth,/load
 
-             ;Get AIA data header infromation
-             arcsec_per_pixel=index1[j].cdelt1 ;; Conversion for AIA data assuming square
-             ;binscale  = index1[j].chipsum
-             binscale  = 1 ; Assume all full res for now
-             img_xsize = index1[j].naxis1
-             img_ysize = index1[j].naxis2
-             img_xphys = index1[j].crval1
-             img_yphys = index1[j].crval2
-             img_xcntr = index1[j].crpix1
-             img_ycntr = index1[j].crpix2
+            ;Get AIA data header infromation
+            arcsec_per_pixel=index1[j].cdelt1 ;; Conversion for AIA data assuming square
+            ;binscale  = index1[j].chipsum
+            binscale  = 1 ; Assume all full res for now
+            img_xsize = index1[j].naxis1
+            img_ysize = index1[j].naxis2
+            img_xphys = index1[j].crval1
+            img_yphys = index1[j].crval2
+            img_xcntr = index1[j].crpix1
+            img_ycntr = index1[j].crpix2
 
 
-             ;convert x,y best coordinates into pixel values
-             px = (x[gi]+img_xphys)/arcsec_per_pixel+img_xcntr
-             py = (y[gi]+img_yphys)/arcsec_per_pixel+img_ycntr
+            ;convert x,y best coordinates into pixel values
+            px = (x[gi]+img_xphys)/arcsec_per_pixel+img_xcntr
+            py = (y[gi]+img_yphys)/arcsec_per_pixel+img_ycntr
 
-             ;compute the min and max x and y pixel ranges
-             pxmin = px-(wind_size/2.) 
-             pxmax = px+(wind_size/2.)-1
-             pymin = py-(wind_size/2.) 
-             pymax = py+(wind_size/2.)-1 
+            ;compute the min and max x and y pixel ranges
+            pxmin = px-(wind_size/2.) 
+            pxmax = px+(wind_size/2.)-1
+            pymin = py-(wind_size/2.) 
+            pymax = py+(wind_size/2.)-1 
           
-             ;make sure pixel values are within image limits
-             case 1 of 
-                 (pxmin lt 0):  begin
-                     offset = abs(pxmin)
-                     pxmin = 0
-                     pxmax = pxmax+offset
-                 end
-                 (pymin lt 0):  begin
-                     offset = abs(pymin)
-                     pymin = 0
-                     pymax = pymax+offset
-                 end
-                 (pxmax gt img_xsize):  begin
-                     offset = img_xsize-pxmax
-                     pxmax = img_xsize-1
-                     pxmin = pxmin+offset
-                 end
-                 (pymax gt img_ysize):  begin
-                     offset = img_ysize-pymax
-                     pymax = img_ysize-1
-                     pymin = pymin+offset
-                 end
-                 else: square= 0
-             endcase 
+            ;make sure pixel values are within image limits
+            case 1 of 
+                (pxmin lt 0):  begin
+                    offset = abs(pxmin)
+                    pxmin = 0
+                    pxmax = pxmax+offset
+                end
+                (pymin lt 0):  begin
+                    offset = abs(pymin)
+                    pymin = 0
+                    pymax = pymax+offset
+                end
+                (pxmax gt img_xsize):  begin
+                    offset = img_xsize-pxmax
+                    pxmax = img_xsize-1
+                    pxmin = pxmin+offset
+                end
+                (pymax gt img_ysize):  begin
+                    offset = img_ysize-pymax
+                    pymax = img_ysize-1
+                    pymin = pymin+offset
+                end
+                else: square= 0
+            endcase 
 
-             ;force integers
-             pxmin = fix(pxmin)
-             pxmax = fix(pxmax)
-             pymin = fix(pymin)
-             pymax = fix(pymax)
+            ;force integers
+            pxmin = fix(pxmin)
+            pxmax = fix(pxmax)
+            pymin = fix(pymin)
+            pymax = fix(pymax)
 
-             ;device to physical cooridinates
-             devicex_to_imgx=float(xwdw_size)/(wind_size)
-             devicey_to_imgy=float(ywdw_size)/(wind_size)
-             arcsec_per_devicex=arcsec_per_pixel/devicex_to_imgx
-             arcsec_per_devicey=arcsec_per_pixel/devicey_to_imgy
+            ;device to physical cooridinates
+            devicex_to_imgx=float(xwdw_size)/(wind_size)
+            devicey_to_imgy=float(ywdw_size)/(wind_size)
+            arcsec_per_devicex=arcsec_per_pixel/devicex_to_imgx
+            arcsec_per_devicey=arcsec_per_pixel/devicey_to_imgy
+   
+            ;Get image limits
+            lim = cgPercentiles(data1(pxmin:pxmax,pymin:pymax),percentiles=[0.01,0.99])
         
-             ;Plot image
-             window,5,xs=xwdw_size,ys=ywdw_size
-             tv,bytscl(rebin(data1(pxmin:pxmax,pymin:pymax),xwdw_size,ywdw_size),min=5,max=700)
-             ;print,''
-             ;print,'Hopefully this file produces a good image.'
-             ;print,"If not, don't worry, because you'll have an opportunity to"
-             ;print,'do this again in a minute or so.'
+            ;Plot image
+            window,5,xs=xwdw_size,ys=ywdw_size
+            img = bytscl(rebin(asinh(double(data1(pxmin:pxmax,pymin:pymax))),xwdw_size,ywdw_size),min=asinh(double(lim[0])),max=asinh(double(lim[1])))
+            tv,img
+            ;print,''
+            ;print,'Hopefully this file produces a good image.'
+            ;print,"If not, don't worry, because you'll have an opportunity to"
+            ;print,'do this again in a minute or so.'
 
-             lx = []
-             ly = []
+            lx = []
+            ly = []
 
-             ;allow clicks along filament
-             click = 1
-             while click do begin
+            ;allow clicks along filament
+            click = 1
+            while click do begin
 
-                 print,''
-                 print,"Click continuously along the filament (right click to end)"
-                 cursor,lx1,ly1,/down,/device
-                 xyouts,lx1,ly1,'x',/device,alignment=0.5
+                print,''
+                print,"Click continuously along the filament (right click to end)"
+                print,"Right click once if no filament"
+                cursor,lx1,ly1,/down,/device
+                xyouts,lx1,ly1,'x',/device,alignment=0.5
+               
+                if !MOUSE.button eq 4  then click = 0
                 
-                 if !MOUSE.button eq 4  then click = 0
-                 
-                 ;Add lx and ly values to array 
-                 lx = [lx,lx1]
-                 ly = [ly,ly1]
-             endwhile
+                ;Add lx and ly values to array 
+                lx = [lx,lx1]
+                ly = [ly,ly1]
+            endwhile
 
-             plots,lx,ly,color=255,/device,linestyle=1,thick=2
+            ;If no filament create fillvalues
+            if n_elements(ly) eq 1 then begin
+                lr_phy = -9999.0 
 
-             ;get running difference of x values
-             dx = ts_diff(lx,1)
-             dy = ts_diff(ly,1)
-        
-             ;total distance in device coordinates
-             lr_dev=sqrt(total(dx^2+dy^2))
-             ;total distance in physical cooridinates       
-             lr_phy=sqrt(total((arcsec_per_devicex*dx)^2+(arcsec_per_devicey*dy)^2))
 
-             print,''
-             print,'The axis size in DEVICE-units is:'
-             print,strcompress(string(lr_dev),/remove_all)
+            ;If a filament is present solve length
+            endif else begin
+
+                ;plot path along route
+                plots,lx,ly,color=255,/device,linestyle=1,thick=2
+
+                ;get running difference of x values
+                dx = ts_diff(lx,1)
+                dy = ts_diff(ly,1)
         
-             print,''
-             print,'The axis size in ARCSEC is:'
-             print,strcompress(string(lr_phy),/remove_all)
+                ;total distance in device coordinates
+                lr_dev=sqrt(total(dx^2+dy^2))
+                ;total distance in physical cooridinates       
+                lr_phy=sqrt(total((arcsec_per_devicex*dx)^2+(arcsec_per_devicey*dy)^2))
+
+                print,''
+                print,'The axis size in DEVICE-units is:'
+                print,strcompress(string(lr_dev),/remove_all)
         
+                print,''
+                print,'The axis size in ARCSEC is:'
+                print,strcompress(string(lr_phy),/remove_all)
+            endelse
         
-          cont=''
-          print,''
-          print,'Shall we try again?'
-          print,'Enter 1 for yes, any other key for no.'
-          read,cont
-          if (cont ne '1') then done=1
+            cont=''
+            print,''
+            print,'Shall we try again?'
+            print,'Enter 1 for yes, any other key for no.'
+            read,cont
+            if (cont ne '1') then done=1
         endwhile
-readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
 
         ;Update information in save file
         filament[i].sig_id=ID[gi] 
