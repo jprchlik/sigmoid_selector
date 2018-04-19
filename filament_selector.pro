@@ -1,4 +1,65 @@
 
+;#############################################################
+;
+;NAME:
+;    select_cutout   
+;
+;PURPOSE
+;
+;CATEGORY:
+;
+;USAGE
+;    limits = select_cutout(px,py,img_size,img_xmax,img_ymax)   
+;
+;INPUTS
+;
+;OUTPUTS
+;
+;#############################################################
+function select_cutout,px,py,img_size,img_xmax,img_ymax
+
+    
+    ;compute the min and max x and y pixel ranges
+    pxmin = px-(img_size/2.) 
+    pxmax = px+(img_size/2.)-1
+    pymin = py-(img_size/2.) 
+    pymax = py+(img_size/2.)-1 
+    
+    ;make sure pixel values are within image limits
+    case 1 of 
+        (pxmin lt 0):  begin
+            offset = abs(pxmin)
+            pxmin = 0
+            pxmax = pxmax+offset
+        end
+        (pymin lt 0):  begin
+            offset = abs(pymin)
+            pymin = 0
+            pymax = pymax+offset
+        end
+        (pxmax gt img_xmax):  begin
+            offset = img_xmax-pxmax
+            pxmax = img_xmax-1
+            pxmin = pxmin+offset
+        end
+        (pymax gt img_ymax):  begin
+            offset = img_ymax-pymax
+            pymax = img_ymax-1
+            pymin = pymin+offset
+        end
+        else: square= 0
+    endcase 
+    
+    ;force integers
+    pxmin = fix(pxmin)
+    pxmax = fix(pxmax)
+    pymin = fix(pymin)
+    pymax = fix(pymax)
+
+    ;return limits for plot
+    return,[pxmin,pxmax,pymin,pymax]
+
+end
 
 
 
@@ -204,42 +265,13 @@ for i=start,n_elements(goodt)-1 do begin
             px = (x[gi]+img_xphys)/arcsec_per_pixel+img_xcntr
             py = (y[gi]+img_yphys)/arcsec_per_pixel+img_ycntr
 
-            ;compute the min and max x and y pixel ranges
-            pxmin = px-(wind_size/2.) 
-            pxmax = px+(wind_size/2.)-1
-            pymin = py-(wind_size/2.) 
-            pymax = py+(wind_size/2.)-1 
-          
-            ;make sure pixel values are within image limits
-            case 1 of 
-                (pxmin lt 0):  begin
-                    offset = abs(pxmin)
-                    pxmin = 0
-                    pxmax = pxmax+offset
-                end
-                (pymin lt 0):  begin
-                    offset = abs(pymin)
-                    pymin = 0
-                    pymax = pymax+offset
-                end
-                (pxmax gt img_xsize):  begin
-                    offset = img_xsize-pxmax
-                    pxmax = img_xsize-1
-                    pxmin = pxmin+offset
-                end
-                (pymax gt img_ysize):  begin
-                    offset = img_ysize-pymax
-                    pymax = img_ysize-1
-                    pymin = pymin+offset
-                end
-                else: square= 0
-            endcase 
+            ; Get coorinate limits for image plot
+            limits = select_cutout(px,py,wind_size,img_xsize,img_ysize)   
+            pxmin = limits[0]
+            pxmax = limits[1]
+            pymin = limits[2]
+            pymax = limits[3]
 
-            ;force integers
-            pxmin = fix(pxmin)
-            pxmax = fix(pxmax)
-            pymin = fix(pymin)
-            pymax = fix(pymax)
 
             ;device to physical cooridinates
             devicex_to_imgx=float(xwdw_size)/(wind_size)
@@ -272,7 +304,24 @@ for i=start,n_elements(goodt)-1 do begin
                 cursor,lx1,ly1,/down,/device
                 xyouts,lx1,ly1,'x',/device,alignment=0.5
                
-                if !MOUSE.button eq 4  then click = 0
+                if !MOUSE.button eq 4 then click = 0
+
+                if !MOUSE.button eq 3 then begin
+                   ; Get coorinate limits for image plot from center click
+                   limits = select_cutout(lx1,ly1,wind_size,img_xsize,img_ysize)   
+                   pxmin = limits[0]
+                   pxmax = limits[1]
+                   pymin = limits[2]
+                   pymax = limits[3]
+ 
+                   ;reset filament length arrays
+                   lx =[]
+                   ly =[]
+
+                   ;Exit current iteration without saving clicks
+                   continue
+
+                endif
                 
                 ;Add lx and ly values to array 
                 lx = [lx,lx1]
