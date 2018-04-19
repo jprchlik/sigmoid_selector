@@ -160,10 +160,10 @@ for i=start,n_elements(goodt)-1 do begin
     ;Get fits files from matched array
     fits_files=mat_f[*,i+1]
     ;Count number of files
-    nfiles=n_elements(fits_files)
+    gfiles=where(fits_files ne 'None',nfiles)
 
     ;We have AIA Data
-    if ((nfiles eq 1) AND (fits_files[0] ne 'None')) then begin
+    if (nfiles eq 0) then begin
        no_aia=1
     endif else begin
        xwdw_size=wind_size*scale
@@ -176,7 +176,7 @@ for i=start,n_elements(goodt)-1 do begin
 
 
     ;Prep all wavelength images
-    aia_prep,fits_files,findgen(nfiles),index1,data1,/verbose
+    aia_prep,fits_files,gfiles,index1,data1,/verbose
 
     ;loop over all wavelengths for each time
     for j=0,nfiles-1 do begin
