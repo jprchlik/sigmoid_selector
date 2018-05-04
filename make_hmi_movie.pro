@@ -119,7 +119,22 @@ for i=0,n_elements(goodt)-1 do begin
 
     ;Get matched files
     match_files=fname[chk_i]
+  
+    ;prep hmi data
+    hmi_prep,hmi_list[chk_i],findgen(n_elements(chk_i)-1),index,data
 
+    ; plot each hmi observation
+    for j=0,n_elements(index)-1 do begin
+        img = data[*,*,j]
+        plot_image,img,min=-100,max=100,$
+            origin=-[(index(j).crpix1-1)*index(j).cdelt1, $
+            (index(j).crpix2-1)*index(j).cdelt2], $
+            scale=[index(j).cdelt1,index(j).cdelt2], $
+            xtitle='X-postion (arcseconds)', $
+            ytitle='Y-position (arcseconds)'
+        wait,1
+
+    endfor
 
     stop
 endfor
