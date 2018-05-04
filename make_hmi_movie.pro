@@ -49,6 +49,8 @@ times = str_replace(fname,'hmi.m_45s.','')
 times = str_replace(times,'_TAI.magnetogram.fits','')
 ;Switch _ to :
 times = str_replace(times,'_',':')
+;Switch . to -
+times = str_replace(times,'.','-')
 
 ;Replace the first : with a T
 pos = strpos(times,':')
@@ -103,8 +105,23 @@ for i=0,n_elements(goodt)-1 do begin
         counter = counter+1
     endwhile
 
+    ;Create large time array to find the best times for each cadence
+    r_ti = double(time_arr ## (-1+dblarr(n_elements(hmi_time))))
+    p_ti = double(hmi_time # (1+dblarr(n_elements(time_arr))))
+
+    ;get time min for matches
+    minv = min(r_ti+p_ti,min_loc,/abs,dimension=1)
+    col_i = array_indices(r_ti,min_loc)
+
+    ;get the file indices that match the time
+    chk_i = col_i[0,*]
 
 
+    ;Get matched files
+    match_files=fname[chk_i]
+
+
+    stop
 endfor
 
 end
