@@ -208,6 +208,7 @@ for i=0,n_elements(goodt)-1 do begin
 
     ;Create directory for output png files
     full_dir = out_arch+string([id[i]],format=out_fmt)
+    print,full_dir,id[i]
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
 
     ;clip to only get closest matches
@@ -255,7 +256,6 @@ for i=0,n_elements(goodt)-1 do begin
         pymin = lims[2]
         pymax = lims[3]
 
-        print,index(j).date_obs
         ;Get image data to plot
         fimg = data[*,*,j]
 
@@ -320,7 +320,6 @@ for i=0,n_elements(goodt)-1 do begin
     ;output file name
     outf = string([id[i]],format='(I03,"_mag.mp4")')
     spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
-    stop
 endfor
 
 end
