@@ -1,3 +1,73 @@
+
+;#############################################################
+;
+;NAME:
+;    select_cutout   
+;
+;PURPOSE
+;
+;CATEGORY:
+;
+;USAGE
+;    limits = select_cutout(px,py,img_size,img_xmax,img_ymax)   
+;
+;INPUTS
+;
+;OUTPUTS
+;
+;#############################################################
+function select_cutout,px,py,img_size,img_xmax,img_ymax
+
+    
+    ;compute the min and max x and y pixel ranges
+    pxmin = px-(img_size/2.) 
+    pxmax = px+(img_size/2.)-1
+    pymin = py-(img_size/2.) 
+    pymax = py+(img_size/2.)-1 
+    
+    square = 1
+    ;Make sure everything is squared array before returning
+    ;Prevents issues at the corners
+    while square do begin
+        ;make sure pixel values are within image limits
+        case 1 of 
+            (pxmin lt 0):  begin
+                offset = abs(pxmin)
+                pxmin = 0
+                pxmax = pxmax+offset
+            end
+            (pymin lt 0):  begin
+                offset = abs(pymin)
+                pymin = 0
+                pymax = pymax+offset
+            end
+            (pxmax gt img_xmax):  begin
+                offset = img_xmax-pxmax
+                pxmax = img_xmax-1
+                pxmin = pxmin+offset-1
+            end
+            (pymax gt img_ymax):  begin
+                offset = img_ymax-pymax
+                pymax = img_ymax-1
+                pymin = pymin+offset-1
+            end
+            else: square= 0
+        endcase 
+     endwhile
+    
+    ;force integers
+    pxmin = fix(pxmin)
+    pxmax = fix(pxmax)
+    pymin = fix(pymin)
+    pymax = fix(pymax)
+
+    ;return limits for plot
+    return,[pxmin,pxmax,pymin,pymax]
+
+end
+
+
+
 ;#############################################################
 ;
 ;NAME:
@@ -70,10 +140,16 @@ goodt = where(strlen(tbest) eq 23)
 ;Cadance for image creation in seconds
 img_cad = 90.*60.
 
+;width of image window in pixels
+win_w= 500
+
+;title format
+title_fmt = '("HMI ID: ",I03," ")'
+
 ;Download HMI data for all the best times
 for i=0,n_elements(goodt)-1 do begin
     ;get index for a good time
-    gi = goodt[i]
+    gi = tbest[i]
     xi = x[i]
     yi = y[i]
 
@@ -111,6 +187,16 @@ for i=0,n_elements(goodt)-1 do begin
 
     ;get time min for matches
     minv = min(r_ti+p_ti,min_loc,/abs,dimension=1)
+    ;get min values less than 90 minutes only
+    good_min = where(minv lt img_cad,matches)
+
+    ;leave if there are no good matches
+    if matches eq 0 then continue
+
+    ;clip to only get closest matches
+    min_loc = min_loc[good_min]
+   
+    ;convert 1D indices into 2D indices
     col_i = array_indices(r_ti,min_loc)
 
     ;get the file indices that match the time
@@ -118,25 +204,60 @@ for i=0,n_elements(goodt)-1 do begin
 
 
     ;Get matched files
-    match_files=fname[chk_i]
+    match_files=hmi_list[chk_i]
+
+    ;Get only unique values
+    match_files=match_files[uniq(match_files)]
+    
   
     ;prep hmi data
-    hmi_prep,hmi_list[chk_i],findgen(n_elements(chk_i)-1),index,data
+    hmi_prep,match_files,findgen(n_elements(match_files)),index,data
+    ;hmi_prep,hmi_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
+
+    
 
     ; plot each hmi observation
     for j=0,n_elements(index)-1 do begin
-        img = data[*,*,j]
+
+        ;Plot restricted range
+        ;Rotate coordinate to image time
+        rot_p = rot_xy(xi,yi,tstart=gi,tend=index(j).date_obs)
+
+        ;Get center pixel value
+        pix_x = rot_p[0]/index(j).cdelt1+index(j).crpix1-1
+        pix_y = rot_p[1]/index(j).cdelt2+index(j).crpix2-1
+ 
+        ;Get range around pix_x and pix_y values
+        lims = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
+
+        ;Store limite seperately
+        pxmin = lims[0]
+        pxmax = lims[1]
+        pymin = lims[2]
+        pymax = lims[3]
+
+        print,index(j).date_obs
+        ;Get image data to plot
+        fimg = data[*,*,j]
+
+        ;Cut image to restricted window
+        img = fimg(pxmin:pxmax,pymin:pymax)
+        
         plot_image,img,min=-100,max=100,$
-            origin=-[(index(j).crpix1-1)*index(j).cdelt1, $
-            (index(j).crpix2-1)*index(j).cdelt2], $
+            origin=-[(index(j).crpix1-1-pix_x)*index(j).cdelt1, $
+            (index(j).crpix2-1-pix_y)*index(j).cdelt2], $
             scale=[index(j).cdelt1,index(j).cdelt2], $
             xtitle='X-postion (arcseconds)', $
-            ytitle='Y-position (arcseconds)'
+            ytitle='Y-position (arcseconds)',$
+            title=string([id[i]],format=title_fmt)+index(j).date_obs,$
+            xcharsize=1.25, $
+            ycharsize=1.25, $
+            charsize=2.5
         wait,1
+        print,'HERE'
 
     endfor
 
-    stop
 endfor
 
 end
