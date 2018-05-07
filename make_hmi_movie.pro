@@ -90,15 +90,19 @@ end
 ;
 ;#############################################################
 
-pro make_hmi_movie,times,hmi_arch=hmi_arch
-;set plot to X Window
-set_plot,'X'
+pro make_hmi_movie,times,hmi_arch=hmi_arch,out_arch=out_arch
+;set plot to Z Window
+set_plot,'Z'
 
 ;Read in file containing TBEST
 readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
 ;Set archive directory for download aia files
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_arch/'
 hmi_arch = hmi_arch+'/'
+
+;Set archive directory for output png files
+if keyword_set(out_arch) then out_arch = out_arch else out_arch = 'hmi_movie/'
+out_arch = out_arch+'/'
 
 ;Get list of hmi files
 hmi_list = file_search(hmi_arch+"hmi*fits")
@@ -142,12 +146,21 @@ img_cad = 90.*60.
 
 ;width of image window in pixels
 win_w= 500
+;Set up device
+device,set_resolution=[win_w*3,win_w*3],decomposed=0,set_pixel_depth=24
 
 ;title format
 title_fmt = '("HMI ID: ",I03," ")'
 
+;format for output png file directory
+out_fmt = '(I03,"/")'
+
+
 ;Download HMI data for all the best times
 for i=0,n_elements(goodt)-1 do begin
+
+
+    
     ;get index for a good time
     gi = tbest[i]
     xi = x[i]
@@ -193,6 +206,10 @@ for i=0,n_elements(goodt)-1 do begin
     ;leave if there are no good matches
     if matches eq 0 then continue
 
+    ;Create directory for output png files
+    full_dir = out_arch+string([id[i]],format=out_fmt)
+    if file_test(full_dir) eq 0 then file_mkdir,full_dir
+
     ;clip to only get closest matches
     min_loc = min_loc[good_min]
    
@@ -205,9 +222,11 @@ for i=0,n_elements(goodt)-1 do begin
 
     ;Get matched files
     match_files=hmi_list[chk_i]
+    match_fname = fname[chk_i]
 
     ;Get only unique values
     match_files=match_files[uniq(match_files)]
+    match_fname=match_fname[uniq(match_files)]
     
   
     ;prep hmi data
@@ -250,14 +269,55 @@ for i=0,n_elements(goodt)-1 do begin
             xtitle='X-postion (arcseconds)', $
             ytitle='Y-position (arcseconds)',$
             title=string([id[i]],format=title_fmt)+index(j).date_obs,$
-            xcharsize=1.25, $
-            ycharsize=1.25, $
-            charsize=2.5
-        wait,1
-        print,'HERE'
+            xcharsize=1.50, $
+            ycharsize=1.50, $
+            charsize=2.
 
+        ;write png file in directory 
+        TVLCT,r,g,b,/Get
+        write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
     endfor
 
+    ;create directory for symbolic links
+    if file_test(full_dir+'/symlinks/') then file_delete,full_dir+'symlinks/',/recursive
+    file_mkdir,full_dir+'/symlinks/'
+
+    ;collect all png files
+    png_files = file_search(full_dir+'*png',/FULLY_QUALIFY_PATH)
+    ;create symbolic links
+    for j=0,n_elements(png_files)-1 do file_link,png_files[j],full_dir+'symlinks/'+string(j,format='(I04,".png")')
+
+    ;Automatically create movie
+    ;Where does ffmpeg live?
+    if not keyword_set(ffmpeg) then begin 
+            spawn, 'which ffmpeg', ffmpeg
+            if strpos(ffmpeg, 'Command not found') ne -1 then begin
+                    message, 'ERROR: FFMPEG does not appear to be installed.', /informational
+                    return
+            endif 
+            ffmpeg = str_replace(ffmpeg, 'opt', 'usr')
+    endif
+
+    png_size = string([2*win_w,2*win_w],format='(I04,"x",I04)')
+    framerate= strcompress(string(8),/remove_all) ;frames per second
+    bitrate = ((24*win_w)^2)*framerate ; number of bits per frame 24 bit colors and win_w^2 image
+    bit = trim(bitrate)+'k'
+    ;Use aia_ffmpeg for simplicity
+    call1 = '-y -f image2 -r '+framerate+' -i ' 
+    call2 = '-pix_fmt "yuv420p" -vcodec libx264 -level 41 -crf 18.0 -b '+bit+' -r '+framerate+' '+ $
+                    '-bufsize '+bit+' -maxrate '+bit+' -g '+framerate+' -coder 1 -profile main -preset faster ' + $
+                    '-qdiff 4 -qcomp 0.7 -directpred 3 -flags +loop+mv4 -cmp +chroma -partitions ' + $
+                    '+parti4x4+partp8x8+partb8x8 -subq 7 -me_range 16 -keyint_min 1 -sc_threshold ' + $
+                    '40 -i_qfactor 0.71 -rc_eq ''blurCplx^(1-qComp)'' -s '+png_size+' -b_strategy 1 ' + $
+                    '-bidir_refine 1 -refs 6 -deblockalpha 0 -deblockbeta 0 -trellis 1 -x264opts ' + $
+                    'keyint='+framerate+':min-keyint=1:bframes=1 -threads 2 '
+                
+    
+    
+    ;output file name
+    outf = string([id[i]],format='(I03,"_mag.mp4")')
+    spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
+    stop
 endfor
 
 end
