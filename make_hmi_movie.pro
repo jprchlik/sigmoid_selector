@@ -271,7 +271,10 @@ for i=0,n_elements(goodt)-1 do begin
             title=string([id[i]],format=title_fmt)+index(j).date_obs,$
             xcharsize=1.50, $
             ycharsize=1.50, $
-            charsize=2.
+            xcharthick=1.50, $
+            ycharthick=1.50, $
+            charsize=2.,$
+            charthick=2.
 
         ;write png file in directory 
         TVLCT,r,g,b,/Get
