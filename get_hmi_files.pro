@@ -10,16 +10,16 @@
 ;    Program, data gathering
 ;
 ;USAGE
-;    filament_selector,times,hmi_arch='hmi_arch/'
+;    get_hmi_files,times,hmi_arch='hmi_arch/'
 ;
 ;INPUTS
 ;    times      -   A csv file containing times to analyze sigmoid filaments
 ;
 ;OUTPUTS
-;    A save file called called filament_sizedata.sav
+;    HMI files in hmi_arc
 ;
 ;#############################################################
-pro get_hmi_files,times,hmi_arch=hmi_arch
+pro get_hmi_files,times,hmi_arch=hmi_arch,cad=cad
 
 
 
@@ -32,6 +32,8 @@ readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format=
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_arch/'
 hmi_arch = hmi_arch+'/'
 
+;Set cadence for image download
+if keyword_set(cad) then cad = cad else cad = 30.*60. ;30 minutes
 
 ;Good sigmoid tbest times (i.e. contains time string)
 goodt = where(strlen(tbest) eq 23)
@@ -49,7 +51,7 @@ for i=0,n_elements(goodt)-1 do begin
     t2 = sig_end[i]
     
     ;Get all hmi data in date range with 90 minute cadence
-    s_f = vso_search(t1,t2,inst='hmi',provider='jsoc',physobs='los_magnetic_field',sample=60.*90)
+    s_f = vso_search(t1,t2,inst='hmi',provider='jsoc',physobs='los_magnetic_field',sample=cad)
 
 
     d_cnt = 1
