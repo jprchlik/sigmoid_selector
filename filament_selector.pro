@@ -200,7 +200,7 @@ scale = 2
 
 
 ;Create new filaments array
-filament=replicate(fil_d,n_elements(goodt))
+sfilament=replicate(fil_d,2*n_elements(goodt))
 
 ;Init assume start counting from 0
 start = 0
@@ -212,10 +212,20 @@ f_chck = file_test(outf)
 if f_chck eq 1 then begin
     restore,outf
     ;check to see filled sigmoid values
-    comp = where(filament.sig_id ne '',cnt_chck)
-    start = cnt_chck
+    if isa(nfilament) then  begin
+        comp = where(nfilament.sig_id ne '',cnt_chck)
+        start = cnt_chck/2
+    endif
+    ;check for old formatted sigmiod filaments
+    if isa(filament) then  begin
+        comp = where(filament.sig_id ne '',cnt_chck)
+        save,filament,filename=outf+'.backup'
+        start = 0
+    endif
 endif
 
+;cludge to make this earlier mistake work
+nfilament = sfilament
 
 ;Loop over all good tbest sigmoid times
 for i=start,n_elements(goodt)-1 do begin
@@ -252,6 +262,27 @@ for i=start,n_elements(goodt)-1 do begin
     for j=0,nfiles-1 do begin
         initialized=0
         done=0
+        ;check to see if file is already analyzed 
+        ;if so update parameters in new save file and return to start of loop
+        if isa(filament) then begin
+            print,fits_files[j]
+            analyzed =  where((fits_files[j] eq filament.filename) and (ID[gi] eq filament.sig_id),cnt)
+            if cnt eq 1 then begin
+                nfilament[2*i+j].sig_id          = filament[analyzed].sig_id 
+                nfilament[2*i+j].NOAA_id         = filament[analyzed].NOAA_id        
+                nfilament[2*i+j].filename        = filament[analyzed].filename
+                nfilament[2*i+j].date            = filament[analyzed].date
+                nfilament[2*i+j].leng            = filament[analyzed].leng
+                nfilament[2*i+j].device_arcsecx  = filament[analyzed].device_arcsecx
+                nfilament[2*i+j].device_arcsecy  = filament[analyzed].device_arcsecy
+                nfilament[2*i+j].devicex         = filament[analyzed].devicex
+                nfilament[2*i+j].devicey         = filament[analyzed].devicey
+                save,filename=outf,nfilament
+                print,'HERE'
+                continue
+            endif
+        endif
+      
         ;Try to select filament
         while not(done) do begin
             ;Load color table for wavelength
@@ -390,18 +421,18 @@ for i=start,n_elements(goodt)-1 do begin
         endwhile
 
         ;Update information in save file
-        filament[i].sig_id=ID[gi] 
-        filament[i].NOAA_id=NOAA[gi]        
-        filament[i].filename=fits_files[j]      
-        filament[i].date=tbest[gi]   
-        filament[i].leng=lr_phy         
-        filament[i].device_arcsecx=arcsec_per_devicex
-        filament[i].device_arcsecy=arcsec_per_devicey
-        filament[i].devicex=lx
-        filament[i].devicey=ly
+        nfilament[2*i+j].sig_id=ID[gi] 
+        nfilament[2*i+j].NOAA_id=NOAA[gi]        
+        nfilament[2*i+j].filename=fits_files[j]      
+        nfilament[2*i+j].date=tbest[gi]   
+        nfilament[2*i+j].leng=lr_phy         
+        nfilament[2*i+j].device_arcsecx=arcsec_per_devicex
+        nfilament[2*i+j].device_arcsecy=arcsec_per_devicey
+        nfilament[2*i+j].devicex=lx
+        nfilament[2*i+j].devicey=ly
  
         ;save sav file
-        save,filename=outf,filament
+        save,filename=outf,nfilament
 
     endfor
     
