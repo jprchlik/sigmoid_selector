@@ -142,7 +142,7 @@ hmi_time = double(anytim(times))
 goodt = where(strlen(tbest) eq 23)
 
 ;Cadance for image creation in seconds
-img_cad = 90.*60.
+img_cad = 30.*60.
 
 ;width of image window in pixels
 win_w= 500
