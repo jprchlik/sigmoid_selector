@@ -97,7 +97,7 @@ set_plot,'Z'
 ;Read in file containing TBEST
 readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
 ;Set archive directory for download aia files
-if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = 'aia_arch/'
+if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = 'aia_arch/symlinks/'
 aia_arch = aia_arch+'/'
 
 ;Set archive directory for output png files
@@ -107,19 +107,57 @@ out_arch = out_arch+'/'
 ;Work around for aia_mkmovie 
 ;List all files with a certain wavelength
 ;This is where I have some example files
-l193 = file_search(aia_arch+'*193.image_lev1.fits')
-l304 = file_search(aia_arch+'*304.image_lev1.fits')
-l335 = file_search(aia_arch+'*335.image_lev1.fits')
+l193 = file_search(aia_arch+'*193.fits')
+l304 = file_search(aia_arch+'*304.fits')
+l335 = file_search(aia_arch+'*335.fits')
+lxrt = l335
+
 ;list of wavelengths for 4 panel movie
 wavs = ['193','304','335','xrt']
+wavs = ['193','304','335','355']
 ;create pointer array of paths for files
 paths = ptrarr(n_elements(wavs))
+;create pointer array of for file times
+times = ptrarr(n_elements(wavs))
 
 ;Create new pointers in larger pointer array (Could search and loop)
 paths[0] = ptr_new(l193)
 paths[1] = ptr_new(l304)
 paths[2] = ptr_new(l335)
 paths[3] = ptr_new(lxrt)
+
+
+;Convert pointers 
+for i=0,n_elements(wavs)-1 do begin
+
+    if wavs[i] ne 'xrt' then begin
+        ;extract the string time and date
+        temp = *paths[i]
+        ;first and last index of string with AIA_YYYYMMDD_HHMMSS_WAVE.fits
+        fstr = strsplit(temp[0],'/',length=estr)
+        tstr = fstr+estr
+        ;number of elements in split 
+        nstr = n_elements(tstr)
+
+        ;extract string if in sub-directory
+        if nstr gt 1 then $
+            fils = strmid(temp,tstr[nstr-2]+4,15)$
+        ;extract string if in  current directory
+        else $
+            fils = strmid(temp,4,15)
+
+      
+        ;Add in time date formatting
+        any_fmt = strmid(fils,0,4)+'/'+strmid(fils,4,2)+'/'+strmid(fils,6,2)+'T'+strmid(fils,9,2)+':'+strmid(fils,11,2)+":"+strmid(fils,13,2)
+
+        ;add times to pointer 
+        times[i] = ptr_new(anytim(any_fmt))
+
+    endif else begin
+        print,"xrt ain't seen nothing yet"
+    endelse
+
+endfor
 
 
 ;separate file name
@@ -135,6 +173,10 @@ img_cad = 30.*60.
 
 ;Download aia data for all the best times
 for i=0,n_elements(goodt)-1 do begin
+
+
+   ;Create sub pointer for each particular time range
+   sub_point =  ptrarr(n_elements(wavs))
 
 
     
@@ -171,132 +213,49 @@ for i=0,n_elements(goodt)-1 do begin
         counter = counter+1
     endwhile
 
-    ;Create large time array to find the best times for each cadence
-    r_ti = double(time_arr ## (-1+dblarr(n_elements(aia_time))))
-    p_ti = double(aia_time # (1+dblarr(n_elements(time_arr))))
-
-    ;get time min for matches
-    minv = min(r_ti+p_ti,min_loc,/abs,dimension=1)
-    ;get min values less than 90 minutes only
-    good_min = where(minv lt img_cad,matches)
-
-    ;leave if there are no good matches
-    if matches eq 0 then continue
-
     ;Create directory for output png files
     full_dir = out_arch+string([id[i]],format=out_fmt)
-    print,full_dir,id[i]
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
 
-    ;clip to only get closest matches
-    min_loc = min_loc[good_min]
+    ;Loop over all pointers and get the best times
+    for j=0,n_elements(wavs)-1 do begin
+
+        ;get aia times from pointer
+        aia_time = *times[j]
+        aia_list = *par[j]
+
+        ;Create large time array to find the best times for each cadence
+        r_ti = double(time_arr ## (-1+dblarr(n_elements(aia_time))))
+        p_ti = double(aia_time # (1+dblarr(n_elements(time_arr))))
+
+        ;get time min for matches
+        minv = min(r_ti+p_ti,min_loc,/abs,dimension=1)
+        ;get min values less than 90 minutes only
+        good_min = where(minv lt img_cad,matches)
+
+        ;leave if there are no good matches
+        if matches eq 0 then continue
+
+
+        ;clip to only get closest matches
+        min_loc = min_loc[good_min]
    
-    ;convert 1D indices into 2D indices
-    col_i = array_indices(r_ti,min_loc)
+        ;convert 1D indices into 2D indices
+        col_i = array_indices(r_ti,min_loc)
 
-    ;get the file indices that match the time
-    chk_i = col_i[0,*]
+        ;get the file indices that match the time
+        chk_i = col_i[0,*]
 
 
-    ;Get matched files
-    match_files=aia_list[chk_i]
-    match_fname = fname[chk_i]
+        ;Get matched files
+        match_files=aia_list[chk_i]
+        match_fname = fname[chk_i]
 
-    ;Get only unique values
-    match_files=match_files[uniq(match_files)]
-    match_fname=match_fname[uniq(match_files)]
+        ;Get only unique values
+        match_files=match_files[uniq(match_files)]
+        match_fname=match_fname[uniq(match_files)]
     
-  
-    ;prep aia data
-    aia_prep,match_files,findgen(n_elements(match_files)),index,data
-    ;aia_prep,aia_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
-
-    
-
-    ; plot each aia observation
-    for j=0,n_elements(index)-1 do begin
-
-        ;Plot restricted range
-        ;Rotate coordinate to image time
-        rot_p = rot_xy(xi,yi,tstart=gi,tend=index(j).date_obs)
-
-        ;Get center pixel value
-        pix_x = rot_p[0]/index(j).cdelt1+index(j).crpix1-1
-        pix_y = rot_p[1]/index(j).cdelt2+index(j).crpix2-1
- 
-        ;Get range around pix_x and pix_y values
-        lims = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
-
-        ;Store limite seperately
-        pxmin = lims[0]
-        pxmax = lims[1]
-        pymin = lims[2]
-        pymax = lims[3]
-
-        ;Get image data to plot
-        fimg = data[*,*,j]
-
-        ;Cut image to restricted window
-        img = fimg(pxmin:pxmax,pymin:pymax)
-        
-        plot_image,img,min=-100,max=100,$
-            origin=-[(index(j).crpix1-1-pix_x)*index(j).cdelt1, $
-            (index(j).crpix2-1-pix_y)*index(j).cdelt2], $
-            scale=[index(j).cdelt1,index(j).cdelt2], $
-            xtitle='X-postion (arcseconds)', $
-            ytitle='Y-position (arcseconds)',$
-            title=string([id[i]],format=title_fmt)+index(j).date_obs,$
-            xcharsize=1.50, $
-            ycharsize=1.50, $
-            xcharthick=1.50, $
-            ycharthick=1.50, $
-            charsize=2.,$
-            charthick=2.
-
-        ;write png file in directory 
-        TVLCT,r,g,b,/Get
-        write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
     endfor
-
-    ;create directory for symbolic links
-    if file_test(full_dir+'/symlinks/') then file_delete,full_dir+'symlinks/',/recursive
-    file_mkdir,full_dir+'/symlinks/'
-
-    ;collect all png files
-    png_files = file_search(full_dir+'*png',/FULLY_QUALIFY_PATH)
-    ;create symbolic links
-    for j=0,n_elements(png_files)-1 do file_link,png_files[j],full_dir+'symlinks/'+string(j,format='(I04,".png")')
-
-    ;Automatically create movie
-    ;Where does ffmpeg live?
-    if not keyword_set(ffmpeg) then begin 
-            spawn, 'which ffmpeg', ffmpeg
-            if strpos(ffmpeg, 'Command not found') ne -1 then begin
-                    message, 'ERROR: FFMPEG does not appear to be installed.', /informational
-                    return
-            endif 
-            ffmpeg = str_replace(ffmpeg, 'opt', 'usr')
-    endif
-
-    png_size = string([2*win_w,2*win_w],format='(I04,"x",I04)')
-    framerate= strcompress(string(8),/remove_all) ;frames per second
-    bitrate = ((24*win_w)^2)*framerate ; number of bits per frame 24 bit colors and win_w^2 image
-    bit = trim(bitrate)+'k'
-    ;Use aia_ffmpeg for simplicity
-    call1 = '-y -f image2 -r '+framerate+' -i ' 
-    call2 = '-pix_fmt "yuv420p" -vcodec libx264 -level 41 -crf 18.0 -b '+bit+' -r '+framerate+' '+ $
-                    '-bufsize '+bit+' -maxrate '+bit+' -g '+framerate+' -coder 1 -profile main -preset faster ' + $
-                    '-qdiff 4 -qcomp 0.7 -directpred 3 -flags +loop+mv4 -cmp +chroma -partitions ' + $
-                    '+parti4x4+partp8x8+partb8x8 -subq 7 -me_range 16 -keyint_min 1 -sc_threshold ' + $
-                    '40 -i_qfactor 0.71 -rc_eq ''blurCplx^(1-qComp)'' -s '+png_size+' -b_strategy 1 ' + $
-                    '-bidir_refine 1 -refs 6 -deblockalpha 0 -deblockbeta 0 -trellis 1 -x264opts ' + $
-                    'keyint='+framerate+':min-keyint=1:bframes=1 -threads 2 '
-                
-    
-    
-    ;output file name
-    outf = string([id[i]],format='(I03,"_mag.mp4")')
-    spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
+  
 endfor
-
 end
