@@ -90,7 +90,7 @@ end
 ;
 ;#############################################################
 
-pro make_aia_movie,times,aia_arch=aia_arch,out_arch=out_arch
+pro make_aia_movie,times,aia_arch=aia_arch,out_arch=out_arch,win_w=win_w
 ;set plot to Z Window
 set_plot,'Z'
 
@@ -103,6 +103,9 @@ aia_arch = aia_arch+'/'
 ;Set archive directory for output png files
 if keyword_set(out_arch) then out_arch = out_arch else out_arch = 'aia_movie/'
 out_arch = out_arch+'/'
+
+;Set window size
+if keyword_set(win_w) then win_w = win_w else win_w = 700
 
 ;Work around for aia_mkmovie 
 ;List all files with a certain wavelength
@@ -270,7 +273,8 @@ for i=0,n_elements(goodt)-1 do begin
      if found_fil eq 0 then continue
 
     ;prep first aia observation data
-    aia_prep,*sub_point[0],[0],index,data
+    filein = *sub_point[0]
+    read_sdo,filein[0],index,data,/uncomp_delete,/noshell
 
     ;Rotate best point to first time
     ;Plot restricted range
@@ -278,17 +282,36 @@ for i=0,n_elements(goodt)-1 do begin
     rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_obs)
 
     ;Get center pixel value
-    pix_x = rot_p[0]/index(j).cdelt1+index(0).crpix1-1
-    pix_y = rot_p[1]/index(j).cdelt2+index(0).crpix2-1
+    pix_x = rot_p[0]/index(0).cdelt1+index(0).crpix1-1
+    pix_y = rot_p[1]/index(0).cdelt2+index(0).crpix2-1
  
     ;Get range around pix_x and pix_y values
     cutout = select_cutout(pix_x,pix_y,win_w,index(0).naxis1,index(0).naxis2)
+    ;buffer for Y values to include in movie
+    y_buff = 284
 
     ;Get XRT data in time range
     ;Query time catalog
     xrt_cat, t1, t2, catx, ofiles
-    want = where((catx.naxis1 eq 384) AND ((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) AND (catx.ec_imty_ eq 'normal'))
-    read_xrt, ofiles[want], xrt_index, xrt_data, /quiet
+
+    ;get X x-ray position at a given time
+    x_val = fltarr(n_elements(catx))
+
+    ;Loop and store xvalue for comparison
+    for k=0,n_elements(x_val)-1 do begin
+       x_pos = rot_xy(xi,yi,tstart=gi,tend=catx(k).date_obs)
+       x_val[k] = x_pos[0]
+
+    endfor
+
+    want = where(((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) $
+                 AND (catx.ec_imty_ eq 'normal') $
+                 AND ((catx.ycen+catx.fovy*catx.cdelt1 gt rot_p[1]) AND (catx.ycen-catx.fovy*catx.cdelt1 lt rot_p[1])) $
+                 AND (catx.chip_sum le 2) $
+                 AND ((catx.xcen+catx.fovx*catx.cdelt1 gt x_val) AND (catx.xcen-catx.fovx*catx.cdelt1 lt x_val)))
+
+    ;Force allow for difference size images
+    read_xrt, ofiles[want], xrt_index, xrt_data, /force
     for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = (xrt_data[*,*,i] - 30) / xrt_index[i].exptime
     xrt_data = alog10(xrt_data >1)
     for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = bytscl(xrt_data[*,*,i], min=median(xrt_data[*,*,i]*0.85))
@@ -297,7 +320,7 @@ for i=0,n_elements(goodt)-1 do begin
 
 
     ;Use aia_mkmovie to make the movie
-    aia_mkmovie,t1,t2,waves(0:2),cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0)
+    aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0)
 
     stop
   
