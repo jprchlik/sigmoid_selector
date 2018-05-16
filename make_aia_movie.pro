@@ -362,13 +362,11 @@ for p=0,n_elements(goodt)-1 do begin
 
 
 
-    stop
     ;Use aia_mkmovie to make the movie
     aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,$
                 path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0), $
                 dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
 
-    stop
   
 endfor
 end
