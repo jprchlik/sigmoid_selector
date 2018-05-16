@@ -113,8 +113,7 @@ l335 = file_search(aia_arch+'*335.fits')
 lxrt = l335
 
 ;list of wavelengths for 4 panel movie
-wavs = ['193','304','335','xrt']
-wavs = ['193','304','335','355']
+wavs = ['193','304','335']
 ;create pointer array of paths for files
 paths = ptrarr(n_elements(wavs))
 ;create pointer array of for file times
@@ -124,47 +123,46 @@ times = ptrarr(n_elements(wavs))
 paths[0] = ptr_new(l193)
 paths[1] = ptr_new(l304)
 paths[2] = ptr_new(l335)
-paths[3] = ptr_new(lxrt)
 
 
 ;Convert pointers 
 for i=0,n_elements(wavs)-1 do begin
+    ;extract the string time and date
+    temp = *paths[i]
+    ;first and last index of string with AIA_YYYYMMDD_HHMMSS_WAVE.fits
+    fstr = strsplit(temp[0],'/',length=estr)
+    tstr = fstr+estr
+    ;number of elements in split 
+    nstr = n_elements(tstr)
 
-    if wavs[i] ne 'xrt' then begin
-        ;extract the string time and date
-        temp = *paths[i]
-        ;first and last index of string with AIA_YYYYMMDD_HHMMSS_WAVE.fits
-        fstr = strsplit(temp[0],'/',length=estr)
-        tstr = fstr+estr
-        ;number of elements in split 
-        nstr = n_elements(tstr)
+    ;extract string if in sub-directory
+    if nstr gt 1 then $
+        fils = strmid(temp,tstr[nstr-2]+4,15)$
+    ;extract string if in  current directory
+    else $
+        fils = strmid(temp,4,15)
 
-        ;extract string if in sub-directory
-        if nstr gt 1 then $
-            fils = strmid(temp,tstr[nstr-2]+4,15)$
-        ;extract string if in  current directory
-        else $
-            fils = strmid(temp,4,15)
+ 
+    ;Add in time date formatting
+    any_fmt = strmid(fils,0,4)+'/'+strmid(fils,4,2)+'/'+strmid(fils,6,2)+'T'+strmid(fils,9,2)+':'+strmid(fils,11,2)+":"+strmid(fils,13,2)
 
-      
-        ;Add in time date formatting
-        any_fmt = strmid(fils,0,4)+'/'+strmid(fils,4,2)+'/'+strmid(fils,6,2)+'T'+strmid(fils,9,2)+':'+strmid(fils,11,2)+":"+strmid(fils,13,2)
-
-        ;add times to pointer 
-        times[i] = ptr_new(anytim(any_fmt))
-
-    endif else begin
-        print,"xrt ain't seen nothing yet"
-    endelse
-
+    ;add times to pointer 
+    times[i] = ptr_new(anytim(any_fmt))
 endfor
 
 
-;separate file name
-fnames = strsplit(aia_list,'/',/extract) 
-fname = strarr(n_elements(fnames))
-;Number of columns
-splnu = n_elements(fnames[0])
+;    endif else begin
+;        print,"xrt ain't seen nothing yet"
+;    endelse
+;
+;endfor
+
+
+;;separate file name
+;fnames = strsplit(aia_list,'/',/extract) 
+;fname = strarr(n_elements(fnames))
+;;Number of columns
+;splnu = n_elements(fnames[0])
 
 
 ;Cadance for image creation in seconds
@@ -248,14 +246,46 @@ for i=0,n_elements(goodt)-1 do begin
 
 
         ;Get matched files
-        match_files=aia_list[chk_i]
-        match_fname = fname[chk_i]
+        match_files = aia_list[chk_i]
 
         ;Get only unique values
         match_files=match_files[uniq(match_files)]
-        match_fname=match_fname[uniq(match_files)]
     
+        ;store file names in pointer 
+        sub_point[j] = ptr_new(match_files)
     endfor
+
+    ;prep first aia observation data
+    hmi_prep,*sub_point[0],[0],index,data
+
+    ;Rotate best point to first time
+    ;Plot restricted range
+    ;Rotate coordinate to image time
+    rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_obs)
+
+    ;Get center pixel value
+    pix_x = rot_p[0]/index(j).cdelt1+index(j).crpix1-1
+    pix_y = rot_p[1]/index(j).cdelt2+index(j).crpix2-1
+ 
+    ;Get range around pix_x and pix_y values
+    cutout = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
+
+    ;Get XRT data in time range
+    ;Query time catalog
+    xrt_cat, t1, t2, catx, ofiles
+    want = where((catx.naxis1 eq 384) AND ((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) AND (catx.ec_imty_ eq 'normal'))
+    read_xrt, ofiles[want], xrt_index, xrt_data, /quiet
+    for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = (xrt_data[*,*,i] - 30) / xrt_index[i].exptime
+    xrt_data = alog10(xrt_data >1)
+    for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = bytscl(xrt_data[*,*,i], min=median(xrt_data[*,*,i]*0.85))
+    xrt_data = byte(xrt_data)
+
+
+
+    ;Use aia_mkmovie to make the movie
+    aia_mkmovie,t1,t2,waves(0:2),cadence=1,/no_quality_check,/diff_rot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data
+
+    stop
   
 endfor
 end
