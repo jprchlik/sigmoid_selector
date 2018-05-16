@@ -118,6 +118,8 @@ wavs = ['193','304','335']
 paths = ptrarr(n_elements(wavs))
 ;create pointer array of for file times
 times = ptrarr(n_elements(wavs))
+;good sigmoid tbest times (i.e. contains time string)
+goodt = where(strlen(tbest) eq 23)
 
 ;Create new pointers in larger pointer array (Could search and loop)
 paths[0] = ptr_new(l193)
@@ -164,6 +166,8 @@ endfor
 ;;Number of columns
 ;splnu = n_elements(fnames[0])
 
+;good sigmoid tbest times (i.e. contains time string)
+goodt = where(strlen(tbest) eq 23)
 
 ;Cadance for image creation in seconds
 img_cad = 30.*60.
@@ -215,12 +219,15 @@ for i=0,n_elements(goodt)-1 do begin
     full_dir = out_arch+string([id[i]],format=out_fmt)
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
 
+    ;Check to see if the code locates any aia files
+    found_fil = 0
+
     ;Loop over all pointers and get the best times
     for j=0,n_elements(wavs)-1 do begin
 
         ;get aia times from pointer
         aia_time = *times[j]
-        aia_list = *par[j]
+        aia_list = *paths[j]
 
         ;Create large time array to find the best times for each cadence
         r_ti = double(time_arr ## (-1+dblarr(n_elements(aia_time))))
@@ -234,6 +241,9 @@ for i=0,n_elements(goodt)-1 do begin
         ;leave if there are no good matches
         if matches eq 0 then continue
 
+
+        ;found aia files to analyze 
+        found_fil = 1
 
         ;clip to only get closest matches
         min_loc = min_loc[good_min]
@@ -255,8 +265,12 @@ for i=0,n_elements(goodt)-1 do begin
         sub_point[j] = ptr_new(match_files)
     endfor
 
+
+    ;leave if no aia files found
+     if found_fil eq 0 then continue
+
     ;prep first aia observation data
-    hmi_prep,*sub_point[0],[0],index,data
+    aia_prep,*sub_point[0],[0],index,data
 
     ;Rotate best point to first time
     ;Plot restricted range
@@ -264,11 +278,11 @@ for i=0,n_elements(goodt)-1 do begin
     rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_obs)
 
     ;Get center pixel value
-    pix_x = rot_p[0]/index(j).cdelt1+index(j).crpix1-1
-    pix_y = rot_p[1]/index(j).cdelt2+index(j).crpix2-1
+    pix_x = rot_p[0]/index(j).cdelt1+index(0).crpix1-1
+    pix_y = rot_p[1]/index(j).cdelt2+index(0).crpix2-1
  
     ;Get range around pix_x and pix_y values
-    cutout = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
+    cutout = select_cutout(pix_x,pix_y,win_w,index(0).naxis1,index(0).naxis2)
 
     ;Get XRT data in time range
     ;Query time catalog
@@ -283,7 +297,7 @@ for i=0,n_elements(goodt)-1 do begin
 
 
     ;Use aia_mkmovie to make the movie
-    aia_mkmovie,t1,t2,waves(0:2),cadence=1,/no_quality_check,/diff_rot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data
+    aia_mkmovie,t1,t2,waves(0:2),cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0)
 
     stop
   
