@@ -191,7 +191,7 @@ for p=0,n_elements(goodt)-1 do begin
     gi = tbest[i]
     xi = x[i]
     yi = y[i]
-    sid_id = ID[i]
+    sig_id = ID[i]
 
     ;get time range to search over
     ;t1 = tbest[gi]
