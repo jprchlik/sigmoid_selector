@@ -177,8 +177,10 @@ img_cad = 30.*60.
 
 
 ;Download aia data for all the best times
-for i=0,n_elements(goodt)-1 do begin
+for p=0,n_elements(goodt)-1 do begin
 
+   ;get index of good time
+   i = goodt[p]
 
    ;Create sub pointer for each particular time range
    sub_point =  ptrarr(n_elements(wavs))
@@ -189,6 +191,7 @@ for i=0,n_elements(goodt)-1 do begin
     gi = tbest[i]
     xi = x[i]
     yi = y[i]
+    sid_id = ID[i]
 
     ;get time range to search over
     ;t1 = tbest[gi]
@@ -325,7 +328,6 @@ for i=0,n_elements(goodt)-1 do begin
     check_cnt_x = 0 
     for k=0,n_elements(unq_x)-1 do begin 
         sizer = where(catx[want].naxis1 eq unq_x[k],cnt) 
-        print,cnt,unq_x[k] 
         if cnt gt check_cnt_x then begin  
             check_cnt_x = cnt 
             x_dim = unq_x[k] 
@@ -362,7 +364,9 @@ for i=0,n_elements(goodt)-1 do begin
 
     stop
     ;Use aia_mkmovie to make the movie
-    aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0)
+    aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,$
+                path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0), $
+                dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
 
     stop
   
