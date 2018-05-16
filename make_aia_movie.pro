@@ -304,14 +304,55 @@ for i=0,n_elements(goodt)-1 do begin
 
     endfor
 
+    ;Get regions which cover the region
     want = where(((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) $
                  AND (catx.ec_imty_ eq 'normal') $
                  AND ((catx.ycen+catx.fovy*catx.cdelt1 gt rot_p[1]) AND (catx.ycen-catx.fovy*catx.cdelt1 lt rot_p[1])) $
                  AND (catx.chip_sum le 2) $
                  AND ((catx.xcen+catx.fovx*catx.cdelt1 gt x_val) AND (catx.xcen-catx.fovx*catx.cdelt1 lt x_val)))
 
+    ;Find the most common dimensions
+    unq_x = catx[UNIQ(catx.naxis1, SORT(catx.naxis1))].naxis1  
+    unq_y = catx[UNIQ(catx.naxis2, SORT(catx.naxis2))].naxis2  
+    
+
+ 
+    ;Most common x,y dimension
+    x_dim = 0
+    y_dim = 0
+
+    ;Loop and find the solution
+    check_cnt_x = 0 
+    for k=0,n_elements(unq_x)-1 do begin 
+        sizer = where(catx[want].naxis1 eq unq_x[k],cnt) 
+        print,cnt,unq_x[k] 
+        if cnt gt check_cnt_x then begin  
+            check_cnt_x = cnt 
+            x_dim = unq_x[k] 
+        endif  
+    endfor 
+
+    ;Loop and find the solution
+    check_cnt_y = 0  
+    for k=0,n_elements(unq_y)-1 do begin  
+        sizer = where(catx[want].naxis2 eq unq_y[k],cnt)  
+        if cnt gt check_cnt_y then begin   
+            check_cnt_y = cnt  
+            y_dim = unq_y[k]  
+        endif   
+    endfor  
+
+
+    ;Get new solution with the most common values for Naxis1 and 2
+    want = where(((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) $
+                 AND (catx.ec_imty_ eq 'normal') $
+                 AND ((catx.ycen+catx.fovy*catx.cdelt1 gt rot_p[1]) AND (catx.ycen-catx.fovy*catx.cdelt1 lt rot_p[1])) $
+                 AND (catx.chip_sum le 2) $
+                 AND ((catx.xcen+catx.fovx*catx.cdelt1 gt x_val) AND (catx.xcen-catx.fovx*catx.cdelt1 lt x_val)) $
+                 AND ((catx.naxis1 eq x_dim) and (catx.naxis2 eq y_dim)))
+
     ;Force allow for difference size images
-    read_xrt, ofiles[want], xrt_index, xrt_data, /force
+    read_xrt, ofiles[want], xrt_index, xrt_data, /quiet
     for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = (xrt_data[*,*,i] - 30) / xrt_index[i].exptime
     xrt_data = alog10(xrt_data >1)
     for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = bytscl(xrt_data[*,*,i], min=median(xrt_data[*,*,i]*0.85))
@@ -319,6 +360,7 @@ for i=0,n_elements(goodt)-1 do begin
 
 
 
+    stop
     ;Use aia_mkmovie to make the movie
     aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0)
 
