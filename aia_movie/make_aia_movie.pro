@@ -97,7 +97,7 @@ set_plot,'Z'
 ;Read in file containing TBEST
 readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
 ;Set archive directory for download aia files
-if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = 'aia_arch/symlinks/'
+if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = '../aia_arch/symlinks/'
 aia_arch = aia_arch+'/'
 
 ;Set archive directory for output png files
@@ -364,8 +364,9 @@ for p=0,n_elements(goodt)-1 do begin
 
     ;Use aia_mkmovie to make the movie
     aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,$
-                path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0), $
-                dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
+                path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0);, $
+                ;Remove dir out because aia_mkmovie has an error that prevents it from running outside the base directory
+                ;dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
 
   
 endfor
