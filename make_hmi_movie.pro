@@ -21,23 +21,26 @@
 ;#############################################################
 function get_sig,cube
 
-    siz=size(cube)
-    tmax=1
     
     sig=fltarr(1)
     
+    ;Set up dummy variable
     dum=cube
     
+    ;Compute histogram
     hist=histogram(dum,binsize=1.,locations=loc)
     w1=where((loc gt -75) and (loc lt 75))
     
+    ;Get binned gaussian and wieghts
     hsml=hist(w1)
     vals=loc(w1)
     
+    ;Fig gaussian and weights
     gf6=gaussfit(w1,hsml,a6,nterms=6)
+    ;Compute FWHM from sigma
     fwhm=2.*sqrt(2.*alog(2))*a6(2)
     
-    sig=fwhm/2.3548
+    sig=fwhm/2.
     
     return,sig
 end
@@ -150,8 +153,8 @@ out_arch = out_arch+'/'
 ;Get list of hmi files
 hmi_list = file_search(hmi_arch+"hmi*fits")
 
-;Solar radius in Mm
-phy_rad = 6.957E2 ;Mm
+;Solar radius in cm
+phy_rad = 6.957E10 ;cm
 
 ;separate file name
 fnames = strsplit(hmi_list,'/',/extract) 
@@ -323,9 +326,9 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Get solar radius in arcsec at given time
         sol_rad = index(j).rsun_obs
-        ;Get conversion from arcsec to Mm
-        arc_phy = phy_rad/sol_rad ; Mm/arcsec
-        ;Area of pixel in Mm
+        ;Get conversion from arcsec to cm
+        arc_phy = phy_rad/sol_rad ; cm/arcsec
+        ;Area of pixel in cm
         are_pix = arc_phy^2*abs(index(j).cdelt1*index(j).cdelt2)
 
         ;rotate by 180 degrees
@@ -363,10 +366,48 @@ for i=0,n_elements(goodt)-1 do begin
         ;Rotate the unprepped image
         fimg = rot(fimg,180)
 
+        ;get sigma from image
+        img_sig = get_sig(fimg)
+
+        ;set noise thresholds
+        zero_lev = 2*img_sig    ; zero level in G
+        ;zero_lev2 = 3*sig
+
+
+
+
         ;Cut image to restricted window
         img = fimg(pxmin:pxmax,pymin:pymax)
+        simg= img
+
+
+        ;Remove noisy values
+        bzzero = where(abs(simg) le  zero_lev)
+        simg(bzzero) = 0.0                                ; All pixels below a certain value are set to zero
+
+
+        ;Despike image
+        cormag_p0=fltarr(win_w,win_w)
+        cormag_n =fltarr(win_w,win_w)
         
-        plot_image,img,min=-100,max=100,$
+        ;Get positive and negative spikes
+        cormag_p0(where(simg ge 0))=simg(where(simg ge 0))
+        cormag_n(where(simg lt 0)) =simg(where(simg lt 0))
+
+
+        ;create spike pixel masks
+        cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0)
+        cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.5,imap=imap_n)
+
+        ;Remove spikes from image
+        img(where(imap_p0 eq 1))=0
+        img(Where(imap_n eq 1))=0
+        simg(where(imap_p0 eq 1))=0
+        simg(Where(imap_n eq 1))=0
+  
+        
+        ;Plot image with rotation
+        plot_image,simg,min=-100,max=100,$
             origin=-[(cent_x-1-pix_x)*delt_x, $
             (cent_y-1-pix_y)*delt_x], $
             scale=[delt_x,delt_y], $
