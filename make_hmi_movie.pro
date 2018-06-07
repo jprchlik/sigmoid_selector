@@ -253,12 +253,17 @@ for i=0,n_elements(goodt)-1 do begin
     full_dir = out_arch+string([sig_id],format=out_fmt)
     ;Remove : characters
     full_dir = str_replace(full_dir,':','')
+    full_dir = str_replace(full_dir,'-','')
     print,full_dir,sig_id
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
     
 
     ; plot each hmi observation
     for j=0,n_elements(index)-1 do begin
+
+        ;if image quality greater than 90000 exit
+        if index(j).quality gt 90000 then continue
+        
 
         ;Plot restricted range
         ;Rotate coordinate to image time
@@ -330,16 +335,17 @@ for i=0,n_elements(goodt)-1 do begin
     call1 = '-y -f image2 -r '+framerate+' -i ' 
     call2 = '-pix_fmt "yuv420p" -vcodec libx264 -level 41 -crf 18.0 -b '+bit+' -r '+framerate+' '+ $
                     '-bufsize '+bit+' -maxrate '+bit+' -g '+framerate+' -coder 1 -profile main -preset faster ' + $
-                    '-qdiff 4 -qcomp 0.7 -directpred 3 -flags +loop+mv4 -cmp +chroma -partitions ' + $
+                    '-qdiff 4 -qcomp 0.7 -flags +loop+mv4 -partitions ' + $
                     '+parti4x4+partp8x8+partb8x8 -subq 7 -me_range 16 -keyint_min 1 -sc_threshold ' + $
                     '40 -i_qfactor 0.71 -rc_eq ''blurCplx^(1-qComp)'' -s '+png_size+' -b_strategy 1 ' + $
-                    '-bidir_refine 1 -refs 6 -deblockalpha 0 -deblockbeta 0 -trellis 1 -x264opts ' + $
+                    '-bidir_refine 1 -refs 6 -trellis 1 -x264opts ' + $
                     'keyint='+framerate+':min-keyint=1:bframes=1 -threads 2 '
                 
     
     
     ;output file name
-    outf = sig_id+"_mag.mp4"
+    outf = str_replace(sig_id,':','')+"_mag.mp4"
+    outf = str_replace(outf,'-','')
     spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
     stop
 endfor
