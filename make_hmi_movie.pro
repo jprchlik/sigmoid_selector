@@ -150,10 +150,10 @@ win_w= 700
 device,set_resolution=[win_w*3,win_w*3],decomposed=0,set_pixel_depth=24
 
 ;title format
-title_fmt = '("HMI ID: ",A28," ")'
+title_fmt = '("HMI ID: ",A30," ")'
 
 ;format for output png file directory
-out_fmt = '(A28,"/")'
+out_fmt = '(A30,"/")'
 
 ;IAU_format for coordinates
 iau_cor = '("L",I03,"C",I03)'
@@ -251,6 +251,8 @@ for i=0,n_elements(goodt)-1 do begin
     ;Create new unique ID with IAU standard
     sig_id = 'SOL'+iau_time+iau_pos
     full_dir = out_arch+string([sig_id],format=out_fmt)
+    ;Remove : characters
+    full_dir = strreplace(full_dir,':','')
     print,full_dir,sig_id
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
     
