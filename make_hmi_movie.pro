@@ -252,7 +252,7 @@ for i=0,n_elements(goodt)-1 do begin
     sig_id = 'SOL'+iau_time+iau_pos
     full_dir = out_arch+string([sig_id],format=out_fmt)
     ;Remove : characters
-    full_dir = strreplace(full_dir,':','')
+    full_dir = str_replace(full_dir,':','')
     print,full_dir,sig_id
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
     
