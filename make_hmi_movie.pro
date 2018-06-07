@@ -185,6 +185,11 @@ strput,times,'T',pos[0]
 ;Get hmi times
 hmi_time = double(anytim(times))
 
+;These are edgedog radii
+ ;radius to scale to select the sigmoid mag field
+rad_1 = 3.6
+rad_2 = 15.
+
 
 ;good sigmoid tbest times (i.e. contains time string)
 goodt = where(strlen(tbest) eq 23)
@@ -194,8 +199,9 @@ img_cad = 30.*60.
 
 ;width of image window in pixels
 win_w= 700
+sc = 3
 ;Set up device
-device,set_resolution=[win_w*3,win_w*3],decomposed=0,set_pixel_depth=24
+device,set_resolution=[win_w*sc,win_w*sc],decomposed=0,set_pixel_depth=24
 
 ;title format
 title_fmt = '("HMI ID: ",A30," ")'
@@ -396,21 +402,40 @@ for i=0,n_elements(goodt)-1 do begin
 
 
         ;create spike pixel masks
-        cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0)
+        cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
         cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.5,imap=imap_n)
 
         ;Remove spikes from image
-        img(where(imap_p0 eq 1))=0
-        img(Where(imap_n eq 1))=0
+        ;img(where(imap_p0 eq 1))=0
+        ;img(Where(imap_n eq 1))=0
         simg(where(imap_p0 eq 1))=0
         simg(Where(imap_n eq 1))=0
+
+        ;gaussian smooth image
+        gimg = gauss_smooth(abs(simg),30)
+
+
+        ;set origin variables
+        org_x = -(cent_x-1-pix_x)*delt_x
+        org_y = -(cent_y-1-pix_y)*delt_y
+
+        ;Find the boundaries in the smoothed image
+        rad_1 = 1.
+        rad_2 = 250.
+        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=20,zero_crossings=[0,255])
   
+        ;Get boundary of created countour
+        CONTOUR,edge, LEVEL = 1,  $
+               XMARGIN = [0, 0], YMARGIN = [0, 0], $
+               /NOERASE, PATH_INFO = pathInfo, PATH_XY = pathXY, $
+               XSTYLE = 5, YSTYLE = 5, /PATH_DATA_COORDS;/NODATA
+
         
         ;Plot image with rotation
-        plot_image,simg,min=-100,max=100,$
-            origin=-[(cent_x-1-pix_x)*delt_x, $
-            (cent_y-1-pix_y)*delt_x], $
-            scale=[delt_x,delt_y], $
+        plot_image,edge,min=-100,max=100,$
+            ;origin=[org_x, $
+            ;org_y], $
+            ;scale=[delt_x,delt_y], $
             xtitle='X-postion (arcseconds)', $
             ytitle='Y-position (arcseconds)',$
             title=string([sig_id],format=title_fmt)+index(j).date_d$obs,$
@@ -419,8 +444,36 @@ for i=0,n_elements(goodt)-1 do begin
             xcharthick=1.50, $
             ycharthick=1.50, $
             charsize=2.,$
-            charthick=2.
+            charthick=2.,/noadjust
 
+
+        ;Image display parameters
+        ORIGIN = [0,0]
+        XSCALE = 1
+        YSCALE = 1
+  	    XS = !X.S * !D.X_SIZE
+	    YS = !Y.S * !D.Y_SIZE
+	    MX = XS[1]*index(j).naxis1*XSCALE
+	    MY = YS[1]*index(j).naxis2*YSCALE
+	    IX = XS[0] + (ORIGIN[0] - XSCALE/2.)*XS[1]
+	    IY = YS[0] + (ORIGIN[1] - YSCALE/2.)*YS[1]
+
+        DX = (MX-IX)/(sc*win_w)
+        DY = (MY-IY)/(sc*win_w)
+
+        ;Create new ROI obejct using contour
+        loadct,12
+        line = [LINDGEN(PathInfo(0).N), 0] & $
+        roi_obj = OBJ_NEW('IDLanROI', $
+           DX*(pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
+           DY*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
+           ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
+           ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
+        ;Draw ROI on plot
+        DRAW_ROI, roi_obj, COLOR =200,/device,/LINE_FILL
+        loadct,0
+
+        stop
         ;write png file in directory 
         TVLCT,r,g,b,/Get
         write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
