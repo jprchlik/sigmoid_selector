@@ -1,5 +1,48 @@
 
 ;#############################################################
+;NAME:
+;    gauss_smooth    
+;
+;USAGE
+;    limits = select_cutout(px,py,img_size,img_xmax,img_ymax)   
+;
+;#############################################################
+
+
+;#############################################################
+;NAME:
+;    get_sig    
+;
+;USAGE
+;    sig = get_sig(cube)
+;
+;DESCRIPTION
+;  Compute sigma:
+;#############################################################
+function get_sig,cube
+
+    siz=size(cube)
+    tmax=1
+    
+    sig=fltarr(1)
+    
+    dum=cube
+    
+    hist=histogram(dum,binsize=1.,locations=loc)
+    w1=where((loc gt -75) and (loc lt 75))
+    
+    hsml=hist(w1)
+    vals=loc(w1)
+    
+    gf6=gaussfit(w1,hsml,a6,nterms=6)
+    fwhm=2.*sqrt(2.*alog(2))*a6(2)
+    
+    sig=fwhm/2.3548
+    
+    return,sig
+end
+
+;#############################################################
 ;
 ;NAME:
 ;    select_cutout   
@@ -107,6 +150,8 @@ out_arch = out_arch+'/'
 ;Get list of hmi files
 hmi_list = file_search(hmi_arch+"hmi*fits")
 
+;Solar radius in Mm
+phy_rad = 6.957E2 ;Mm
 
 ;separate file name
 fnames = strsplit(hmi_list,'/',/extract) 
@@ -157,6 +202,10 @@ out_fmt = '(A30,"/")'
 
 ;IAU_format for coordinates
 iau_cor = '("L",I03,"C",I03)'
+
+
+;Rotate images by given angle
+rot_mat = [[-1.,0.],[0.,-1.]]
 
 ;Download HMI data for all the best times
 for i=0,n_elements(goodt)-1 do begin
@@ -229,7 +278,9 @@ for i=0,n_elements(goodt)-1 do begin
     
   
     ;prep hmi data
-    hmi_prep,match_files,findgen(n_elements(match_files)),index,data
+    ;hmi_prep,match_files,findgen(n_elements(match_files)),index,odata
+    mreadfits,match_files, index,data
+    ;hmi_prep,iindex,data,index,odata
     ;hmi_prep,hmi_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
 
     ;Create directory for output png files
@@ -240,8 +291,8 @@ for i=0,n_elements(goodt)-1 do begin
     
 
     ;Get Carrington coordinates 
-    wcs = fitshead2wcs( index[0] )
-    rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_obs)
+    wcs = fitshead2wcs( index(0) )
+    rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_d$obs)
     WCS_CONV_HPC_HG, rot_p[0], rot_p[1], lon, lat, WCS=WCS, /carr, /pos_long
     iau_pos = string([round(lon),round(lat)],format=iau_cor)
     
@@ -267,14 +318,38 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Plot restricted range
         ;Rotate coordinate to image time
-        rot_p = rot_xy(xi,yi,tstart=gi,tend=index(j).date_obs)
+        rot_p = rot_xy(xi,yi,tstart=gi,tend=index(j).date_d$obs)
+
+
+        ;Get solar radius in arcsec at given time
+        sol_rad = index(j).rsun_obs
+        ;Get conversion from arcsec to Mm
+        arc_phy = phy_rad/sol_rad ; Mm/arcsec
+        ;Area of pixel in Mm
+        are_pix = arc_phy^2*abs(index(j).cdelt1*index(j).cdelt2)
+
+        ;rotate by 180 degrees
+        ;rot_pix = [pix_x,pix_y]#rot_mat
+        ;pix_x = rot_pix[0]
+        ;pix_y = rot_pix[1]
+
+        ;Center rotated by 180 degrees
+        cent_pix = [index(j).crpix1-index(j).naxis1/2.,index(j).crpix2-index(j).naxis2/2.]#rot_mat
+        cent_x = cent_pix[0]+index(j).naxis1/2.
+        cent_y = cent_pix[1]+index(j).naxis2/2.
+
+        ;rotate delta by 180 degrees
+        delt_pix = [index(j).cdelt1,index(j).cdelt2]#rot_mat
+        delt_x = -delt_pix[0]
+        delt_y = -delt_pix[1]
 
         ;Get center pixel value
-        pix_x = rot_p[0]/index(j).cdelt1+index(j).crpix1-1
-        pix_y = rot_p[1]/index(j).cdelt2+index(j).crpix2-1
+        pix_x = (rot_p[0]/delt_x+cent_x)
+        pix_y = (rot_p[1]/delt_y+cent_y) 
  
         ;Get range around pix_x and pix_y values
         lims = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
+        print,lims
 
         ;Store limite seperately
         pxmin = lims[0]
@@ -285,16 +360,19 @@ for i=0,n_elements(goodt)-1 do begin
         ;Get image data to plot
         fimg = data[*,*,j]
 
+        ;Rotate the unprepped image
+        fimg = rot(fimg,180)
+
         ;Cut image to restricted window
         img = fimg(pxmin:pxmax,pymin:pymax)
         
         plot_image,img,min=-100,max=100,$
-            origin=-[(index(j).crpix1-1-pix_x)*index(j).cdelt1, $
-            (index(j).crpix2-1-pix_y)*index(j).cdelt2], $
-            scale=[index(j).cdelt1,index(j).cdelt2], $
+            origin=-[(cent_x-1-pix_x)*delt_x, $
+            (cent_y-1-pix_y)*delt_x], $
+            scale=[delt_x,delt_y], $
             xtitle='X-postion (arcseconds)', $
             ytitle='Y-position (arcseconds)',$
-            title=string([sig_id],format=title_fmt)+index(j).date_obs,$
+            title=string([sig_id],format=title_fmt)+index(j).date_d$obs,$
             xcharsize=1.50, $
             ycharsize=1.50, $
             xcharthick=1.50, $
