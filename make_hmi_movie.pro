@@ -145,16 +145,18 @@ goodt = where(strlen(tbest) eq 23)
 img_cad = 30.*60.
 
 ;width of image window in pixels
-win_w= 500
+win_w= 700
 ;Set up device
 device,set_resolution=[win_w*3,win_w*3],decomposed=0,set_pixel_depth=24
 
 ;title format
-title_fmt = '("HMI ID: ",I03," ")'
+title_fmt = '("HMI ID: ",A28," ")'
 
 ;format for output png file directory
-out_fmt = '(I03,"/")'
+out_fmt = '(A28,"/")'
 
+;IAU_format for coordinates
+iau_cor = '("L",I03,"C",I03)'
 
 ;Download HMI data for all the best times
 for i=0,n_elements(goodt)-1 do begin
@@ -206,10 +208,6 @@ for i=0,n_elements(goodt)-1 do begin
     ;leave if there are no good matches
     if matches eq 0 then continue
 
-    ;Create directory for output png files
-    full_dir = out_arch+string([id[i]],format=out_fmt)
-    print,full_dir,id[i]
-    if file_test(full_dir) eq 0 then file_mkdir,full_dir
 
     ;clip to only get closest matches
     min_loc = min_loc[good_min]
@@ -234,6 +232,27 @@ for i=0,n_elements(goodt)-1 do begin
     hmi_prep,match_files,findgen(n_elements(match_files)),index,data
     ;hmi_prep,hmi_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
 
+    ;Create directory for output png files
+    ;Subscribe to IAU standard on output format
+    iau_time = strsplit(gi,'.',/extract)
+    iau_time = iau_time[0]
+
+    
+
+    ;Get Carrington coordinates 
+    wcs = fitshead2wcs( index[0] )
+    rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_obs)
+    WCS_CONV_HPC_HG, rot_p[0], rot_p[1], lon, lat, WCS=WCS, /carr, /pos_long
+    iau_pos = string([round(lon),round(lat)],format=iau_cor)
+    
+
+    
+
+    ;Create new unique ID with IAU standard
+    sig_id = 'SOL'+iau_time+iau_pos
+    full_dir = out_arch+string([sig_id],format=out_fmt)
+    print,full_dir,sig_id
+    if file_test(full_dir) eq 0 then file_mkdir,full_dir
     
 
     ; plot each hmi observation
@@ -268,7 +287,7 @@ for i=0,n_elements(goodt)-1 do begin
             scale=[index(j).cdelt1,index(j).cdelt2], $
             xtitle='X-postion (arcseconds)', $
             ytitle='Y-position (arcseconds)',$
-            title=string([id[i]],format=title_fmt)+index(j).date_obs,$
+            title=string([sig_id],format=title_fmt)+index(j).date_obs,$
             xcharsize=1.50, $
             ycharsize=1.50, $
             xcharthick=1.50, $
@@ -318,8 +337,9 @@ for i=0,n_elements(goodt)-1 do begin
     
     
     ;output file name
-    outf = string([id[i]],format='(I03,"_mag.mp4")')
+    outf = sig_id+"_mag.mp4"
     spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
+    stop
 endfor
 
 end
