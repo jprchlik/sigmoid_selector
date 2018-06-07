@@ -324,7 +324,7 @@ for i=0,n_elements(goodt)-1 do begin
                     message, 'ERROR: FFMPEG does not appear to be installed.', /informational
                     return
             endif 
-            ffmpeg = str_replace(ffmpeg, 'opt', 'usr')
+            ;ffmpeg = str_replace(ffmpeg, 'opt', 'usr')
     endif
 
     png_size = string([2*win_w,2*win_w],format='(I04,"x",I04)')
