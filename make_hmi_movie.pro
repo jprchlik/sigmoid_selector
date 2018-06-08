@@ -317,6 +317,16 @@ for i=0,n_elements(goodt)-1 do begin
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
     
 
+    ;Init time, total intensity, neg. intensity, pos. intensity, area
+    obs_time = [] ; observation time
+    tot_ints = [] ; Total magnetic field intensity
+    pos_ints = [] ; Positive magnetic field intensity
+    neg_ints = [] ; Negative magnetic field intensity
+    pix_area = [] ; Area of ROI in pixels^2
+    tot_area = [] ; Area of ROI in cm^2
+    roi_save = [] ; ROI object
+    phy_save = [] ; ROI object
+
     ; plot each hmi observation
     for j=0,n_elements(index)-1 do begin
 
@@ -354,7 +364,6 @@ for i=0,n_elements(goodt)-1 do begin
         ;Get center pixel value
         pix_x = (rot_p[0]/delt_x+cent_x)
         pix_y = (rot_p[1]/delt_y+cent_y) 
- 
         ;Get range around pix_x and pix_y values
         lims = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
 
@@ -379,7 +388,6 @@ for i=0,n_elements(goodt)-1 do begin
 
 
 
-
         ;Cut image to restricted window
         img = fimg(pxmin:pxmax,pymin:pymax)
         simg= img
@@ -400,8 +408,9 @@ for i=0,n_elements(goodt)-1 do begin
 
 
         ;create spike pixel masks
-        cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
-        cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.5,imap=imap_n)
+        ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
+        cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.85,imap=imap_p0)
+        cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.85,imap=imap_n)
 
         ;Remove spikes from image
         ;img(where(imap_p0 eq 1))=0
@@ -419,8 +428,8 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
-        rad_2 = 250.
-        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=20,zero_crossings=[0,255])
+        rad_2 = 300.
+        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=10,zero_crossings=[0,255])
   
         ;Get boundary of created countour
         CONTOUR,edge, LEVEL = 1,  $
@@ -447,20 +456,60 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Create new ROI obejct using contour
         loadct,12
-        line = [LINDGEN(PathInfo(0).N), 0] & $
-        roi_obj = OBJ_NEW('IDLanROI', $
+        ;search for an object containing the rotated point
+        ;search = 1
+        ;while searc
+        line = [LINDGEN(PathInfo(0).N), 0] 
+
+
+        ;ROI in physical coordinates
+        roi_phy = OBJ_NEW('IDLanROI', $
            delt_x*(pathXY(*, pathInfo(0).OFFSET + line))[0, *]+org_x, $
            delt_y*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]+org_y) & $
            ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
            ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
-        ;Draw ROI on plot
-        DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
+
+        ;ROI in pixel coordinates
+        roi_obj = OBJ_NEW('IDLanROI', $
+           (pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
+           (pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
+
+
+        ;DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
+        ;Draw ROI on plot switch to plotting line around ROI instead of ROI in draw_roi
+        plots, delt_x*(pathXY(*, pathInfo(0).OFFSET + line))[0, *]+org_x, delt_y*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]+org_y,color= 200,thick=3
         loadct,0
 
         ;write png file in directory 
         TVLCT,r,g,b,/Get
         write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
+
+
+        ;create mask for image based on edge detection
+        maskResult = ROIout -> ComputeMask(DIMENSIONS = [win_w,win_w])            
+        IMAGE_STATISTICS, abs(img), MASK = maskResult, $  
+                        COUNT = maskArea , data_sum=tot_intensity   
+        IMAGE_STATISTICS, img < 0., MASK = maskResult, $  
+                        COUNT = neg_maskArea , data_sum=neg_intensity   
+        IMAGE_STATISTICS, img > 0., MASK = maskResult, $  
+                        COUNT = pos_maskArea , data_sum=pos_intensity   
+
+
+
+        ;Save variables
+        obs_time = [obs_time,index(j).date_d$obs] ; observation time
+        tot_ints = [tot_ints,tot_intensity] ; Total magnetic field intensity
+        pos_ints = [pos_ints,pos_intensity] ; Positive magnetic field intensity
+        neg_ints = [neg_ints,neg_intensity] ; Negative magnetic field intensity
+        pix_area = [pix_area,maskArea] ; Area of ROI in pixels^2
+        tot_area = [tot_area,maskArea*are_pix] ; Area of ROI in cm^2
+        roi_save = [roi_save,roi_obj] ;ROI object in pixels
+        phy_save = [phy_save,roi_phy] ;ROI object in physical coordinates
     endfor
+
+
+     ;Save output sav file
+     save,sig_id,obs_time,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
 
     ;create directory for symbolic links
     if file_test(full_dir+'/symlinks/') then file_delete,full_dir+'symlinks/',/recursive
