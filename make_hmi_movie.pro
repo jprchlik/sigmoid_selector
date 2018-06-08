@@ -422,9 +422,9 @@ for i=0,n_elements(goodt)-1 do begin
         gimg = gauss_smooth(abs(simg),30)
 
 
-        ;set origin variables
-        org_x = -(cent_x-1-pix_x)*delt_x
-        org_y = -(cent_y-1-pix_y)*delt_y
+        ;set origin variables correct from center origin to bottom left origin 2018/06/08 J. Prchlik
+        org_x = -(cent_x-1-pix_x+win_w/2)*delt_x
+        org_y = -(cent_y-1-pix_y+win_w/2)*delt_y
 
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
@@ -457,27 +457,75 @@ for i=0,n_elements(goodt)-1 do begin
         ;Create new ROI obejct using contour
         loadct,12
         ;search for an object containing the rotated point
-        ;search = 1
-        ;while searc
-        line = [LINDGEN(PathInfo(0).N), 0] 
+        search = 1
+        ;index of object
+        ind_obj = 0
+
+        ;Use largest area if no good position match
+        areas = []
+
+        ;Look through ROIs until you find one with the sigmoid point inside
+        while search do begin 
+            line = [LINDGEN(PathInfo(ind_obj).N), 0] 
+            ;ROI in physical coordinates
+            roi_phy = OBJ_NEW('IDLanROI', $
+               delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
+               delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
+               ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
+               ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
+
+ 
+           ;check if point is in ROI object
+           pnt_chk = roi_phy -> containsPoints(rot_p[0],rot_p[1])
+
+           ;get ROI AREA use largest area if no good point match
+           geo_comp = roi_phy.ComputeGeometry(AREA = area)
+           areas = [areas,area]
+
+           ;if point in object stop while and keep object
+           if pnt_chk then search = 0
+           ;No region found
+           if ind_obj eq n_elements(PathInfo.N)-1 then search = 0 
+
+           ;increment counter
+           ind_obj = ind_obj+1
+        endwhile
+
+        ;correct for adding 1 to index
+        ind_obj = ind_obj-1
+
+        ;If no ROI found save figure and move to next time
+        ;Changed to get ROI with largest area if no good point ROI match is found
+        if pnt_chk eq 0 then begin
+           ;get ROI with largest area
+           ind_obj = where(area eq max(area))  
+
+           ;Do other notmal ROI position stuff
+           line = [LINDGEN(PathInfo(ind_obj).N), 0] 
+           ;ROI in physical coordinates
+           roi_phy = OBJ_NEW('IDLanROI', $
+              delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
+              delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
+              ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
+          
+           ; ;write png file in directory 
+           ; TVLCT,r,g,b,/Get
+           ; write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
+        endif
+
+        
 
 
-        ;ROI in physical coordinates
-        roi_phy = OBJ_NEW('IDLanROI', $
-           delt_x*(pathXY(*, pathInfo(0).OFFSET + line))[0, *]+org_x, $
-           delt_y*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]+org_y) & $
-           ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
-           ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
-
+        
         ;ROI in pixel coordinates
         roi_obj = OBJ_NEW('IDLanROI', $
-           (pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
-           (pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
+           (pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *], $
+           (pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]) & $
 
 
         ;DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
         ;Draw ROI on plot switch to plotting line around ROI instead of ROI in draw_roi
-        plots, delt_x*(pathXY(*, pathInfo(0).OFFSET + line))[0, *]+org_x, delt_y*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]+org_y,color= 200,thick=3
+        plots, delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y,color= 200,thick=3
         loadct,0
 
         ;write png file in directory 
@@ -486,7 +534,7 @@ for i=0,n_elements(goodt)-1 do begin
 
 
         ;create mask for image based on edge detection
-        maskResult = ROIout -> ComputeMask(DIMENSIONS = [win_w,win_w])            
+        maskResult = roi_obj -> ComputeMask(DIMENSIONS = [win_w,win_w])            
         IMAGE_STATISTICS, abs(img), MASK = maskResult, $  
                         COUNT = maskArea , data_sum=tot_intensity   
         IMAGE_STATISTICS, img < 0., MASK = maskResult, $  
