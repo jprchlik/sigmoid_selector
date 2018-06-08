@@ -314,7 +314,6 @@ for i=0,n_elements(goodt)-1 do begin
     ;Remove : characters
     full_dir = str_replace(full_dir,':','')
     full_dir = str_replace(full_dir,'-','')
-    print,full_dir,sig_id
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
     
 
@@ -358,7 +357,6 @@ for i=0,n_elements(goodt)-1 do begin
  
         ;Get range around pix_x and pix_y values
         lims = select_cutout(pix_x,pix_y,win_w,index(j).naxis1,index(j).naxis2)
-        print,lims
 
         ;Store limite seperately
         pxmin = lims[0]
