@@ -599,7 +599,6 @@ for i=0,n_elements(goodt)-1 do begin
     outf = str_replace(sig_id,':','')+"_mag.mp4"
     outf = str_replace(outf,'-','')
     spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
-    stop
 endfor
 
 end
