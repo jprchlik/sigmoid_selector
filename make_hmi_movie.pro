@@ -432,10 +432,10 @@ for i=0,n_elements(goodt)-1 do begin
 
         
         ;Plot image with rotation
-        plot_image,edge,min=-100,max=100,$
-            ;origin=[org_x, $
-            ;org_y], $
-            ;scale=[delt_x,delt_y], $
+        plot_image,img,min=-100,max=100,$
+            origin=[org_x, $
+            org_y], $
+            scale=[delt_x,delt_y], $
             xtitle='X-postion (arcseconds)', $
             ytitle='Y-position (arcseconds)',$
             title=string([sig_id],format=title_fmt)+index(j).date_d$obs,$
@@ -444,36 +444,21 @@ for i=0,n_elements(goodt)-1 do begin
             xcharthick=1.50, $
             ycharthick=1.50, $
             charsize=2.,$
-            charthick=2.,/noadjust
+            charthick=2.;/nosquare
 
-
-        ;Image display parameters
-        ORIGIN = [0,0]
-        XSCALE = 1
-        YSCALE = 1
-  	    XS = !X.S * !D.X_SIZE
-	    YS = !Y.S * !D.Y_SIZE
-	    MX = XS[1]*index(j).naxis1*XSCALE
-	    MY = YS[1]*index(j).naxis2*YSCALE
-	    IX = XS[0] + (ORIGIN[0] - XSCALE/2.)*XS[1]
-	    IY = YS[0] + (ORIGIN[1] - YSCALE/2.)*YS[1]
-
-        DX = (MX-IX)/(sc*win_w)
-        DY = (MY-IY)/(sc*win_w)
 
         ;Create new ROI obejct using contour
         loadct,12
         line = [LINDGEN(PathInfo(0).N), 0] & $
         roi_obj = OBJ_NEW('IDLanROI', $
-           DX*(pathXY(*, pathInfo(0).OFFSET + line))[0, *], $
-           DY*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]) & $
+           delt_x*(pathXY(*, pathInfo(0).OFFSET + line))[0, *]+org_x, $
+           delt_y*(pathXY(*, pathInfo(0).OFFSET + line))[1, *]+org_y) & $
            ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
            ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
         ;Draw ROI on plot
-        DRAW_ROI, roi_obj, COLOR =200,/device,/LINE_FILL
+        DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
         loadct,0
 
-        stop
         ;write png file in directory 
         TVLCT,r,g,b,/Get
         write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
