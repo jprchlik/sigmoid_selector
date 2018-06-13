@@ -451,7 +451,7 @@ for i=0,n_elements(goodt)-1 do begin
         rad_1 = 1.
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
-        rad_2 = sig_p
+        rad_2 = sig_p+20
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=5,zero_crossings=[0,255])
   
         ;Get boundary of created countour
