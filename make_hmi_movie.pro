@@ -141,7 +141,11 @@ pro make_hmi_movie,times,hmi_arch=hmi_arch,out_arch=out_arch
 set_plot,'Z'
 
 ;Read in file containing TBEST
-readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;Updates with Patty's new output format 2018/06/13 J. Prchlik
+formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
 ;Set archive directory for download aia files
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_arch/'
 hmi_arch = hmi_arch+'/'
@@ -197,12 +201,6 @@ goodt = where(strlen(tbest) eq 23)
 ;Cadance for image creation in seconds
 img_cad = 30.*60.
 
-;width of image window in pixels
-win_w= 700
-sc = 3
-;Set up device
-device,set_resolution=[win_w*sc,win_w*sc],decomposed=0,set_pixel_depth=24
-
 ;title format
 title_fmt = '("HMI ID: ",A30," ")'
 
@@ -212,12 +210,16 @@ out_fmt = '(A30,"/")'
 ;IAU_format for coordinates
 iau_cor = '("L",I03,"C",I03)'
 
+;Restore sigmiod save file
+restore,'Sigmoids2007to2017.sav'
+
 
 ;Rotate images by given angle
 rot_mat = [[-1.,0.],[0.,-1.]]
 
 ;Download HMI data for all the best times
 for i=0,n_elements(goodt)-1 do begin
+
 
 
     
@@ -306,6 +308,22 @@ for i=0,n_elements(goodt)-1 do begin
     iau_pos = string([round(lon),round(lat)],format=iau_cor)
     
 
+    ;width of image window in pixels
+    win_w= 700
+    sc = 3
+
+    ;Get dynamic window to make for larger sigmiods
+    ;Get the width of the sigmoid in pixels and add 100
+    ;pixels on either side
+    sig_p = length[i]/index(0).cdelt1 ; sigmiod length in hmi pixels
+    tmp_w = 200+sig_p ; Caculate new window width
+
+    ;use the modified window if the sigmoid is larger 
+    if tmp_w gt win_w then win_w = tmp_w
+    
+
+    ;Set up device
+    device,set_resolution=[win_w*sc,win_w*sc],decomposed=0,set_pixel_depth=24
     
 
     ;Create new unique ID with IAU standard
@@ -319,6 +337,7 @@ for i=0,n_elements(goodt)-1 do begin
 
     ;Init time, total intensity, neg. intensity, pos. intensity, area
     obs_time = [] ; observation time
+    obs_qual = [] ; observation quality
     tot_ints = [] ; Total magnetic field intensity
     pos_ints = [] ; Positive magnetic field intensity
     neg_ints = [] ; Negative magnetic field intensity
@@ -332,6 +351,7 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;if image quality greater than 90000 exit
         if index(j).quality gt 90000 then continue
+        
         
 
         ;Plot restricted range
@@ -428,7 +448,9 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
-        rad_2 = 300.
+        ;rad_2 = 300.
+        ;Use the sigmoids measured size +20 pixels to look for features
+        rad_2 = sig_p+20./2.
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=10,zero_crossings=[0,255])
   
         ;Get boundary of created countour
@@ -546,6 +568,7 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Save variables
         obs_time = [obs_time,index(j).date_d$obs] ; observation time
+        obs_qual = [obs_uale,index(j).quality] ; observation time
         tot_ints = [tot_ints,tot_intensity] ; Total magnetic field intensity
         pos_ints = [pos_ints,pos_intensity] ; Positive magnetic field intensity
         neg_ints = [neg_ints,neg_intensity] ; Negative magnetic field intensity
@@ -556,8 +579,9 @@ for i=0,n_elements(goodt)-1 do begin
     endfor
 
 
-     ;Save output sav file
-     save,sig_id,obs_time,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
+    ;Save output sav file
+    out_id = id[i]
+    save,sig_id,out_id,obs_time,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
 
     ;create directory for symbolic links
     if file_test(full_dir+'/symlinks/') then file_delete,full_dir+'symlinks/',/recursive
