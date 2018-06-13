@@ -319,7 +319,7 @@ for i=0,n_elements(goodt)-1 do begin
     tmp_w = 200+sig_p ; Caculate new window width
 
     ;use the modified window if the sigmoid is larger 
-    if tmp_w gt win_w then win_w = tmp_w
+    if tmp_w gt win_w then win_w = round(tmp_w)
     
 
     ;Set up device
@@ -450,7 +450,7 @@ for i=0,n_elements(goodt)-1 do begin
         rad_1 = 1.
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
-        rad_2 = sig_p+20./2.
+        rad_2 = (sig_p+20.)/2.
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=5,zero_crossings=[0,255])
   
         ;Get boundary of created countour
