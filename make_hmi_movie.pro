@@ -451,7 +451,7 @@ for i=0,n_elements(goodt)-1 do begin
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
         rad_2 = sig_p+20./2.
-        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=10,zero_crossings=[0,255])
+        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=5,zero_crossings=[0,255])
   
         ;Get boundary of created countour
         CONTOUR,edge, LEVEL = 1,  $
@@ -568,7 +568,7 @@ for i=0,n_elements(goodt)-1 do begin
 
         ;Save variables
         obs_time = [obs_time,index(j).date_d$obs] ; observation time
-        obs_qual = [obs_uale,index(j).quality] ; observation time
+        obs_qual = [obs_qual,index(j).quality] ; observation time
         tot_ints = [tot_ints,tot_intensity] ; Total magnetic field intensity
         pos_ints = [pos_ints,pos_intensity] ; Positive magnetic field intensity
         neg_ints = [neg_ints,neg_intensity] ; Negative magnetic field intensity
