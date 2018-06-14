@@ -196,7 +196,7 @@ rad_2 = 15.
 
 
 ;good sigmoid tbest times (i.e. contains time string)
-goodt = where(strlen(tbest) eq 23)
+goodt = where(strlen(tobs) eq 23)
 
 ;Cadance for image creation in seconds
 img_cad = 30.*60.
@@ -218,10 +218,12 @@ restore,'Sigmoids2007to2017.sav'
 rot_mat = [[-1.,0.],[0.,-1.]]
 
 ;Download HMI data for all the best times
-for i=0,n_elements(goodt)-1 do begin
+for ii=0,n_elements(goodt)-1 do begin
 
 
 
+    ;Set index to value with goodt
+    i = goodt[ii]
     
     ;get index for a good time
     ;Now x, y are measured at tobs instead of tbest 2018/06/14 J. Prchlik
