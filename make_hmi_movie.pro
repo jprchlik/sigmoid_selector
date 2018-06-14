@@ -317,7 +317,7 @@ for i=0,n_elements(goodt)-1 do begin
     ;pixels on either side
     sig_p = length[i]/index(0).cdelt1 ; sigmiod length in hmi pixels
     ;Use window width to be at least twice size of the simoid
-    tmp_w = 100+2.*sig_p ; Caculate new window width
+    tmp_w = 250+2.*sig_p ; Caculate new window width
 
     ;use the modified window if the sigmoid is larger 
     if tmp_w gt win_w then win_w = round(tmp_w)
@@ -451,7 +451,7 @@ for i=0,n_elements(goodt)-1 do begin
         rad_1 = 1.
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
-        rad_2 = sig_p+20
+        rad_2 = sig_p+100.
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=5,zero_crossings=[0,255])
   
         ;Get boundary of created countour
@@ -520,20 +520,22 @@ for i=0,n_elements(goodt)-1 do begin
         ;If no ROI found save figure and move to next time
         ;Changed to get ROI with largest area if no good point ROI match is found
         if pnt_chk eq 0 then begin
+          ;No reason for this with better coordinates 2018/06/14
+           continue
            ;get ROI with largest area
-           ind_obj = where(area eq max(area))  
+          ;;;ind_obj = where(area eq max(area))  
 
-           ;Do other notmal ROI position stuff
-           line = [LINDGEN(PathInfo(ind_obj).N), 0] 
-           ;ROI in physical coordinates
-           roi_phy = OBJ_NEW('IDLanROI', $
-              delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
-              delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
-              ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
-          
-           ; ;write png file in directory 
-           ; TVLCT,r,g,b,/Get
-           ; write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
+          ;; ;Do other notmal ROI position stuff
+          ;; line = [LINDGEN(PathInfo(ind_obj).N), 0] 
+          ;; ;ROI in physical coordinates
+          ;; roi_phy = OBJ_NEW('IDLanROI', $
+          ;;    delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
+          ;;    delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
+          ;;    ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
+          ;;
+          ;; ; ;write png file in directory 
+          ;; ; TVLCT,r,g,b,/Get
+          ;; ; write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
         endif
 
         
@@ -589,7 +591,12 @@ for i=0,n_elements(goodt)-1 do begin
     file_mkdir,full_dir+'/symlinks/'
 
     ;collect all png files
-    png_files = file_search(full_dir+'*png',/FULLY_QUALIFY_PATH)
+    png_files = file_search(full_dir+'*png',/FULLY_QUALIFY_PATH,count=png_count)
+
+
+    ;If no png files found just exit
+    if png_count lt 1 then continue 
+
     ;create symbolic links
     for j=0,n_elements(png_files)-1 do file_link,png_files[j],full_dir+'symlinks/'+string(j,format='(I04,".png")')
 
