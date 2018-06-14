@@ -224,7 +224,8 @@ for i=0,n_elements(goodt)-1 do begin
 
     
     ;get index for a good time
-    gi = tbest[i]
+    ;Now x, y are measured at tobs instead of tbest 2018/06/14 J. Prchlik
+    gi = tobs[i]
     xi = x[i]
     yi = y[i]
 
