@@ -231,6 +231,10 @@ for ii=0,n_elements(goodt)-1 do begin
     xi = x[i]
     yi = y[i]
 
+
+    ;if there is no new measurements of the sigmoid just continue
+    if gi eq '0' then continue
+
     ;get time range to search over
     ;t1 = tbest[gi]
     ;t2 = anytim(anytim(t1)+24.,/ecs)  
@@ -414,8 +418,20 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;Cut image to restricted window
         img = fimg(pxmin:pxmax,pymin:pymax)
+
+        ;Make sure image is the correct size if no loop off left pixels
+        img_size = size(img)
+
+        ;Check x
+        if img_size[1] gt win_w then img = img(0:win_w-1,*)
+        ;Check y
+        if img_size[2] gt win_w then img = img(*,0:win_w-1)
+
+
+        ;Create a smoothed version of the image
         simg= img
 
+        
 
         ;Remove noisy values
         bzzero = where(abs(simg) le  zero_lev)
@@ -443,7 +459,8 @@ for ii=0,n_elements(goodt)-1 do begin
         simg(Where(imap_n eq 1))=0
 
         ;gaussian smooth image
-        gimg = gauss_smooth(abs(simg),30)
+        gimg = gauss_smooth(abs(simg),30,/edge_truncate)
+        ;gimg = abs(simg)
 
 
         ;set origin variables correct from center origin to bottom left origin 2018/06/08 J. Prchlik
@@ -454,8 +471,9 @@ for ii=0,n_elements(goodt)-1 do begin
         rad_1 = 1.
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
-        rad_2 = sig_p+100.
-        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=5,zero_crossings=[0,255])
+        ;rad_2 = sig_p+100.
+        rad_2 = win_w/2-1
+        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])
   
         ;Get boundary of created countour
         CONTOUR,edge, LEVEL = 1,  $
@@ -489,6 +507,8 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;Use largest area if no good position match
         areas = []
+        ;closest area if no good position match
+        dists = []
 
         ;Look through ROIs until you find one with the sigmoid point inside
         while search do begin 
@@ -500,13 +520,19 @@ for ii=0,n_elements(goodt)-1 do begin
                ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
                ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
 
+           ;scale roi
+           roi_scl = roi_phy
+           roi_scl -> Scale,1.2, 1.2
  
            ;check if point is in ROI object
            pnt_chk = roi_phy -> containsPoints(rot_p[0],rot_p[1])
 
            ;get ROI AREA use largest area if no good point match
-           geo_comp = roi_phy.ComputeGeometry(AREA = area)
+           geo_comp = roi_phy.ComputeGeometry(AREA = area, centroid=cent)
            areas = [areas,area]
+           ;get ROI closest centriod if no good point match
+           distr = sqrt(total((cent[[0,1]]-transpose(rot_p))^2))
+           dists = [dists,distr]
 
            ;if point in object stop while and keep object
            if pnt_chk then search = 0
@@ -523,22 +549,22 @@ for ii=0,n_elements(goodt)-1 do begin
         ;If no ROI found save figure and move to next time
         ;Changed to get ROI with largest area if no good point ROI match is found
         if pnt_chk eq 0 then begin
-          ;No reason for this with better coordinates 2018/06/14
-           continue
+           ;No reason for this with better coordinates 2018/06/14
            ;get ROI with largest area
-          ;;;ind_obj = where(area eq max(area))  
+           ;nearest ROI
+           ind_obj = where(dists eq min(dists))  
 
-          ;; ;Do other notmal ROI position stuff
-          ;; line = [LINDGEN(PathInfo(ind_obj).N), 0] 
-          ;; ;ROI in physical coordinates
-          ;; roi_phy = OBJ_NEW('IDLanROI', $
-          ;;    delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
-          ;;    delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
-          ;;    ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
-          ;;
-          ;; ; ;write png file in directory 
-          ;; ; TVLCT,r,g,b,/Get
-          ;; ; write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
+           ;Do other notmal ROI position stuff
+           line = [LINDGEN(PathInfo(ind_obj).N), 0] 
+           ;ROI in physical coordinates
+           roi_phy = OBJ_NEW('IDLanROI', $
+              delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
+              delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
+              ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
+          
+           ; ;write png file in directory 
+           ; TVLCT,r,g,b,/Get
+           ; write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
         endif
 
         
@@ -550,6 +576,10 @@ for ii=0,n_elements(goodt)-1 do begin
            (pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *], $
            (pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]) & $
 
+
+        ;Scale up object roi 2018/06/14
+        ;Thought about but don't do too much could go wrong
+        ;roi_obj -> Scale,1.6, 1.6
 
         ;DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
         ;Draw ROI on plot switch to plotting line around ROI instead of ROI in draw_roi
@@ -582,6 +612,7 @@ for ii=0,n_elements(goodt)-1 do begin
         tot_area = [tot_area,maskArea*are_pix] ; Area of ROI in cm^2
         roi_save = [roi_save,roi_obj] ;ROI object in pixels
         phy_save = [phy_save,roi_phy] ;ROI object in physical coordinates
+
     endfor
 
 
