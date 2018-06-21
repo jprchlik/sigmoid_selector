@@ -633,7 +633,6 @@ for ii=0,n_elements(goodt)-1 do begin
         IMAGE_STATISTICS, fimg > 0., MASK = maskResult, $  
                         COUNT = pos_maskArea , data_sum=pos_intensity   
 
-        stop
 
         ;Save variables
         obs_time = [obs_time,index(j).date_d$obs] ; observation time
