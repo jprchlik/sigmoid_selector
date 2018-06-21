@@ -126,7 +126,7 @@ end
 ;    Program, movie creation
 ;
 ;USAGE
-;    filament_selector,times,hmi_arch='hmi_arch/'
+;    filament_selector,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=8
 ;
 ;INPUTS
 ;    times      -   A csv file containing times to analyze sigmoid filaments
@@ -136,7 +136,7 @@ end
 ;
 ;#############################################################
 
-pro make_hmi_movie,times,hmi_arch=hmi_arch,out_arch=out_arch
+pro make_hmi_movie,times,hmi_arch=hmi_arch,out_arch=out_arch,rebinv=rebinv
 ;set plot to Z Window
 set_plot,'Z'
 
@@ -153,6 +153,8 @@ hmi_arch = hmi_arch+'/'
 ;Set archive directory for output png files
 if keyword_set(out_arch) then out_arch = out_arch else out_arch = 'hmi_movie/'
 out_arch = out_arch+'/'
+
+if keyword_set(rebinv) then rebinv = rebinv else rebinv = 8
 
 ;Get list of hmi files
 hmi_list = file_search(hmi_arch+"hmi*fits")
@@ -423,12 +425,8 @@ for ii=0,n_elements(goodt)-1 do begin
         ;zero_lev2 = 3*sig
 
 
-
-        ;Cut image to restricted window
-        img = fimg(pxmin:pxmax,pymin:pymax)
-
-        ;Make sure image is the correct size if no loop off left pixels
-        img_size = size(img)
+        ;get size of image
+        fimg_size = size(fimg)
 
         ;Check x
         ;if img_size[1] gt win_w then img = img(0:win_w-1,*)
@@ -436,8 +434,8 @@ for ii=0,n_elements(goodt)-1 do begin
         ;if img_size[2] gt win_w then img = img(*,0:win_w-1)
 
 
-        ;Create a smoothed version of the image
-        simg= img
+        ;Create a low res smoothed version of the image
+        simg= rebin(fimg,fimg_size[1]/rebinv,fimg_size[2]/rebinv)
 
         
 
@@ -466,10 +464,23 @@ for ii=0,n_elements(goodt)-1 do begin
         simg(where(imap_p0 eq 1))=0
         simg(Where(imap_n eq 1))=0
 
-        stop
         ;gaussian smooth image
-        gimg = gauss_smooth(abs(simg),30,/edge_truncate)
+        gimg = gauss_smooth(abs(simg),30)
+        ;Find the boundaries in the smoothed image
+        rad_1 = 1.
+        ;rad_2 = 300.
+        ;Use the sigmoids measured size +20 pixels to look for features
+        ;rad_2 = sig_p+100. 2(half of image width)*8(rebinned pixels)
+        rad_2 = win_w/(2.*rebinv)-1
+        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])
         ;gimg = abs(simg)
+        ;Make gimg back to normal size then cut
+
+        ;Cut image to restricted window
+        img = fimg(pxmin:pxmax,pymin:pymax)
+
+        ;Make sure image is the correct size if no loop off left pixels
+        img_size = size(img)
 
 
 
@@ -477,13 +488,6 @@ for ii=0,n_elements(goodt)-1 do begin
         org_x = -(cent_x-1-pix_x+win_w/2)*delt_x
         org_y = -(cent_y-1-pix_y+win_w/2)*delt_y
 
-        ;Find the boundaries in the smoothed image
-        rad_1 = 1.
-        ;rad_2 = 300.
-        ;Use the sigmoids measured size +20 pixels to look for features
-        ;rad_2 = sig_p+100.
-        rad_2 = win_w/2-1
-        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])
   
         ;Get boundary of created countour
         CONTOUR,edge, LEVEL = 1,  $
@@ -525,8 +529,8 @@ for ii=0,n_elements(goodt)-1 do begin
             line = [LINDGEN(PathInfo(ind_obj).N), 0] 
             ;ROI in physical coordinates
             roi_phy = OBJ_NEW('IDLanROI', $
-               delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
-               delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
+               rebingv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
+               rebingv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
                ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
                ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
 
@@ -600,7 +604,7 @@ for ii=0,n_elements(goodt)-1 do begin
         TVLCT,r,g,b,/Get
         write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
 
-
+        stop
         ;create mask for image based on edge detection
         ;Switched to img_size because if you can't beat em join em
         maskResult = roi_obj -> ComputeMask(DIMENSIONS = [img_size[1],img_size[2]])            
