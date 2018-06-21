@@ -436,19 +436,9 @@ for ii=0,n_elements(goodt)-1 do begin
         ;if img_size[2] gt win_w then img = img(*,0:win_w-1)
 
 
-        ;Create a low res smoothed version of the image
-        simg= rebin(fimg,fimg_size[1]/rebinv,fimg_size[2]/rebinv)
+        ;create image for smoothing
+        simg= fimg 
 
-        ;fill values outside rsun with median
-        bin_cor_x = dindgen(fimg_size[1]/rebinv) # (intarr((fimg_size[1]/rebinv)) +1) -cent_x/rebinv
-        bin_cor_y = dindgen(fimg_size[2]/rebinv) ## (intarr((fimg_size[1]/rebinv)) +1)-cent_y/rebinv
-        bin_cor_x = delt_x*rebinv*bin_cor_x
-        bin_cor_y = delt_y*rebinv*bin_cor_y
-        bin_cor_r = sqrt(bin_cor_x^2+bin_cor_y^2)
-
-        ;get median value when less than solar radius
-        med_sun = median(simg[where(bin_cor_r lt sol_rad)])
-        simg[where(bin_cor_r gt sol_rad)] = med_sun
 
         ;Remove noisy values
         bzzero = where(abs(simg) le  zero_lev)
@@ -474,15 +464,29 @@ for ii=0,n_elements(goodt)-1 do begin
         ;img(Where(imap_n eq 1))=0
         simg(where(imap_p0 eq 1))=0
         simg(Where(imap_n eq 1))=0
+    
 
+        ;Create a low res smoothed version of the image
+        simg = rebin(fimg,fimg_size[1]/rebinv,fimg_size[2]/rebinv)
+
+        ;fill values outside rsun with median
+        bin_cor_x = dindgen(fimg_size[1]/rebinv) # (intarr((fimg_size[1]/rebinv)) +1) -cent_x/rebinv
+        bin_cor_y = dindgen(fimg_size[2]/rebinv) ## (intarr((fimg_size[1]/rebinv)) +1)-cent_y/rebinv
+        bin_cor_x = delt_x*rebinv*bin_cor_x
+        bin_cor_y = delt_y*rebinv*bin_cor_y
+        bin_cor_r = sqrt(bin_cor_x^2+bin_cor_y^2)
+
+        ;get median value when less than solar radius
+        med_sun = median(simg[where(bin_cor_r lt sol_rad)])
+        simg[where(bin_cor_r gt sol_rad)] = 0.0
         ;gaussian smooth image
-        gimg = gauss_smooth(abs(simg),30/rebinv)
+        gimg = gauss_smooth(abs(simg),10)
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
         ;rad_2 = sig_p+100. 2(half of image width)*8(rebinned pixels)
-        rad_2 = win_w/(2.*rebinv)-1
+        rad_2 = win_w/(2*rebinv)-1
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])
         ;gimg = abs(simg)
         ;Make gimg back to normal size then cut
