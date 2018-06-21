@@ -276,6 +276,7 @@ for ii=0,n_elements(goodt)-1 do begin
     if matches eq 0 then continue
 
 
+
     ;clip to only get closest matches
     min_loc = min_loc[good_min]
    
@@ -294,6 +295,30 @@ for ii=0,n_elements(goodt)-1 do begin
     match_files=match_files[uniq(match_files)]
     match_fname=match_fname[uniq(match_files)]
     
+    ;Check the first file before reading in all files
+    mreadfits,match_files[0], index,data
+
+    ;Create directory for output png files
+    ;Subscribe to IAU standard on output format
+    iau_time = strsplit(gi,'.',/extract)
+    iau_time = iau_time[0]
+
+    ;Get Carrington coordinates 
+    wcs = fitshead2wcs( index(0) )
+    rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_d$obs)
+    WCS_CONV_HPC_HG, rot_p[0], rot_p[1], lon, lat, WCS=WCS, /carr, /pos_long
+    iau_pos = string([round(lon),round(lat)],format=iau_cor)
+
+    ;Create new unique ID with IAU standard
+    sig_id = 'SOL'+iau_time+iau_pos
+    full_dir = out_arch+string([sig_id],format=out_fmt)
+    ;Remove : characters
+    full_dir = str_replace(full_dir,':','')
+    full_dir = str_replace(full_dir,'-','')
+    if file_test(full_dir) eq 0 then file_mkdir,full_dir
+   
+    ;If save file exists continue 2018/06/20
+    if file_test(full_dir+'/'+str_replace(sig_id,':','')+'.sav') eq 1 then continue
   
     ;prep hmi data
     ;hmi_prep,match_files,findgen(n_elements(match_files)),index,odata
@@ -301,18 +326,9 @@ for ii=0,n_elements(goodt)-1 do begin
     ;hmi_prep,iindex,data,index,odata
     ;hmi_prep,hmi_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
 
-    ;Create directory for output png files
-    ;Subscribe to IAU standard on output format
-    iau_time = strsplit(gi,'.',/extract)
-    iau_time = iau_time[0]
 
     
 
-    ;Get Carrington coordinates 
-    wcs = fitshead2wcs( index(0) )
-    rot_p = rot_xy(xi,yi,tstart=gi,tend=index(0).date_d$obs)
-    WCS_CONV_HPC_HG, rot_p[0], rot_p[1], lon, lat, WCS=WCS, /carr, /pos_long
-    iau_pos = string([round(lon),round(lat)],format=iau_cor)
     
 
     ;width of image window in pixels
@@ -331,17 +347,9 @@ for ii=0,n_elements(goodt)-1 do begin
     
 
     ;Set up device
-    device,set_resolution=[win_w*sc,win_w*sc],decomposed=0,set_pixel_depth=24
+    device,set_resolution=[win_w,win_w],decomposed=0,set_pixel_depth=24
     
 
-    ;Create new unique ID with IAU standard
-    sig_id = 'SOL'+iau_time+iau_pos
-    full_dir = out_arch+string([sig_id],format=out_fmt)
-    ;Remove : characters
-    full_dir = str_replace(full_dir,':','')
-    full_dir = str_replace(full_dir,'-','')
-    if file_test(full_dir) eq 0 then file_mkdir,full_dir
-    
 
     ;Init time, total intensity, neg. intensity, pos. intensity, area
     obs_time = [] ; observation time
@@ -423,9 +431,9 @@ for ii=0,n_elements(goodt)-1 do begin
         img_size = size(img)
 
         ;Check x
-        if img_size[1] gt win_w then img = img(0:win_w-1,*)
-        ;Check y
-        if img_size[2] gt win_w then img = img(*,0:win_w-1)
+        ;if img_size[1] gt win_w then img = img(0:win_w-1,*)
+        ;;Check y
+        ;if img_size[2] gt win_w then img = img(*,0:win_w-1)
 
 
         ;Create a smoothed version of the image
@@ -458,9 +466,11 @@ for ii=0,n_elements(goodt)-1 do begin
         simg(where(imap_p0 eq 1))=0
         simg(Where(imap_n eq 1))=0
 
+        stop
         ;gaussian smooth image
         gimg = gauss_smooth(abs(simg),30,/edge_truncate)
         ;gimg = abs(simg)
+
 
 
         ;set origin variables correct from center origin to bottom left origin 2018/06/08 J. Prchlik
@@ -592,7 +602,8 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
         ;create mask for image based on edge detection
-        maskResult = roi_obj -> ComputeMask(DIMENSIONS = [win_w,win_w])            
+        ;Switched to img_size because if you can't beat em join em
+        maskResult = roi_obj -> ComputeMask(DIMENSIONS = [img_size[1],img_size[2]])            
         IMAGE_STATISTICS, abs(img), MASK = maskResult, $  
                         COUNT = maskArea , data_sum=tot_intensity   
         IMAGE_STATISTICS, img < 0., MASK = maskResult, $  
