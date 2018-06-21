@@ -140,6 +140,8 @@ pro make_hmi_movie,times,hmi_arch=hmi_arch,out_arch=out_arch,rebinv=rebinv
 ;set plot to Z Window
 set_plot,'Z'
 
+;Start with BW color table
+loadct,0
 ;Read in file containing TBEST
 ;readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
@@ -488,6 +490,10 @@ for ii=0,n_elements(goodt)-1 do begin
         org_x = -(cent_x-1-pix_x+win_w/2)*delt_x
         org_y = -(cent_y-1-pix_y+win_w/2)*delt_y
 
+        ;get x,y origin for binned image
+        borg_x = -(cent_x/rebinv)*delt_x*rebinv
+        borg_y = -(cent_y/rebinv)*delt_y*rebinv
+        
   
         ;Get boundary of created countour
         CONTOUR,edge, LEVEL = 1,  $
@@ -529,14 +535,15 @@ for ii=0,n_elements(goodt)-1 do begin
             line = [LINDGEN(PathInfo(ind_obj).N), 0] 
             ;ROI in physical coordinates
             roi_phy = OBJ_NEW('IDLanROI', $
-               rebingv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
-               rebingv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
-               ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
-               ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) & $
+               rebinv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+borg_x, $
+               rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y) & $
+               ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], b$
+               ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) b& $
 
            ;scale roi
-           roi_scl = roi_phy
-           roi_scl -> Scale,1.2, 1.2
+           ;Not used 2018/06/21 J. Prchlik
+           ;roi_scl = roi_phy
+           ;roi_scl -> Scale,1.2, 1.2
  
            ;check if point is in ROI object
            pnt_chk = roi_phy -> containsPoints(rot_p[0],rot_p[1])
@@ -572,8 +579,8 @@ for ii=0,n_elements(goodt)-1 do begin
            line = [LINDGEN(PathInfo(ind_obj).N), 0] 
            ;ROI in physical coordinates
            roi_phy = OBJ_NEW('IDLanROI', $
-              delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, $
-              delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y) & $
+              rebinv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+borg_x, $
+              rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y) & $
               ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
           
            ; ;write png file in directory 
@@ -587,8 +594,8 @@ for ii=0,n_elements(goodt)-1 do begin
         
         ;ROI in pixel coordinates
         roi_obj = OBJ_NEW('IDLanROI', $
-           (pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *], $
-           (pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]) & $
+           rebinv*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *], $
+           rebinv*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]) & $
 
 
         ;Scale up object roi 2018/06/14
@@ -597,7 +604,7 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
         ;Draw ROI on plot switch to plotting line around ROI instead of ROI in draw_roi
-        plots, delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+org_x, delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+org_y,color= 200,thick=3
+        plots, rebinv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+borg_x, rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y,color= 200,thick=3
         loadct,0
 
         ;write png file in directory 
