@@ -351,7 +351,7 @@ for ii=0,n_elements(goodt)-1 do begin
     
 
     ;Set up device
-    device,set_resolution=[win_w,win_w],decomposed=0,set_pixel_depth=24
+    device,set_resolution=[win_w*sc,win_w*sc],decomposed=0,set_pixel_depth=24
     
 
 
@@ -436,13 +436,11 @@ for ii=0,n_elements(goodt)-1 do begin
         ;if img_size[2] gt win_w then img = img(*,0:win_w-1)
 
 
-        ;create image for smoothing
-        simg= fimg 
 
 
         ;Remove noisy values
-        bzzero = where(abs(simg) le  zero_lev)
-        simg(bzzero) = 0.0                                ; All pixels below a certain value are set to zero
+        bzzero = where(abs(fimg) le  zero_lev)
+        fimg(bzzero) = 0.0                                ; All pixels below a certain value are set to zero
 
 
         ;Despike image
@@ -450,8 +448,8 @@ for ii=0,n_elements(goodt)-1 do begin
         cormag_n =fltarr(win_w,win_w)
         
         ;Get positive and negative spikes
-        cormag_p0(where(simg ge 0))=simg(where(simg ge 0))
-        cormag_n(where(simg lt 0)) =simg(where(simg lt 0))
+        cormag_p0(where(fimg ge 0))=fimg(where(fimg ge 0))
+        cormag_n(where(fimg lt 0)) =fimg(where(fimg lt 0))
 
 
         ;create spike pixel masks
@@ -462,8 +460,8 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Remove spikes from image
         ;img(where(imap_p0 eq 1))=0
         ;img(Where(imap_n eq 1))=0
-        simg(where(imap_p0 eq 1))=0
-        simg(Where(imap_n eq 1))=0
+        fimg(where(imap_p0 eq 1))=0
+        fimg(Where(imap_n eq 1))=0
     
 
         ;Create a low res smoothed version of the image
@@ -624,18 +622,18 @@ for ii=0,n_elements(goodt)-1 do begin
         TVLCT,r,g,b,/Get
         write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
 
-        stop
         ;create mask for image based on edge detection
         ;Switched to img_size because if you can't beat em join em
-        maskResult = roi_obj -> ComputeMask(DIMENSIONS = [img_size[1],img_size[2]])            
-        IMAGE_STATISTICS, abs(img), MASK = maskResult, $  
+        ;Switched to fimg since fimg and simg/gimg have the same FoV
+        maskResult = roi_obj -> ComputeMask(DIMENSIONS = [fimg_size[1],fimg_size[2]])            
+        IMAGE_STATISTICS, abs(fimg), MASK = maskResult, $  
                         COUNT = maskArea , data_sum=tot_intensity   
-        IMAGE_STATISTICS, img < 0., MASK = maskResult, $  
+        IMAGE_STATISTICS, fimg < 0., MASK = maskResult, $  
                         COUNT = neg_maskArea , data_sum=neg_intensity   
-        IMAGE_STATISTICS, img > 0., MASK = maskResult, $  
+        IMAGE_STATISTICS, fimg > 0., MASK = maskResult, $  
                         COUNT = pos_maskArea , data_sum=pos_intensity   
 
-
+        stop
 
         ;Save variables
         obs_time = [obs_time,index(j).date_d$obs] ; observation time
@@ -647,6 +645,17 @@ for ii=0,n_elements(goodt)-1 do begin
         tot_area = [tot_area,maskArea*are_pix] ; Area of ROI in cm^2
         roi_save = [roi_save,roi_obj] ;ROI object in pixels
         phy_save = [phy_save,roi_phy] ;ROI object in physical coordinates
+
+
+        ;Cancel out image from memory. Leaking like a sieve
+        img = 0
+        fimg = 0
+        simg = 0 
+        bin_cor_x = 0
+        bin_cor_y = 0
+        bin_cor_r = 0
+        roi_obj = 0
+        roi_phy = 0
 
     endfor
 
@@ -700,6 +709,9 @@ for ii=0,n_elements(goodt)-1 do begin
     outf = str_replace(sig_id,':','')+"_mag.mp4"
     outf = str_replace(outf,'-','')
     spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
+   ;Cancel out image from memory. Leaking like a sieve
+   index = 0
+   data  = 0
 endfor
 
 end
