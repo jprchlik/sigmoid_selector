@@ -439,7 +439,16 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Create a low res smoothed version of the image
         simg= rebin(fimg,fimg_size[1]/rebinv,fimg_size[2]/rebinv)
 
-        
+        ;fill values outside rsun with median
+        bin_cor_x = dindgen(fimg_size[1]/rebinv) # (intarr((fimg_size[1]/rebinv)) +1) -cent_x/rebinv
+        bin_cor_y = dindgen(fimg_size[2]/rebinv) ## (intarr((fimg_size[1]/rebinv)) +1)-cent_y/rebinv
+        bin_cor_x = delt_x*rebinv*bin_cor_x
+        bin_cor_y = delt_y*rebinv*bin_cor_y
+        bin_cor_r = sqrt(bin_cor_x^2+bin_cor_y^2)
+
+        ;get median value when less than solar radius
+        med_sun = median(simg[where(bin_cor_r lt sol_rad)])
+        simg[where(bin_cor_r gt sol_rad)] = med_sun
 
         ;Remove noisy values
         bzzero = where(abs(simg) le  zero_lev)
@@ -467,7 +476,7 @@ for ii=0,n_elements(goodt)-1 do begin
         simg(Where(imap_n eq 1))=0
 
         ;gaussian smooth image
-        gimg = gauss_smooth(abs(simg),30)
+        gimg = gauss_smooth(abs(simg),30/rebinv)
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
         ;rad_2 = 300.
