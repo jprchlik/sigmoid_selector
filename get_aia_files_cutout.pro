@@ -94,6 +94,7 @@ for ii=0,n_elements(big_str)-1 do begin
         ;Download files
         sdo_getjsoc,requestidents,aia_arch
         ;cd back to base directory because sdo_getjsoc goes down a level
+        ;cd,'../'
         
 
     endfor
