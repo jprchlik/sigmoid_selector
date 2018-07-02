@@ -207,10 +207,14 @@ pro flare_cme_sigcat, sigloc,fname=fname,odir=odir
 
 sigloc = sigloc+'/'
 
-if keyword_set(fname) then fname = fname else fname = 'sigmoid_sizedata.sav'
+if keyword_set(fname) then fname = fname else fname = 'sigmoids2017.sav'
 if keyword_set(odir) then odir = odir else odir = sigloc
 ;Get save file in directory
 restore,sigloc+fname ;structure name is sigmoids
+
+;Read in csv file to match with save file
+cname = str_replace(fname,'.sav','.csv')
+readcol,sigloc+cnam,format='I,I,I',real_sig_id,rating,noaa
 
 ;Sort sigmioid IDs
 sort_id = sort(sigmoids.sig_id)
@@ -352,7 +356,7 @@ for i=0,n_elements(usig_id)-1 do begin
      ;print,'#############################################################'
      ;Create single row in structure
      tmp = {test_sig,$
-         sigmoid_id:sig_id,$
+         sigmoid_id:real_sig_id[sig_id],$ ;Use index in sav file to call real ID in csv file input to make save file
          cross_m:cross_m,$; Time flare crossed the meridian 
          flare_x:flare_x,$;FLARE X POSITION
          flare_y:flare_y,$;FLARE Y POSITION
