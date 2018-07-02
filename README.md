@@ -182,3 +182,8 @@ getflux_mod
 
 
 
+rjrlib
+============
+Zipped IDL library containing the functions sdo_orderjsoc.pro and sdo_getjsoc.pro, which we exploit to get high cadence cutout images for the catalog. You will need to add these programs to your IDL path.
+Full documentation for see http://www.staff.science.uu.nl/~rutte101/rridl/
+
