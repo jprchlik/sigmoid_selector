@@ -688,10 +688,11 @@ for ii=0,n_elements(goodt)-1 do begin
             ;ffmpeg = str_replace(ffmpeg, 'opt', 'usr')
     endif
 
-    png_size = string([2*win_w,2*win_w],format='(I04,"x",I04)')
+    png_size = strcompress(string([2*win_w,2*win_w],format='(I6,"x",I6)'),/remove_all)
     framerate= strcompress(string(8),/remove_all) ;frames per second
-    bitrate = ((24*win_w)^2)*framerate ; number of bits per frame 24 bit colors and win_w^2 image
-    bit = trim(bitrate)+'k'
+    bitrate = ((24*win_w)^2)*framerate/1.e6 ; number of bits per frame 24 bit colors and win_w^2 image
+    bit = trim(round(bitrate))+'m'
+    bit = '8962k'
     ;Use aia_ffmpeg for simplicity
     call1 = '-y -f image2 -r '+framerate+' -i ' 
     call2 = '-pix_fmt "yuv420p" -vcodec libx264 -level 41 -crf 18.0 -b '+bit+' -r '+framerate+' '+ $
