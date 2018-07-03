@@ -237,7 +237,6 @@ for i=0,n_elements(usig_id)-1 do begin
     ;create variable for sigmoid id 
     sig_id = usig_id[i]
 
-
    
     ;find where sigmoid ids match the input value
     this_sig = sigmoids.sig_id eq sig_id
@@ -248,16 +247,22 @@ for i=0,n_elements(usig_id)-1 do begin
     max_date = max(sigmoids[where(this_sig)].DATE)
 
     ;find where sigmoid nearest to center
-    cntr_sig = abs(this_sig-1)*1e31+sigmoids.cx
+    cntr_sig = abs(this_sig-1)*1e7+sigmoids.cx
     cntr_idx = where(cntr_sig eq min(cntr_sig),count)
     
+    ;Get the fits_header file information for the nearest to center sigmoid
+    if count eq 1 then hdr = headfits(sigloc+sigmoids[cntr_idx].filename) 
+    if count gt 1 then begin 
+        cntr_idx = cntr_idx[0]
+        hdr = headfits(sigloc+sigmoids[cntr_idx].filename)
+    endif
+    if count eq 0 then continue
+
     ;Get the time at central meridian
     cnt_date = sigmoids[cntr_idx].DATE
     cnt_x = sigmoids[cntr_idx].cx
     cnt_y = sigmoids[cntr_idx].cy
-    ;Get the fits_header file information for the nearest to center sigmoid
-    if count eq 1 then hdr = headfits(sigloc+sigmoids[cntr_idx].filename) $
-    else continue
+
 
     ;get crval, crpix, cddelta keywords
     cdelt1 = sxpar(hdr,'cdelt1')
@@ -335,13 +340,13 @@ for i=0,n_elements(usig_id)-1 do begin
     ;get location of nearest sigmoids in catalog csv file
     dif_pos = fltarr(n_elements(b_x))
     for k=0,n_elements(b_x)-1 do begin
-        cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=cross_m)
-        dif_pos[i] = sqrt(total((cat_pos-spos)^2))
+        cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=str_replace(cross_m,', ','T'))
+        dif_pos[k] = sqrt(total((cat_pos-spos)^2))
     endfor
 
     ;Get index of nearest sigmoid
     best_dis = min(dif_pos,best_ind,/Abs)
-    
+ 
 
     ;Print test information
     ;print,'#############################################################'
@@ -424,5 +429,4 @@ save,big_str,filename=string([fix(year)],format=outf)
 
 
 
-;stop
 end
