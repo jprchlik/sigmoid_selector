@@ -192,7 +192,7 @@ end
 ;
 ;INPUTS:
 ;    sigloc     - Directory containting a sav file exported from sigmoidsize_adv
-;    fname      - Filename of save file (Default = 'sigmoid_sizedata.sav')
+;    year       - String of year of observation considering cosistent format (e.g. '2017')
 ;    odir       - Output directory of save file created by flare_cme_sigcat (Default = sigloc)
 ;
 ;OUTPUTS:
@@ -202,19 +202,22 @@ end
 ;
 ;
 ;####################################################################
-pro flare_cme_sigcat, sigloc,fname=fname,odir=odir
+pro flare_cme_sigcat, sigloc,year,odir=odir
 ; Give program active region lifetime start and end times to get out flares and associated cmes
 
 sigloc = sigloc+'/'
 
-if keyword_set(fname) then fname = fname else fname = 'sigmoids2017.sav'
+;Output directory
 if keyword_set(odir) then odir = odir else odir = sigloc
+
+;Filename for sigmoid position and size
+fname = "sigmoid_sizedata"+year+".sav"
 ;Get save file in directory
 restore,sigloc+fname ;structure name is sigmoids
 
 ;Read in csv file to match with save file
-cname = str_replace(fname,'.sav','.csv')
-readcol,sigloc+cnam,format='I,I,I',real_sig_id,rating,noaa
+cname = "Sigmoids"+year+".csv"
+readcol,sigloc+cname,format='I,I,I,A,F,F,A,A,A,A',real_sig_id,rating,noaa,ar_start,b_x,b_y,AR_END,SIG_START,SIG_END,TBEST
 
 ;Sort sigmioid IDs
 sort_id = sort(sigmoids.sig_id)
@@ -226,11 +229,15 @@ uniq_id = uniq(ssig_id)
 ;get the sigmoid number for unique values
 usig_id = ssig_id[uniq_id]
 
+
+
 ;loop over all sigmoid ids
 for i=0,n_elements(usig_id)-1 do begin
 
     ;create variable for sigmoid id 
     sig_id = usig_id[i]
+
+
    
     ;find where sigmoid ids match the input value
     this_sig = sigmoids.sig_id eq sig_id
@@ -274,6 +281,7 @@ for i=0,n_elements(usig_id)-1 do begin
     new_dat = anytim(cnt_date)+fg
 
 
+    ;Loop to find merdian crossing
     loop = 1
     counter = 0
     while loop eq 1 do begin
@@ -324,6 +332,16 @@ for i=0,n_elements(usig_id)-1 do begin
     cmevl_w = strarr(100);CME Angular Width
     cmevl_v = strarr(100) ;CME Velocity
 
+    ;get location of nearest sigmoids in catalog csv file
+    dif_pos = fltarr(n_elements(b_x))
+    for k=0,n_elements(b_x)-1 do begin
+        cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=cross_m)
+        dif_pos[i] = sqrt(total((cat_pos-spos)^2))
+    endfor
+
+    ;Get index of nearest sigmoid
+    best_dis = min(dif_pos,best_ind,/Abs)
+    
 
     ;Print test information
     ;print,'#############################################################'
@@ -356,7 +374,7 @@ for i=0,n_elements(usig_id)-1 do begin
      ;print,'#############################################################'
      ;Create single row in structure
      tmp = {test_sig,$
-         sigmoid_id:real_sig_id[sig_id],$ ;Use index in sav file to call real ID in csv file input to make save file
+         sigmoid_id:real_sig_id[best_ind],$ ;Use index in sav file to call real ID in csv file input to make save file
          cross_m:cross_m,$; Time flare crossed the meridian 
          flare_x:flare_x,$;FLARE X POSITION
          flare_y:flare_y,$;FLARE Y POSITION
@@ -378,8 +396,8 @@ for i=0,n_elements(usig_id)-1 do begin
 endfor
 
 ;Save large structure to file and encopass the range of simoid IDs in save file
-outf = '("sigmoid_id_",I03,"_",I03,".sav")'
-save,big_str,filename=string([fix(min(sigmoids.sig_id)),fix(max(float(sigmoids.sig_id)))],format=outf)
+outf = '("sigmoid_id_",I04,".sav")'
+save,big_str,filename=string([fix(year)],format=outf)
 
 
 ;if count eq 0 then print, 'No Flare Events Found For This Region Within the Time Specified'
