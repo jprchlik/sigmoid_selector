@@ -107,18 +107,20 @@ for ii=0,n_elements(big_str)-1 do begin
             inp_y = Y[best_ind]
 
             ;Get solar radius in arcseconds
-            rsun = get_rb0p('2018/02/24 00:00:00',/radius)
+            rsun = get_rb0p('2018/02/24 00:00:00',/radius,/quiet)
             ;Calculate x given Y
             inp_x = sqrt((rsun)^2-inp_y^2)
         endif
         
-        stop
         ;Get all aia data in date range with 90 minute cadence
         sdo_orderjsoc,ts,diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
                       xsize=750,ysize=750,cadence=cad,requestidents,requestsizes
         ;Download files
-        if requestsizes gt 1 then $
+        if requestsizes gt 1 then begin 
+            ;Wait 3 minute before sending query about files
+            wait,3*60
             sdo_getjsoc,requestidents,full_dir
+        endif
         ;cd back to base directory because sdo_getjsoc goes down a level
         ;cd,'../'
 
