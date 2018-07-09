@@ -99,7 +99,18 @@ for ii=0,n_elements(big_str)-1 do begin
         inp_x = X[best_ind]
         inp_y = Y[best_ind]
         inp_t = tobs[best_ind]
-        rot_p = rot_xy(inp_x,inp_y,tstart=inp_t,tend=ts)
+        rot_p = rot_xy(inp_x,inp_y,tstart=inp_t,tend=ts,offlimb=on_limb)
+
+
+        ;Add check for limb. If on limb just use y value on limb
+        if on_limb eq 1 then begin
+            inp_y = Y[best_ind]
+
+            ;Get solar radius in arcseconds
+            rsun = get_rb0p('2018/02/24 00:00:00',/radius)
+            ;Calculate x given Y
+            inp_x = sqrt((rsun)^2-inp_y^2)
+        endif
         
         stop
         ;Get all aia data in date range with 90 minute cadence
