@@ -52,13 +52,28 @@ for ii=0,n_elements(big_str)-1 do begin
 
 
     ;get index in sigmoid catalog csv file where tbest are equal
-    best_ind = where(tbest eq big_str[ii].cross_m)
+    best_ind = where(ID eq big_str[ii].sigmoid_id,match_count)
+    ;get location of nearest sigmoids in catalog csv file
+    ;dif_pos = fltarr(n_elements(X))
+    ;for k=0,n_elements(X)-1 do begin
+    ;    cat_pos = rot_xy(X[k],Y[k],tstart=tbest[k],tend=str_replace(big_str[ii].cross_m,', ','T'))
+    ;    dif_pos[k] = sqrt(total((cat_pos-spos)^2))
+    ;endfor
+
+    ;;Get index of nearest sigmoid
+    ;best_dis = min(dif_pos,best_ind,/Abs)
+
+    if match_count eq 0 then continue ; No sigmoid found
 
     ;get good flare start times
-    poss_t = where(big_str[ii].flare_s ne 'None',count)
+    poss_t = where((big_str[ii].flare_s ne 'None') and (big_str[ii].flare_s ne ''),count)
  
-    ;Exit loop if count eq 0
+    ;Exit loop if no flares found
     if count eq 0 then continue
+
+    ;Create directory for output png files
+    full_dir = aia_arch+strcompress(big_str[ii].sigmoid_id,/remove_all)+'/'
+    if file_test(full_dir) eq 0 then file_mkdir,full_dir
 
     ;loop over all start times
     for ij = 0,n_elements(poss_t)-1 do begin 
@@ -68,8 +83,8 @@ for ii=0,n_elements(big_str)-1 do begin
         i = poss_t[ij]
 
         ;get time range to search over
-        t1 = anytim(big_str[i].flare_s[ij])-3600. ; move forward 1 hour
-        t2 = anytim(big_str[i].flare_e[ij])
+        t1 = anytim(big_str[ii].flare_s[i])-3600. ; move forward 1 hour
+        t2 = anytim(big_str[ii].flare_e[i])
 
         ;Get difference between start and end time in minutes and add 2 hours
         diff_t = round((t2-t1)/60.)+120
@@ -90,12 +105,11 @@ for ii=0,n_elements(big_str)-1 do begin
         ;Get all aia data in date range with 90 minute cadence
         sdo_orderjsoc,ts,diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
                       xsize=750,ysize=750,cadence=cad,requestidents,requestsizes
-
         ;Download files
-        sdo_getjsoc,requestidents,aia_arch
+        if requestsizes gt 1 then $
+            sdo_getjsoc,requestidents,full_dir
         ;cd back to base directory because sdo_getjsoc goes down a level
         ;cd,'../'
-        
 
     endfor
 
