@@ -220,6 +220,10 @@ sigloc = sigloc+'/'
 ;Output directory
 if keyword_set(odir) then odir = odir else odir = sigloc
 
+;directory location in the hinode archive
+xrt_arch = '/archive/hinode/xrt/level1/'
+
+
 ;Filename for sigmoid position and size
 fname = "sigmoid_sizedata"+year+".sav"
 ;Get save file in directory
@@ -263,14 +267,27 @@ for i=0,n_elements(usig_id)-1 do begin
     ;Fixed using the absolure value of x insteand of just X 
     cntr_sig = abs(this_sig-1)*1e7+abs(sigmoids.cx)
     cntr_idx = where(cntr_sig eq min(cntr_sig),count)
+
+
+
+    
     
     ;Get the fits_header file information for the nearest to center sigmoid
-    if count eq 1 then hdr = headfits(sigloc+sigmoids[cntr_idx].filename) 
+    if count eq 1 then fname = sigmoids[cntr_idx].filename
     if count gt 1 then begin 
         cntr_idx = cntr_idx[0]
-        hdr = headfits(sigloc+sigmoids[cntr_idx].filename)
+        fname = sigmoids[cntr_idx].filename
     endif
     if count eq 0 then continue
+
+    ;parse fname to get the full path
+    fyear = strmid(fname,6,4)
+    fmont = strmid(fname,10,2)
+    fdate = strmid(fname,12,2)
+    fhour = 'H'+strmid(fname,15,2)+'00'
+
+    ;get header information
+    hdr = headfits(xrt_arch+'/'+fyear+'/'+fmont+'/'+fdate+'/'+fhour+'/'+fname)
 
     ;Get the time at central meridian
     cnt_date = sigmoids[cntr_idx].DATE
@@ -360,20 +377,52 @@ for i=0,n_elements(usig_id)-1 do begin
     cmevl_w = strarr(100);CME Angular Width
     cmevl_v = strarr(100) ;CME Velocity
 
+
+    ;Match Sigmiod in save file with sigmiod in text file
     test_ar = where(this_sig)
     best_ind = where(fix(noaa) eq fix(sigmoids[test_ar[0]].NOAA_ID), count_match)
+
+    ;If the Sigmiod has no AR number try matching based on position
     if ((fix(sigmoids[test_ar[0]].NOAA_ID) eq 0) or (count_match lt 1)) then begin
 
     ;get location of nearest sigmoids in catalog csv file if no AR number exists
-         continue ; skip for testing
-         ;;dif_pos = fltarr(n_elements(b_x))
-         ;;for k=0,n_elements(b_x)-1 do begin
-         ;;    cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=str_replace(cross_m,', ','T'))
-         ;;    dif_pos[k] = sqrt(total((cat_pos-spos)^2))
-         ;;endfor
+        ;compute sigmoid roi box in physical coordinates to time nearest D.C.
+        roi_phy = OBJ_NEW('IDLanROI',xvals,yvals)
 
-         ;;;Get index of nearest sigmoid
-         ;;best_dis = min(dif_pos,best_ind,/Abs)
+
+        ;Add NOAA number deg along with inside ROI box
+        dif_pos_x = fltarr(n_elements(b_x))-9999.9
+        dif_pos_y = fltarr(n_elements(b_x))-9999.9
+        dif_pos_r = fltarr(n_elements(b_x))-9999.9
+
+        ;Rotate point to best observed time with bounding box for each sigmiod in catalog
+        for k=0,n_elements(b_x)-1 do begin 
+           ;Do not allow sigmoid to go over the limb for comp (Give 1.5 week time pad
+           dif_pos_t = abs((anytim(tbest[k])-anytim(cnt_date))/(3600.*24.*7.))
+
+           ;remove values when over 1.5 weeks away
+           if dif_pos_t gt 1.5 then continue
+
+           ;store rotated values
+           cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=cnt_date,offlimb=testlimb,error=testerror) 
+           dif_pos_x[k] = cat_pos[0]
+           dif_pos_y[k] = cat_pos[1] 
+           dif_pos_r[k] = sqrt((cat_pos[0]-cnt_x)^2+(cat_pos[1]-cent_y)^2)
+        endfor
+
+        ;check if flare point is in ROI object
+        pnt_chk = roi_phy -> containsPoints(dif_pos_x,dif_pos_y)
+
+        ;Get index of nearest sigmoid
+        best_dis = where(pnt_chk,pnt_cnt)
+
+        ;If no matching sigmoid found find closest value in catalog
+        if pnt_cnt lt 1 then begin
+           best_dis = where(dif_pos_r eq min(dif_pos_r),cnt_min)
+           ;Give up if no unique solution found
+           if cnt_min ne 1 then continue
+        endif
+        stop
     endif
  
 
