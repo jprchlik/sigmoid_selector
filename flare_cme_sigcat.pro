@@ -232,13 +232,15 @@ end
 ;
 ;
 ;####################################################################
-pro flare_cme_sigcat, sigloc,year,odir=odir
+pro flare_cme_sigcat, sigloc,year,odir=odir,sigcat=sigcat
 ; Give program active region lifetime start and end times to get out flares and associated cmes
 
 sigloc = sigloc+'/'
 
 ;Output directory
 if keyword_set(odir) then odir = odir else odir = sigloc
+;Text file with sigmoid catalog
+if keyword_set(sigcat) then sigcat = sigcat else sigcat = 'SigmoidCatalogAll.csv' 
 
 ;directory location in the hinode archive
 xrt_arch = '/archive/hinode/xrt/level1/'
@@ -252,9 +254,12 @@ restore,sigloc+fname ;structure name is sigmoids
 ;Read in csv file to match with save file
 cname = "Sigmoids"+year+".csv"
 readcol,sigloc+cname,format='I,I,A,A,F,F,A,A,A,A',real_sig_id,rating,noaa,ar_start,b_x,b_y,AR_END,SIG_START,SIG_END,TBEST
+;Switch to final sigmoid catalog
+;Does not work because X,Y coordinates are no good with Tbest or Tobs in catalog
+;readcol,sigcat,format='I,I,A,A,F,F,A,A,A,A,A',dum,real_sig_id,NOAA,AR,AR_START,b_X,b_Y,AR_END,SIG_START,SIG_END,lifetime,TBEST_old,TBEST,/preserve
 
 ;convert NA to zeors in noaa
-noaa[noaa eq 'NA'] = '0'
+noaa[where(noaa eq 'NA')] = '0'
 noaa = fix(noaa)
 
 ;Sort sigmioid IDs
@@ -425,7 +430,7 @@ for i=0,n_elements(usig_id)-1 do begin
     best_ind = where(fix(noaa) eq fix(sigmoids[test_ar[0]].NOAA_ID), count_match)
 
     ;If the Sigmiod has no AR number try matching based on position
-    if ((fix(sigmoids[test_ar[0]].NOAA_ID) eq 0) or (count_match lt 1)) then begin
+    if ((fix(sigmoids[test_ar[0]].NOAA_ID) eq 0) or (count_match ne 1)) then begin
 
     ;get location of nearest sigmoids in catalog csv file if no AR number exists
         ;compute sigmoid roi box in physical coordinates to time nearest D.C.
@@ -456,13 +461,16 @@ for i=0,n_elements(usig_id)-1 do begin
         pnt_chk = roi_phy -> containsPoints(dif_pos_x,dif_pos_y)
 
         ;Get index of nearest sigmoid
-        best_dis = where(pnt_chk,pnt_cnt)
+        best_ind = where(pnt_chk,pnt_cnt)
 
+        print,'NO NOAA NUM'
+        print,best_ind
+        print,fix(real_sig_id[best_ind[0]])
         ;If no matching sigmoid found find closest value in catalog
-        if pnt_cnt lt 1 then begin
-           best_dis = where(dif_pos_r eq min(dif_pos_r),cnt_min)
+        if pnt_cnt ne 1 then begin
+           best_ind = where(dif_pos_r eq min(dif_pos_r),cnt_min)
            ;Give up if no unique solution found
-           if cnt_min ne 1 then stop
+           if cnt_min ne 1 then continue
         endif
     endif
  
