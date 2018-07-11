@@ -69,8 +69,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             ffl_cl = her.ce[cme_clip].CME_RADIALLINVEL
 
         endif else begin
-            fl_x  = her.fl.event_coord1
-            fl_y  = her.fl.event_coord2
+            fl_x  = her.fl.hpc_x
+            fl_y  = her.fl.hpc_y
             fl_u  = her.fl.EVENT_COORDUNIT 
             fl_ts = her.fl.EVENT_STARTTIME
             fl_te = her.fl.EVENT_ENDTIME
@@ -87,20 +87,22 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             ;Rotate position to obs time
             for j=0, n_elements(fl_x)-1 do begin
 
-
                 ;Update GOES flux with AIA coordinates if CME not set
                 if keyword_set(cme) eq 0 then begin
                     asdo_t=double(anytim(aia.fl.event_peaktime))
                     goes_t=double(anytim(her.fl[j].event_peaktime))
                     ;Get minimum time index
                     getmin=min(abs(goes_t-asdo_t),imin)
+
+                    ;Use GOES information as degfault
+                    fl_u[j] = 'arcseconds'
   
-                    ;Only update pointing GOES pointing with AIA pointing if within a minute
+                    ;Only update pointing GOES pointing with AIA pointing if within a minute 
                     ; and GOES position is 0
-                    if ((min(abs(goes_t-asdo_t)) lt 1.*60.) and ((abs(fl_x[j]) lt 1.) and (abs(fl_y[j]) lt 1.))) then begin
+                    if ((min(abs(goes_t-asdo_t)) lt 1.*60.) and (fl_x[j] eq 0))  then begin
                         fl_x[j] = round(float(aia.fl[imin].event_coord1))
                         fl_y[j] = round(float(aia.fl[imin].event_coord2))
-                        fl_u[j] = aia.fl[imin].event_coordunit
+                        fl_u[j] = 'degrees'
                     endif
 
                 endif
@@ -132,12 +134,20 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             lims = comp_limits(xbox,ybox)
             
             ;Create array of 1 and 0 for box
-            xmin = rot_x ge lims[1]*rot_y+lims[0]
-            xmax = rot_x le lims[3]*rot_y+lims[2]
-            ymin = rot_y le lims[5]*rot_x+lims[4]
-            ymax = rot_y ge lims[7]*rot_x+lims[6]
-            ;Add NOAA number deg along with inside box
-            vbox = where(((xmin*xmax*ymin*ymax) or (fix(her.fl.ar_noaanum) eq fix(arnum))),cnt)
+            ;change to using ROI J. Prchlik 2018/07/11
+            ;xmin = rot_x ge lims[1]*rot_y+lims[0]
+            ;xmax = rot_x le lims[3]*rot_y+lims[2]
+            ;ymin = rot_y le lims[5]*rot_x+lims[4]
+            ;ymax = rot_y ge lims[7]*rot_x+lims[6]
+
+            ;compute sigmoid roi box in physical coordinates
+            roi_phy = OBJ_NEW('IDLanROI',xbox,ybox)
+
+            ;check if flare point is in ROI object
+            pnt_chk = roi_phy -> containsPoints(rot_x,rot_y)
+
+            ;Add NOAA number deg along with inside ROI box
+            vbox = where((pnt_chk) or (fix(her.fl.ar_noaanum) eq fix(arnum))),cnt)
 
             
             ;Get the flares inside the sigmoid box
@@ -237,6 +247,9 @@ for i=0,n_elements(usig_id)-1 do begin
     ;create variable for sigmoid id 
     sig_id = usig_id[i]
 
+    ;leave if sig id is a long string (i.e. file skipped)
+    type_sig = strlen(sig_id)
+    if type_sig ge 4 then continue
    
     ;find where sigmoid ids match the input value
     this_sig = sigmoids.sig_id eq sig_id
@@ -282,13 +295,22 @@ for i=0,n_elements(usig_id)-1 do begin
     fg = (0-cnt_x)/(10.)*3600. ;distance from center in arcsec and guess 10arcsec per hour from center
     ;find the closest value to when sigmoid is at the central meridian
     cpos = [cnt_x,cnt_y]
-    spos = rot_xy(cnt_x,cnt_y,fg ,date=cnt_date)
-    new_dat = anytim(cnt_date)+fg
+
+    ;Less than 2 arsecond from center just call it the center 2018/07/03 (prevents MORINT error)
+    if abs(cnt_x) lt 2 then begin
+        loop = 0 
+        new_dat = anytim(cnt_date)
+        spos = cpos
+    endif else begin
+        spos = rot_xy(cnt_x,cnt_y,fg ,date=cnt_date)
+         new_dat = anytim(cnt_date)+fg
+        ;Loop to find merdian crossing
+         loop = 1
+         counter = 0
+    endelse
 
 
-    ;Loop to find merdian crossing
-    loop = 1
-    counter = 0
+    ;Loop to find where sigmoid crosses central merdian
     while loop eq 1 do begin
         case 1 of  
            ( abs(cpos[0]) gt abs(spos[0])): begin
@@ -321,7 +343,7 @@ for i=0,n_elements(usig_id)-1 do begin
 
 
     ;Create dummy arrays to fill in structure
-    cross_m = '20'+anytim(new_dat,/yymmdd);merdian crossing time
+    cross_m = '20'+str_replace(anytim(new_dat,/yymmdd),', ','T');merdian crossing time
     flare_x = fltarr(100)-1.e31;FLARE X POSITION
     flare_y = fltarr(100)-1.e31;FLARE Y POSITION
     flare_u = strarr(100);FLARE POSITION Units
