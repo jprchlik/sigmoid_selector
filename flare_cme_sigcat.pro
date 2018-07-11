@@ -147,7 +147,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             pnt_chk = roi_phy -> containsPoints(rot_x,rot_y)
 
             ;Add NOAA number deg along with inside ROI box
-            vbox = where((pnt_chk) or (fix(her.fl.ar_noaanum) eq fix(arnum))),cnt)
+            vbox = where((pnt_chk and (fix(her.fl.ar_noaanum) eq 0)) or (fix(her.fl.ar_noaanum) eq fix(arnum)),cnt)
 
             
             ;Get the flares inside the sigmoid box
@@ -230,7 +230,7 @@ cname = "Sigmoids"+year+".csv"
 readcol,sigloc+cname,format='I,I,I,A,F,F,A,A,A,A',real_sig_id,rating,noaa,ar_start,b_x,b_y,AR_END,SIG_START,SIG_END,TBEST
 
 ;Sort sigmioid IDs
-sort_id = sort(sigmoids.sig_id)
+sort_id = sort(float(sigmoids.sig_id))
 ssig_id = sigmoids[sort_id].sig_id
 
 ;get unqiue sigmiod ids
@@ -260,7 +260,8 @@ for i=0,n_elements(usig_id)-1 do begin
     max_date = max(sigmoids[where(this_sig)].DATE)
 
     ;find where sigmoid nearest to center
-    cntr_sig = abs(this_sig-1)*1e7+sigmoids.cx
+    ;Fixed using the absolure value of x insteand of just X 
+    cntr_sig = abs(this_sig-1)*1e7+abs(sigmoids.cx)
     cntr_idx = where(cntr_sig eq min(cntr_sig),count)
     
     ;Get the fits_header file information for the nearest to center sigmoid
@@ -359,15 +360,21 @@ for i=0,n_elements(usig_id)-1 do begin
     cmevl_w = strarr(100);CME Angular Width
     cmevl_v = strarr(100) ;CME Velocity
 
-    ;get location of nearest sigmoids in catalog csv file
-    dif_pos = fltarr(n_elements(b_x))
-    for k=0,n_elements(b_x)-1 do begin
-        cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=str_replace(cross_m,', ','T'))
-        dif_pos[k] = sqrt(total((cat_pos-spos)^2))
-    endfor
+    test_ar = where(this_sig)
+    best_ind = where(fix(noaa) eq fix(sigmoids[test_ar[0]].NOAA_ID), count_match)
+    if ((fix(sigmoids[test_ar[0]].NOAA_ID) eq 0) or (count_match lt 1)) then begin
 
-    ;Get index of nearest sigmoid
-    best_dis = min(dif_pos,best_ind,/Abs)
+    ;get location of nearest sigmoids in catalog csv file if no AR number exists
+         continue ; skip for testing
+         ;;dif_pos = fltarr(n_elements(b_x))
+         ;;for k=0,n_elements(b_x)-1 do begin
+         ;;    cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=str_replace(cross_m,', ','T'))
+         ;;    dif_pos[k] = sqrt(total((cat_pos-spos)^2))
+         ;;endfor
+
+         ;;;Get index of nearest sigmoid
+         ;;best_dis = min(dif_pos,best_ind,/Abs)
+    endif
  
 
     ;Print test information
@@ -401,7 +408,7 @@ for i=0,n_elements(usig_id)-1 do begin
      ;print,'#############################################################'
      ;Create single row in structure
      tmp = {test_sig,$
-         sigmoid_id:real_sig_id[best_ind],$ ;Use index in sav file to call real ID in csv file input to make save file
+         sigmoid_id:fix(real_sig_id[best_ind[0]]),$ ;Use index in sav file to call real ID in csv file input to make save file
          cross_m:cross_m,$; Time flare crossed the meridian 
          flare_x:flare_x,$;FLARE X POSITION
          flare_y:flare_y,$;FLARE Y POSITION
