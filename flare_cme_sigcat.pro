@@ -187,6 +187,26 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
     return,0 ;[[ffl_x],[ffl_y],[ffl_ts],[ffl_te],[ffl_tp],[ffl_mx],[ffl_cl]]
 end
 
+
+;####################################################
+;FUNCTION
+;Returns full path for file in local XRT archive given XRT filename
+;
+;USAGE
+;  res = return_full_path(xrtf)
+;####################################################
+function return_full_path,xrtf
+
+    ;parse fname to get the full path
+    fyear = strmid(xrtf,6,4)
+    fmont = strmid(xrtf,10,2)
+    fdate = strmid(xrtf,12,2)
+    fhour = 'H'+strmid(xrtf,15,2)+'00'
+
+    res = '/'+fyear+'/'+fmont+'/'+fdate+'/'+fhour+'/'
+    return,res
+end
+
 ;####################################################################
 ;
 ;NAME:
@@ -231,7 +251,11 @@ restore,sigloc+fname ;structure name is sigmoids
 
 ;Read in csv file to match with save file
 cname = "Sigmoids"+year+".csv"
-readcol,sigloc+cname,format='I,I,I,A,F,F,A,A,A,A',real_sig_id,rating,noaa,ar_start,b_x,b_y,AR_END,SIG_START,SIG_END,TBEST
+readcol,sigloc+cname,format='I,I,A,A,F,F,A,A,A,A',real_sig_id,rating,noaa,ar_start,b_x,b_y,AR_END,SIG_START,SIG_END,TBEST
+
+;convert NA to zeors in noaa
+noaa[noaa eq 'NA'] = '0'
+noaa = fix(noaa)
 
 ;Sort sigmioid IDs
 sort_id = sort(float(sigmoids.sig_id))
@@ -278,16 +302,34 @@ for i=0,n_elements(usig_id)-1 do begin
         cntr_idx = cntr_idx[0]
         fname = sigmoids[cntr_idx].filename
     endif
+ 
+    ;Leave if no files found
     if count eq 0 then continue
 
-    ;parse fname to get the full path
-    fyear = strmid(fname,6,4)
-    fmont = strmid(fname,10,2)
-    fdate = strmid(fname,12,2)
-    fhour = 'H'+strmid(fname,15,2)+'00'
+
+    ;Make sure filename is in correct format
+    if strlen(fname) ne 28 then begin
+        ;split string into comps
+        comps = strsplit(fname,'.',/extract)
+
+        ;fix bad ms in filename
+        if strlen(comps[1]) gt 1 then begin
+            comps[1] = strmid(comps[1],0,1)
+            fname = strjoin(comps,'.')
+        endif
+
+    endif
+
+    ;Get full path to file
+    full_path  = return_full_path(fname)
 
     ;get header information
-    hdr = headfits(xrt_arch+'/'+fyear+'/'+fmont+'/'+fdate+'/'+fhour+'/'+fname)
+    hdr = headfits(xrt_arch+full_path+fname,ERRMSG=ERRMSG)
+
+    ;fix for a bad filename 
+    if strlen(ERRMSG) gt 1 then begin
+        stop
+    end 
 
     ;Get the time at central meridian
     cnt_date = sigmoids[cntr_idx].DATE
@@ -407,7 +449,7 @@ for i=0,n_elements(usig_id)-1 do begin
            cat_pos = rot_xy(b_x[k],b_y[k],tstart=tbest[k],tend=cnt_date,offlimb=testlimb,error=testerror) 
            dif_pos_x[k] = cat_pos[0]
            dif_pos_y[k] = cat_pos[1] 
-           dif_pos_r[k] = sqrt((cat_pos[0]-cnt_x)^2+(cat_pos[1]-cent_y)^2)
+           dif_pos_r[k] = sqrt((cat_pos[0]-cnt_x)^2+(cat_pos[1]-cnt_y)^2)
         endfor
 
         ;check if flare point is in ROI object
@@ -420,9 +462,8 @@ for i=0,n_elements(usig_id)-1 do begin
         if pnt_cnt lt 1 then begin
            best_dis = where(dif_pos_r eq min(dif_pos_r),cnt_min)
            ;Give up if no unique solution found
-           if cnt_min ne 1 then continue
+           if cnt_min ne 1 then stop
         endif
-        stop
     endif
  
 
