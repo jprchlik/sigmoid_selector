@@ -131,7 +131,6 @@ for ii=0,n_elements(big_str)-1 do begin
         ;cd back to base directory because sdo_getjsoc goes down a level
         ;cd,'../'
 
-    stop
     endfor
 
 endfor
