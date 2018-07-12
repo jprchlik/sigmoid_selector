@@ -2,8 +2,10 @@
 
 pro compile_structure
 
-    test_sig = CREATE_STRUCT('sigmoid_id',0,$
+    test_sig_a = CREATE_STRUCT('sigmoid_id',0,$
                              'cross_m','                    ',$; Time flare crossed the meridian 
+                             'sigmd_s','                    ',$; Sigmoid start time 
+                             'sigmd_e','                    ',$; Sigmoid end time 
                              'flare_x',fltarr(100),$;FLARE X POSITION
                              'flare_y',fltarr(100),$;FLARE Y POSITION
                              'flare_s',strarr(100),$;FLARE Start time
@@ -505,8 +507,10 @@ for i=0,n_elements(usig_id)-1 do begin
      ;print,'#############################################################'
      ;print,'#############################################################'
      ;Create single row in structure
-     tmp = {test_sig,$
+     tmp = {test_sig_a,$
          sigmoid_id:fix(real_sig_id[best_ind[0]]),$ ;Use index in sav file to call real ID in csv file input to make save file
+         sigmd_s:SIG_START[best_ind[0]],$ ;Use index in sav file to call sigmiod start time in csv file input to make save file
+         sigmd_e:SIG_END[best_ind[0]],$ ;Use index in sav file to call sigmoid end time in csv file input to make save file
          cross_m:cross_m,$; Time flare crossed the meridian 
          flare_x:flare_x,$;FLARE X POSITION
          flare_y:flare_y,$;FLARE Y POSITION
