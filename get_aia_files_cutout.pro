@@ -52,7 +52,11 @@ for ii=0,n_elements(big_str)-1 do begin
 
 
     ;get index in sigmoid catalog csv file where tbest are equal
-    best_ind = where(ID eq big_str[ii].sigmoid_id,match_count)
+    ;best_ind = where(ID eq big_str[ii].sigmoid_id,match_count)
+
+    ;Switch to sigmoid start and end time because sigmiod ID changed  2018/07/12
+    best_ind = where(((SIG_START eq big_str[ii].sigmd_s) and (SIG_END eq big_str[ii].sigmd_e)),match_count)
+
     ;get location of nearest sigmoids in catalog csv file
     ;dif_pos = fltarr(n_elements(X))
     ;for k=0,n_elements(X)-1 do begin
@@ -103,14 +107,17 @@ for ii=0,n_elements(big_str)-1 do begin
 
 
         ;Add check for limb. If on limb just use y value on limb
-        if on_limb eq 1 then begin
-            inp_y = Y[best_ind]
+        ;Do not do limb flares
+        if on_limb eq 1 then continue
+        ;if on_limb eq 1 then begin
+        ;    inp_y = Y[best_ind]
 
-            ;Get solar radius in arcseconds
-            rsun = get_rb0p('2018/02/24 00:00:00',/radius,/quiet)
-            ;Calculate x given Y
-            inp_x = sqrt((rsun)^2-inp_y^2)
-        endif
+        ;    ;Get solar radius in arcseconds
+        ;    rsun = get_rb0p('2018/02/24 00:00:00',/radius,/quiet)
+        ;    ;Calculate x given Y
+        ;    inp_x = sqrt((rsun)^2-inp_y^2)
+        ;    if anytim(ts) lt anytim(inp_t) then inp_x = -inp_x
+        ;endif
         
         ;Get all aia data in date range with 90 minute cadence
         sdo_orderjsoc,ts,diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
