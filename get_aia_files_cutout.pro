@@ -30,7 +30,7 @@ set_plot,'X'
 ;Read in file containing TBEST
 formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
-       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve
 ;Set archive directory for download aia files
 if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = 'aia_arch_cutout/'
 aia_arch = aia_arch+'/'
@@ -131,6 +131,7 @@ for ii=0,n_elements(big_str)-1 do begin
         ;cd back to base directory because sdo_getjsoc goes down a level
         ;cd,'../'
 
+    stop
     endfor
 
 endfor
