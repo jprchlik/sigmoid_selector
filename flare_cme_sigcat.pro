@@ -527,7 +527,8 @@ for i=0,n_elements(usig_id)-1 do begin
 
 
      ;Create large structure
-     if i eq 0 then big_str = tmp $
+     ;Added check if variable exists instead of just the first index for more versitility
+     if isa(big_str) eq 0 then big_str = tmp $
      else big_str = [big_str,tmp] 
 endfor
 
