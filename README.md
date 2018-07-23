@@ -1,4 +1,7 @@
-Compliation of sigmoid catalog routines from Sean McKillop and updated by Jakub Prchlik
+Compliation of sigmoid catalog routines from Sean McKillop and updated by Jakub Prchlik. 
+The software suite contains various programs for the XRT sigmoid catalog. 
+Unfortunately, the code is a bit less a pipeline than I initially imagined due the impersisence of unique IDs (UIDs). 
+I recommend the next time this endeavour is undertaken that UIDs be established from the start.
 
 sigmoidsize_adv,dir=dir
 =======================
@@ -153,20 +156,27 @@ a position for the flare the program sees if any other coordinates for a flare a
 1 minute, so the flares may be correlated with a particular sigmiod. The code correlates flares with
 a sigmoid two different ways. First, it uses the AR association of the flare. Then it checks whether
 the position of the flare is inside the box defined in sigmoidsize_adv. If either condition is met
-the flare is associated with the sigmiod and stored. The output file of the flare correlation has the 
-form '("sigmoid_id_",I03,"_",I03,".sav")'.
+the flare is associated with the sigmiod and stored. ~~The output file of the flare correlation has the 
+form '("sigmoid_id_",I03,"_",I03,".sav")'~~.
+Due to the non unique nature of the IDs the program now outputs in the form '("sigmoid_id_",I04,".sav")'.
+This form is base on how the files were analyzed yearly, and not a great unique method for running a pipeline.
+With no UIDs the output also now contains sigmoid start and end time to match with the total catalog. 
+Currently, there are 4 sigmoids (2 sets of 2) with the same start and end times. 
+Therefore, I will need a new unique characteristic of the sigmoids.
 
 
 
-test_sig = CREATE_STRUCT(
+test_sig_b = CREATE_STRUCT(
 'sigmoid_id',0            , --> User specified sigmiod ID     
 'cross_m'   ,'           ', -->  Time flare crossed the meridian    
-'flare_x'   ,fltarr(100)  , --> FLARE X POSITION arcsec  
-'flare_y'   ,fltarr(100)  , --> FLARE Y POSITION arcsec  
-'flare_s'   ,strarr(100)  , --> FLARE Start time   
-'flare_e'   ,strarr(100)  , --> FLARE End time   
-'flare_p'   ,strarr(100)  , --> FLARE Peak time   
-'flare_c'   ,strarr(100)  , --> FLARE GOES Class   
+'sigmd_s','                    ', --> Sigmoid start time from previous sav file
+'sigmd_e','                    ', --> Sigmoid end time from previous sav file
+'flare_x'   ,fltarr(1000)  , --> FLARE X POSITION arcsec  
+'flare_y'   ,fltarr(1000)  , --> FLARE Y POSITION arcsec  
+'flare_s'   ,strarr(1000)  , --> FLARE Start time   
+'flare_e'   ,strarr(1000)  , --> FLARE End time   
+'flare_p'   ,strarr(1000)  , --> FLARE Peak time   
+'flare_c'   ,strarr(1000)  , --> FLARE GOES Class   
 'cme_x'     ,fltarr(100)  , --> CME X POSITION   
 'cme_y'     ,fltarr(100)  , --> CME Y POSITION   
 'cme_s'     ,strarr(100)  , --> CME Start time   
