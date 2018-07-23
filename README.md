@@ -158,7 +158,7 @@ a sigmoid two different ways. First, it uses the AR association of the flare. Th
 the position of the flare is inside the box defined in sigmoidsize_adv. If either condition is met
 the flare is associated with the sigmiod and stored. ~~The output file of the flare correlation has the 
 form '("sigmoid_id_",I03,"_",I03,".sav")'~~.
-Due to the non unique nature of the IDs the program now outputs in the form '("sigmoid_id_",I04,".sav")'.
+Due to the non unique nature of the IDs the program now outputs in the form '("sigmoid_id\_",I04,".sav")'.
 This form is base on how the files were analyzed yearly, and not a great unique method for running a pipeline.
 With no UIDs the output also now contains sigmoid start and end time to match with the total catalog. 
 Currently, there are 4 sigmoids (2 sets of 2) with the same start and end times. 
@@ -187,11 +187,44 @@ test_sig_b = CREATE_STRUCT(
 
 
 
-getflux_mod
+get_hmi_files.pro
 ================
+Retrieves HMI files given an input csv file between a sigmoid start and end date at a given cadence using vso_search/vso_get.
+The default cadence is 30 minutes.
 
 
+make_hmi_movie.pro
+==================
+Creates a movie of the evolution of a sigmiod in HMI, as well as, measures properties of the sigmiod at a given cadence (30 minutes).
+First, the code selects files from the local archive created by get_hmi_files and finds the files that best fit between the sigmiod start
+and end time with a 30 minute cadence.
+Then it creates a UID corresponding to the AIU international standard using its position in space and time at Tobs.
+N.B. this cannot be used as a unique identifier for the sigmiod catalog because the X, Y coordinates at Tbest,
+which were used early in the catalog are inconsistent with the coordiantes of X, Y at Tobs (Tobs coordinates are better).
+The Tbest coordinates were human specified,
+while Tobs comes from the sigmiod select program's automatic region finder.
+At some point opaque to me the reported X, Y values went from corresponding to Tbest to Tobs without retention of the inferior Tbest X,Y coordinates. 
+The coordinates for the UID are correspond to Tobs.
 
+
+For the analysis and movie the program will only run with SDO/HMI observations with a quality flag less than 90000.
+The first step in the analysis is to prep the HMI observation.
+To do that we rotate the image by 180 degees and select 700x700 pixel region around the position at Tobs.
+Then the code removes spikes from the image using the HMI prep code from Antonia Savecheva.
+Next, I create a Gaussian smoothed absolute image from an 8x8 pixel binned image.
+On that smoothed image I use the IDL procedure edge_dog (Difference of Gaussians) with a radius of 1. and 700./(2\*rebinv)-1
+with 1 threshold, where the 700 comes from the pixel width of the image as long as the sigmoid long axis length is less than 350 pixels.
+If the long axis lengths is greater than 100 pixels, the widow length is twice the measure sigmoid length plus 250 pixels.
+From the edges of the edge_dog procedure I create an ROI object of whatever region is nearest to the sigmiods position at Tobs accounting for rotation.
+That ROI objects is then used to measure the unsigned magnetic flux, positive magnetic flux, negative magnetic flux, and magnetic area under the sigmiod in the prepped image.
+
+Once the analysis finishes, the program writes a save file of the form:
+save,sig_id,out_id,obs_time,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'    
+and creates a movie with the ROI overplotted.
+Both the filenames and the output sigmoid have the IAU formatted UID.
+
+
+ 
 rjrlib
 ============
 Zipped IDL library containing the functions sdo_orderjsoc.pro and sdo_getjsoc.pro, which we exploit to get high cadence cutout images for the catalog. You will need to add these programs to your IDL path.
