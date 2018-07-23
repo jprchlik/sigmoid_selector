@@ -25,7 +25,7 @@ Generally, the program finds the minimum level in less than three loops.
 Next, the program will ask the user to perform a series of tasks.
 First, it asks whether we should analyze the file in the command line. 
 Enter 1 if we should skip the file or enter nothing if we should analyze the file.
-Only enter 1 if the file does not contain a sigmiod you can analyze.
+Only enter 1 if the file does not contain a sigmoid you can analyze.
 If you enter 1 the program will give null values for ever parameters and go to the next file.
 If you enter nothing the program will ask you to click a number of places on the sigmoid.
 
@@ -43,19 +43,19 @@ The program will ask you in order to click the southern trailing short axis, nor
 short axis, southern leading short axis, and northern leading short axis.
 Everytime you click a new appears.
 
-Again the program asks for more human input. This time it is to put a box around the sigmiod.
+Again the program asks for more human input. This time it is to put a box around the sigmoid.
 The box is important because it helps define the bounding box for the background in the
 Full Width Half Maximum (FWHM) calculation, and it helps the program flare_cme_sigcat locate nearby flares.
 
 Finally, the last of the human input. The program asks for the core of the sigmoid to determine the FWHM.
-Click first point in the trailing core of the sigmiod, and the second point in the leading core. 
+Click first point in the trailing core of the sigmoid, and the second point in the leading core. 
 Those two point set the x boundary from which to calculate the FWHM.
 Once you select the leading edge of the sigmoid core,
 two new windows will pop up in the upper left.
-The farthest to the left is an image of the sigmiod rotated by the slope of the line selected in the sigmiod core.
+The farthest to the left is an image of the sigmoid rotated by the slope of the line selected in the sigmoid core.
 Highlight in the image is the region used to calculate the sigmoids FWHM. 
 If you notice any irregularities due to structures not a part of the sigmoid
- reclassify the sigmiod using a new box that exclues the structure.
+ reclassify the sigmoid using a new box that exclues the structure.
 
 
 The calculation of the FWHM is a little tricky,
@@ -65,10 +65,10 @@ shape.
 My solution is to rotate the sigmoid about its core and sum pixels along the x-axis for a given rotated y position (you can see the idea in the rotated image).
 After you sum the pixels you must now divide by the total pixels used in the sum,
 since FWHM is over a small window of the image I sum a rotated mask created from the 
-sigmiod selection of the line core and the bounding box. 
+sigmoid selection of the line core and the bounding box. 
 I then divide the total counts by the sum of the masked bounding box. 
 After summation and normalization, 
-I find define the peak value (stored as hght) in the rotated y direction of the sigmiod profile.
+I find define the peak value (stored as hght) in the rotated y direction of the sigmoid profile.
 Then I break the 1D sigmoid profile into two halves. 
 I then find the value closest to the half maximum for each half. 
 If a half contains more than 1 value close to the half maximum I use the mean of the values to set the width. 
@@ -85,7 +85,7 @@ The program usually converges in 3 iterations.
 Finally, to subtract from the image in physical units and derive the background for the FWHM the pixel size is converted to arcsec.
 
 
-After all computation are recorded, the program does some classification. First, the program asks for the sigmiod ID number. It will show you
+After all computation are recorded, the program does some classification. First, the program asks for the sigmoid ID number. It will show you
 a best guess identification number based on previous identification, but you should verify it is correct before entering. In addtion,
 it will return an AR number based on the nearest AR from the HEK +/-7days. Again you should not blindly follow the returned number and 
 verify by eye especially if many AR are in the region. 
@@ -98,7 +98,7 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         NOAA_id:0,               --> NOAA ID of closest AR.   
         filename:'',             --> Fits file name (without directory) of the file used for Sigmoid classification   
         date:'',                 --> Date of observation from the fits header   
-        size:0.0,                --> long axis size of the sigmiod in arcseconds   
+        size:0.0,                --> long axis size of the sigmoid in arcseconds   
         sizea:0.0,               --> trailing short axis size of the sigmoid in arcseconds.   
         sizeb:0.0,               --> leading short axis size of the sigmoid in arcseconds 
 [early versions duplicated the short axis length](https://github.com/jprchlik/sigmoid_selector/commit/bab8b4ba6db4827b8896cbe12c61558b4bcafa5d#diff-3f0fc4ecafcfd45723c346c14af5de2d).   
@@ -109,12 +109,12 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         area:0.0,                --> Area in square arcseconds from automatic region finding (BETA feature)   
         roi:OBJ_NEW('IDLanROI'), --> Region object from automatic region finding (BETA feature)   
         bkgd:0.0,                --> Background flux in ADU/s/arcsec^2   
-        fwhm:0.0,                --> Half width of the sigmiod core in arcseconds   
-        hght:0.0,                --> Peak flux of the sigmiod in ADU/s/arcsec^2   
+        fwhm:0.0,                --> Half width of the sigmoid core in arcseconds   
+        hght:0.0,                --> Peak flux of the sigmoid in ADU/s/arcsec^2   
         bboxx:fltarr(5),         --> x-coordinates which make a bounding box for the observation in pixels   
         bboxy:fltarr(5),         --> y-coordinates which make a bounding box for the observation in pixels   
-        fwlin1:fltarr(2),        --> x,y coordinates of the trailing end of the sigmiod core in pixels   
-        fwlin2:fltarr(2),        --> x,y coordiantes of the leading end of the sigmiod core in pixels   
+        fwlin1:fltarr(2),        --> x,y coordinates of the trailing end of the sigmoid core in pixels   
+        fwlin2:fltarr(2),        --> x,y coordiantes of the leading end of the sigmoid core in pixels   
         longx1:0.0,              --> Trailing Long Axis X coordinate in Pixels       
         longy1:0.0,              --> Leading  Long Axis X coordinate in Pixels   
         longx2:0.0,              --> Trailing Long Axis Y coordinate in Pixels   
@@ -132,7 +132,7 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
 filament_selector.pro
 =====================
 
-Program allows a user to manually select the a filament in the core of the sigmiod.
+Program allows a user to manually select the a filament in the core of the sigmoid.
 To select the filament you need only use the mouse.
 Points along the filament are selected with a left click. 
 A right click stores that click value and end clicking along the filament.
@@ -142,7 +142,7 @@ but this code was developed before Tobs was readily in use).
 The middle click also reset all clicked points.
 
 The output save file has the following format:    
-fil_d={sig_id:'',    -->  Sigmiod ID (not positive that Patty kept this constant)     
+fil_d={sig_id:'',    -->  sigmoid ID (not positive that Patty kept this constant)     
 NOAA_id:0,           -->  NOAA AR ID     
 filename:'',         -->  AIA filename used for the analysis            
 date:'',             -->  Date of AIA observation    
@@ -160,17 +160,17 @@ Downloads full sun SDO/AIA images in parallel from JSOC at a 30 minute cadence.
 
 aia_movie/make_aia_movie.pro
 ========================
-Creates a 4 panel movie of SDO/AIA 193, 304, 335, and XRT over the sigmiod's lifetime at a 30 minute cadence.
+Creates a 4 panel movie of SDO/AIA 193, 304, 335, and XRT over the sigmoid's lifetime at a 30 minute cadence.
 The output movie has a time range spanning sigmoid start to sigmoid_end to minute precision.
 
 
 flare_cme_sigcat,sigloc,fname=fname,odir=odir
 ================
-flare_cme_sigcat returns a save file with a list of CMEs and flares associated with the sigmiod. In addition,
-it computes the time the sigmiod is closest to the central merdian (CM). The only required input is a directory (sigloc) with a 
+flare_cme_sigcat returns a save file with a list of CMEs and flares associated with the sigmoid. In addition,
+it computes the time the sigmoid is closest to the central merdian (CM). The only required input is a directory (sigloc) with a 
 save file created by sigmoidsize_adv. The output of the program is a save file is in the same directory as
  the sigloc, unless specified. 
-The output file outputs 1 row for all sigmiods of a given ID in the output from sigmoidsize_adv
+The output file outputs 1 row for all sigmoids of a given ID in the output from sigmoidsize_adv
 
 The program first computes the time sigmoid is nearest to CM using the cx and cy parameters.
 Then the program uses the nearest CM point to find the time the sigmoid is at CM.
@@ -188,10 +188,10 @@ The program usually arrives at a solution after 1 or 2 iterations.
 Next, the program finds all flares associated with a given sigmoid. The program queries the flares
 from the HEK for flares identified from the GOES satellites. When the GOES satellites do not return
 a position for the flare the program sees if any other coordinates for a flare are available within 
-1 minute, so the flares may be correlated with a particular sigmiod. The code correlates flares with
+1 minute, so the flares may be correlated with a particular sigmoid. The code correlates flares with
 a sigmoid two different ways. First, it uses the AR association of the flare. Then it checks whether
 the position of the flare is inside the box defined in sigmoidsize_adv. If either condition is met
-the flare is associated with the sigmiod and stored. ~~The output file of the flare correlation has the 
+the flare is associated with the sigmoid and stored. ~~The output file of the flare correlation has the 
 form '("sigmoid_id_",I03,"_",I03,".sav")'~~.
 Due to the non unique nature of the IDs the program now outputs in the form '("sigmoid_id\_",I04,".sav")'.
 This form is base on how the files were analyzed yearly, and not a great unique method for running a pipeline.
@@ -202,7 +202,7 @@ Therefore, I will need a new unique characteristic of the sigmoids.
 
 
 test_sig_b = CREATE_STRUCT(
-'sigmoid_id',0            , --> User specified sigmiod ID     
+'sigmoid_id',0            , --> User specified sigmoid ID     
 'cross_m'   ,'           ', -->  Time flare crossed the meridian    
 'sigmd_s','                    ', --> Sigmoid start time from previous sav file
 'sigmd_e','                    ', --> Sigmoid end time from previous sav file
@@ -230,14 +230,14 @@ The default cadence is 30 minutes.
 
 make_hmi_movie.pro
 ==================
-Creates a movie of the evolution of a sigmiod in HMI, as well as, measures properties of the sigmiod at a given cadence (30 minutes).
-First, the code selects files from the local archive created by get_hmi_files and finds the files that best fit between the sigmiod start
+Creates a movie of the evolution of a sigmoid in HMI, as well as, measures properties of the sigmoid at a given cadence (30 minutes).
+First, the code selects files from the local archive created by get_hmi_files and finds the files that best fit between the sigmoid start
 and end time with a 30 minute cadence.
 Then it creates a UID corresponding to the AIU international standard using its position in space and time at Tobs.
-N.B. this cannot be used as a unique identifier for the sigmiod catalog because the X, Y coordinates at Tbest,
+N.B. this cannot be used as a unique identifier for the sigmoid catalog because the X, Y coordinates at Tbest,
 which were used early in the catalog are inconsistent with the coordiantes of X, Y at Tobs (Tobs coordinates are better).
 The Tbest coordinates were human specified,
-while Tobs comes from the sigmiod select program's automatic region finder.
+while Tobs comes from the sigmoid select program's automatic region finder.
 At some point opaque to me the reported X, Y values went from corresponding to Tbest to Tobs without retention of the inferior Tbest X,Y coordinates. 
 The coordinates for the UID are correspond to Tobs.
 
@@ -250,8 +250,8 @@ Next, I create a Gaussian smoothed absolute image from an 8x8 pixel binned image
 On that smoothed image I use the IDL procedure edge_dog (Difference of Gaussians) with a radius of 1. and 700./(2\*rebinv)-1
 with 1 threshold, where the 700 comes from the pixel width of the image as long as the sigmoid long axis length is less than 350 pixels.
 If the long axis lengths is greater than 100 pixels, the widow length is twice the measure sigmoid length plus 250 pixels.
-From the edges of the edge_dog procedure I create an ROI object of whatever region is nearest to the sigmiods position at Tobs accounting for rotation.
-That ROI objects is then used to measure the unsigned magnetic flux, positive magnetic flux, negative magnetic flux, and magnetic area under the sigmiod in the prepped image.
+From the edges of the edge_dog procedure I create an ROI object of whatever region is nearest to the sigmoids position at Tobs accounting for rotation.
+That ROI objects is then used to measure the unsigned magnetic flux, positive magnetic flux, negative magnetic flux, and magnetic area under the sigmoid in the prepped image.
 
 Once the analysis finishes, the program writes a save file of the form:
 save,sig_id,out_id,obs_time,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'    
