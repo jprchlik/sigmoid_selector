@@ -86,14 +86,28 @@ end
 ;
 ;INPUTS
 ;    times      -   A csv file containing times to analyze sigmoid filaments
+;                   The format for the file is as follows:
+;                   readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;    wavelnth   -   An array of wavelengths to look at filaments (Default = [171,304])
+;    aia_arch   -   Archive to put and read in AIA files (Default = aia_arch)    
+;    outf       -   Name of output file containing save information (Default = times file name with the csv replaced by a sav extension)
+;                   fil_d={sig_id:'',            -->  Sigmiod ID (not positive that Patty kept this constant as I expected)     
+;                           NOAA_id:0,           -->  NOAA AR ID 
+;                           filename:'',         -->  AIA filename used for the analysis        
+;                           date:'',             -->  Date of AIA observation
+;                           leng:0.0,            -->  Length of filament in arcsec     
+;                           device_arcsecx:0.0,  -->  Conversion from clicked points to arcsec in X    
+;                           device_arcsecy:0.0,  -->  Conversion from clicked points to arcsec in Y    
+;                           devicex:fltarr(100), -->  Clicked points in X   
+;                           devicey:fltarr(100)} -->  Clicked points in Y
+;                   
+;
 ;
 ;OUTPUTS
 ;    A save file called called filament_sizedata.sav
 ;
 ;#############################################################
 pro filament_selector,times,wavelnth=wavelnth,aia_arch=aia_arch,outf=outf
-
-
 
 
 fil_d={sig_id:'',                $
