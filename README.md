@@ -154,6 +154,16 @@ devicey:fltarr(100)} -->  Clicked points in Y
 
 
 
+get_aia_files.py
+================
+Downloads full sun SDO/AIA images in parallel from JSOC at a 30 minute cadence. 
+
+aia_movie/make_aia_movie.pro
+========================
+Creates a 4 panel movie of SDO/AIA 193, 304, 335, and XRT over the sigmiod's lifetime at a 30 minute cadence.
+The output movie has a time range spanning sigmoid start to sigmoid_end to minute precision.
+
+
 flare_cme_sigcat,sigloc,fname=fname,odir=odir
 ================
 flare_cme_sigcat returns a save file with a list of CMEs and flares associated with the sigmiod. In addition,
@@ -247,6 +257,7 @@ Once the analysis finishes, the program writes a save file of the form:
 save,sig_id,out_id,obs_time,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'    
 and creates a movie with the ROI overplotted.
 Both the filenames and the output sigmoid have the IAU formatted UID.
+
 
 
  
