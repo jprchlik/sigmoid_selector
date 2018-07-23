@@ -126,13 +126,21 @@ end
 ;    Program, movie creation
 ;
 ;USAGE
-;    filament_selector,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=8
+;    make_hmi_movie,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=8
 ;
 ;INPUTS
 ;    times      -   A csv file containing times to analyze sigmoid filaments
+;                   CSV format must be as follows:
+;                   formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+;                   readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+;                   length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+;    hmi_arch   -   Directory to output the HMI files to (Default = 'hmi_arch/')
+;    cad        -   Cadence to get HMI files in seconds (Default = 30.*60)
+;    out_arch   -   Where to put the output movies and save files (Default = 'hmi_movie/')
+;    rebinv     -   Rebinning pixel value for median smoothing computationally effciently (Default = 8)
 ;
 ;OUTPUTS
-;    HMI files in hmi_arc
+;    HMI movie and sav files in hmi_arc
 ;
 ;#############################################################
 
@@ -215,7 +223,8 @@ out_fmt = '(A30,"/")'
 iau_cor = '("L",I03,"C",I03)'
 
 ;Restore sigmiod save file
-restore,'Sigmoids2007to2017.sav'
+;Not needed anymore 2018/07/23 J. Prchlik
+;restore,'Sigmoids2007to2017.sav'
 
 
 ;Rotate images by given angle
