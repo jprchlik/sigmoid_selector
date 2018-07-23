@@ -1,4 +1,24 @@
-pro getflux_mod,line_file=line_file
+;Compute a series of slopes and intercepts the contain the simgoid
+;Usage
+;res = comp_limits(inx,iny)
+function comp_limits,inx,iny
+
+lx1 = linfit(iny[0:1],inx[0:1])
+lx2 = linfit(iny[2:3],inx[2:3])
+ly1 = linfit(inx[1:2],iny[1:2])
+ly2 = linfit(inx[3:4],iny[3:4])
+
+return,[lx1,lx2,ly1,ly2]
+end
+
+
+pro get_hmi_file,date
+
+
+end
+
+
+pro getflux_mod,sigloc,fname=fname,odir=odir,line_file=line_file
 
 ;; Use sswidl
 ;; The line_file keyword should contain the filename of the IDL .sav file
