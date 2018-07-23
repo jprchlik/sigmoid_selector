@@ -260,6 +260,11 @@ Both the filenames and the output sigmoid have the IAU formatted UID.
 
 
 
+get_aia_files_cutout.pro
+========================
+Orders JSOC cutouts of Sigmoid around the X,Y coordiantes at Tobs during flares at a 45s cadence.
+Matches flare save file for flare_cme_cat.pro to a csv file with the final UID numbers and downloads files into a aia_arch_cutout
+directory.
  
 rjrlib
 ============
