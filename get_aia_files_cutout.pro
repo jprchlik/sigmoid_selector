@@ -68,6 +68,7 @@ for ii=0,n_elements(big_str)-1 do begin
     ;best_dis = min(dif_pos,best_ind,/Abs)
 
     if match_count eq 0 then continue ; No sigmoid found
+    if match_count gt 1 then continue ; Skip dulpicates for now J. Prchlik 2018/07/18
 
     ;get good flare start times
     poss_t = where((big_str[ii].flare_s ne 'None') and (big_str[ii].flare_s ne ''),count)
@@ -76,7 +77,7 @@ for ii=0,n_elements(big_str)-1 do begin
     if count eq 0 then continue
 
     ;Create directory for output png files
-    full_dir = aia_arch+strcompress(big_str[ii].sigmoid_id,/remove_all)+'/'
+    full_dir = aia_arch+strcompress(ID[best_ind],/remove_all)+'/'
     if file_test(full_dir) eq 0 then file_mkdir,full_dir
 
     ;loop over all start times
