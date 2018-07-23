@@ -84,6 +84,9 @@ end
 ;
 ;INPUTS
 ;    times      -   A csv file containing times to analyze sigmoid filaments
+;    aia_arch   -   An archive of AIA files (Default = '../aia_arch/symlinks/')
+;    out_arch   -   Output directory. Deprecated due a feature of aia_mkmovie only really working if it outputs in the current directory. 
+;    win_w      -   Window size in pixels of the AIA image (Default = 700)
 ;
 ;OUTPUTS
 ;    aia files in aia_arc
