@@ -129,13 +129,38 @@ sigdat_mod={sig_id:'',           --> User defined Sigmoid ID
         shrty2b:0.0}             --> Y coordinate of Upper Leading  Sigmoid short axis in pixels   
 
 
+filament_selector.pro
+=====================
+
+Program allows a user to manually select the a filament in the core of the sigmiod.
+To select the filament you need only use the mouse.
+Points along the filament are selected with a left click. 
+A right click stores that click value and end clicking along the filament.
+A middle click recenters the observation in case of a bad Tbest X,Y value, 
+which is rather frequent (N.B. Tbest != Tobs, Tobs positions are much better,
+but this code was developed before Tobs was readily in use).
+The middle click also reset all clicked points.
+
+The output save file has the following format:    
+fil_d={sig_id:'',    -->  Sigmiod ID (not positive that Patty kept this constant)     
+NOAA_id:0,           -->  NOAA AR ID     
+filename:'',         -->  AIA filename used for the analysis            
+date:'',             -->  Date of AIA observation    
+leng:0.0,            -->  Length of filament in arcsec         
+device_arcsecx:0.0,  -->  Conversion from clicked points to arcsec in X        
+device_arcsecy:0.0,  -->  Conversion from clicked points to arcsec in Y        
+devicex:fltarr(100), -->  Clicked points in X       
+devicey:fltarr(100)} -->  Clicked points in Y    
+
+
+
 flare_cme_sigcat,sigloc,fname=fname,odir=odir
 ================
 flare_cme_sigcat returns a save file with a list of CMEs and flares associated with the sigmiod. In addition,
 it computes the time the sigmiod is closest to the central merdian (CM). The only required input is a directory (sigloc) with a 
 save file created by sigmoidsize_adv. The output of the program is a save file is in the same directory as
  the sigloc, unless specified. 
-The output file outputs 1 row for all sigmiods of a given ID in hte output from sigmoidsize_adv
+The output file outputs 1 row for all sigmiods of a given ID in the output from sigmoidsize_adv
 
 The program first computes the time sigmoid is nearest to CM using the cx and cy parameters.
 Then the program uses the nearest CM point to find the time the sigmoid is at CM.
