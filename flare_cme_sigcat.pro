@@ -2,16 +2,16 @@
 
 pro compile_structure
 
-    test_sig_a = CREATE_STRUCT('sigmoid_id',0,$
+    test_sig_b = CREATE_STRUCT('sigmoid_id',0,$
                              'cross_m','                    ',$; Time flare crossed the meridian 
                              'sigmd_s','                    ',$; Sigmoid start time 
                              'sigmd_e','                    ',$; Sigmoid end time 
-                             'flare_x',fltarr(100),$;FLARE X POSITION
-                             'flare_y',fltarr(100),$;FLARE Y POSITION
-                             'flare_s',strarr(100),$;FLARE Start time
-                             'flare_e',strarr(100),$;FLARE End time
-                             'flare_p',strarr(100),$;FLARE Peak time
-                             'flare_c',strarr(100),$;FLARE GOES Class
+                             'flare_x',fltarr(1000),$;FLARE X POSITION
+                             'flare_y',fltarr(1000),$;FLARE Y POSITION
+                             'flare_s',strarr(1000),$;FLARE Start time
+                             'flare_e',strarr(1000),$;FLARE End time
+                             'flare_p',strarr(1000),$;FLARE Peak time
+                             'flare_c',strarr(1000),$;FLARE GOES Class
                              'cme_x',fltarr(100),$;CME X POSITION
                              'cme_y',fltarr(100),$;CME Y POSITION
                              'cme_s',strarr(100),$;CME Start time
@@ -81,7 +81,7 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             fl_cl = her.fl.FL_GOESCLS
 
 
-            ; Moved inside flare loop only 2018/03/29 J. Prchlik
+            ;Moved inside flare loop only 2018/03/29 J. Prchlik
             ;Rotation array
             rot_p = fltarr([2,n_elements(fl_x)])
 
@@ -89,8 +89,8 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             ;Rotate position to obs time
             for j=0, n_elements(fl_x)-1 do begin
 
-                ;Update GOES flux with AIA coordinates if CME not set
-                if keyword_set(cme) eq 0 then begin
+                ;Update GOES flux with AIA coordinates if AIA flare found
+                if n_elements(aia) gt 3 then begin
                     asdo_t=double(anytim(aia.fl.event_peaktime))
                     goes_t=double(anytim(her.fl[j].event_peaktime))
                     ;Get minimum time index
@@ -411,13 +411,13 @@ for i=0,n_elements(usig_id)-1 do begin
 
     ;Create dummy arrays to fill in structure
     cross_m = '20'+str_replace(anytim(new_dat,/yymmdd),', ','T');merdian crossing time
-    flare_x = fltarr(100)-1.e31;FLARE X POSITION
-    flare_y = fltarr(100)-1.e31;FLARE Y POSITION
-    flare_u = strarr(100);FLARE POSITION Units
-    flare_s = strarr(100);FLARE Start time
-    flare_e = strarr(100);FLARE End time
-    flare_p = strarr(100);FLARE Peak time
-    flare_c = strarr(100);FLARE GOES Class
+    flare_x = fltarr(1000)-1.e31;FLARE X POSITION
+    flare_y = fltarr(1000)-1.e31;FLARE Y POSITION
+    flare_u = strarr(1000);FLARE POSITION Units
+    flare_s = strarr(1000);FLARE Start time
+    flare_e = strarr(1000);FLARE End time
+    flare_p = strarr(1000);FLARE Peak time
+    flare_c = strarr(1000);FLARE GOES Class
     cmevl_x = fltarr(100)-1.e31;CME X POSITION
     cmevl_y = fltarr(100)-1.e31;CME Y POSITION
     cmevl_u = strarr(100);CME POSITION Units
@@ -507,7 +507,7 @@ for i=0,n_elements(usig_id)-1 do begin
      ;print,'#############################################################'
      ;print,'#############################################################'
      ;Create single row in structure
-     tmp = {test_sig_a,$
+     tmp = {test_sig_b,$
          sigmoid_id:fix(real_sig_id[best_ind[0]]),$ ;Use index in sav file to call real ID in csv file input to make save file
          sigmd_s:SIG_START[best_ind[0]],$ ;Use index in sav file to call sigmiod start time in csv file input to make save file
          sigmd_e:SIG_END[best_ind[0]],$ ;Use index in sav file to call sigmoid end time in csv file input to make save file
