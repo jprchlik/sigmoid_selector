@@ -218,6 +218,12 @@ for ii=0,n_elements(big_str)-1 do begin
         t_peak = big_str[ii].flare_p[i]
         f_clas = big_str[ii].flare_c[i]
 
+        ;Filename of output movie
+        file_out_fmt = 'AIA_'+str_replace(str_replace(t_peak,'-',''),':','')+'_'+str_replace(f_clas,'.','_')+'.mp4'
+        ;Do not rerun movie if already created 2018/08/06 J. Prchlik
+        if file_test(full_dir+'/'+file_out_fmt) then continue
+        
+
         ;get start time string
         ts = anytim(t1,/hxrbs)
         ts = '20'+ts
@@ -386,8 +392,6 @@ for ii=0,n_elements(big_str)-1 do begin
             for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = bytscl(xrt_data[*,*,i], min=median(xrt_data[*,*,i]*0.85))
             xrt_data = byte(xrt_data)
 
-            ;Filename of output movie
-            file_out_fmt = 'AIA_'+str_replace(str_replace(t_peak,'-',''),':','')+'_'+str_replace(f_clas,'.','_')+'.mp4'
             ;Use aia_mkmovie to make the movie
             ;Need to add ref_time keyword to aia_panel_wrapper and remove aia_prep at line 99 in aia_pane_wrapper 2018/08/06
             ;File with edits located at /home/jprchlik/personaladditions/code/idl/aia_mkmovie_testbed/aia_mkmovie_testbed/aia_mkmovie
