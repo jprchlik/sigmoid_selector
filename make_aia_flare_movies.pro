@@ -213,6 +213,10 @@ for ii=0,n_elements(big_str)-1 do begin
         ;get time range to search over
         t1 = anytim(big_str[ii].flare_s[i])-3600. ; move forward 1 hour
         t2 = anytim(big_str[ii].flare_e[i])+3600. ; Add 1 hour after
+      
+        ;get flare peak time and class
+        t_peak = big_str[ii].flare_p[i]
+        f_clas = big_str[ii].flare_c[i]
 
         ;get start time string
         ts = anytim(t1,/hxrbs)
@@ -382,12 +386,19 @@ for ii=0,n_elements(big_str)-1 do begin
             for i=0, n_elements(xrt_index)-1 do xrt_data[*,*,i] = bytscl(xrt_data[*,*,i], min=median(xrt_data[*,*,i]*0.85))
             xrt_data = byte(xrt_data)
 
+            ;Filename of output movie
+            file_out_fmt = 'AIA_'+str_replace(str_replace(t_peak,'-',''),':','')+'_'+str_replace(f_clas,'.','_')+'.mp4'
             ;Use aia_mkmovie to make the movie
-            aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,/sequential,$
-                    path=sub_point,other_index=xrt_index, other_data=xrt_data,dir_out=full_dir,ref_times=aia_time,/qstop;, $
-        endif else aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,path=sub_point,/sequential,dir_out=full_dir,ref_times=aia_time,/qstop
+            ;Need to add ref_time keyword to aia_panel_wrapper and remove aia_prep at line 99 in aia_pane_wrapper 2018/08/06
+            ;File with edits located at /home/jprchlik/personaladditions/code/idl/aia_mkmovie_testbed/aia_mkmovie_testbed/aia_mkmovie
+            aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,/sequential,/delete,$
+                    path=sub_point,other_index=xrt_index, other_data=xrt_data,ref_times=aia_time,fname=file_out;, $
+        endif else aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,path=sub_point,/sequential,ref_times=aia_time,fname=file_out,/delete
 
-        stop
+
+        ;Move flare movie to new directory
+        file_move,file_out,full_dir+'/'+file_out_fmt
+
     endfor
 
 endfor
