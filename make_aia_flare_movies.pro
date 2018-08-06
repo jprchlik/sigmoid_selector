@@ -399,6 +399,8 @@ for ii=0,n_elements(big_str)-1 do begin
                     path=sub_point,other_index=xrt_index, other_data=xrt_data,ref_times=aia_time,fname=file_out;, $
         endif else aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,path=sub_point,/sequential,ref_times=aia_time,fname=file_out,/delete
 
+        ;If movie is not made continue
+        if not file_test(file_out) then continue
 
         ;Move flare movie to new directory
         file_move,file_out,full_dir+'/'+file_out_fmt
