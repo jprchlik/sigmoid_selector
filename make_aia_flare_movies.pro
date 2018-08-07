@@ -323,6 +323,13 @@ for ii=0,n_elements(big_str)-1 do begin
         ;Query time catalog
         xrt_cat, ts, te, catx, ofiles
 
+
+        ;If no XRT files found make movie with just AIA and continue
+        if n_elements(size(ofiles)) lt 4 then begin
+            aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,path=sub_point,/sequential,ref_times=aia_time,fname=file_out,/delete
+            continue
+        endif
+
         ;get X x-ray position at a given time
         x_val = fltarr(n_elements(catx))
 
@@ -399,7 +406,7 @@ for ii=0,n_elements(big_str)-1 do begin
                     path=sub_point,other_index=xrt_index, other_data=xrt_data,ref_times=aia_time,fname=file_out;, $
         endif else aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,path=sub_point,/sequential,ref_times=aia_time,fname=file_out,/delete
 
-        ;If movie is not made continue
+        ;If movie is not made continue because there were no observations in that time period
         if not file_test(file_out) then continue
 
         ;Move flare movie to new directory
