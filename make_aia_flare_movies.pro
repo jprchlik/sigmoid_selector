@@ -255,6 +255,8 @@ for ii=0,n_elements(big_str)-1 do begin
 
         ;Check to see if the code locates any aia files
         found_fil = 0
+        ;Count total number of files
+        total_fil = 0
         ;Loop over all pointers and get the best times
         for j=0,n_elements(wavs)-1 do begin
 
@@ -269,7 +271,7 @@ for ii=0,n_elements(big_str)-1 do begin
             ;get time min for matches
             minv = min(r_ti+p_ti,min_loc,/abs,dimension=1)
             ;get min values less than 90 minutes only
-            good_min = where(minv lt img_cad,matches)
+            good_min = where(minv lt 5*img_cad,matches)
 
             ;leave if there are no good matches
             if matches eq 0 then continue
@@ -292,14 +294,26 @@ for ii=0,n_elements(big_str)-1 do begin
             match_files = aia_list[chk_i]
 
             ;Get only unique values
-            match_files=match_files[uniq(match_files)]
+            ;Not need J. Prchlik 2018/08/07
+            ;match_files=match_files[uniq(match_files)]
+
+            ;Count total number of files
+            total_fil = n_elements(match_files)+total_fil
+
+            ;Make sure all wavelengths have the same length in array
+            if j eq 0 then begin
+                total_l = n_elements(match_files)
+            endif else begin
+                 if n_elements(match_files) ne total_l then print,'Error Coming in movie creation'
+            endelse
         
             ;store file names in pointer 
             sub_point[j] = ptr_new(match_files)
          endfor
 
         ;leave if no aia files found
-         if found_fil eq 0 then continue
+         if total_fil lt 4 then continue
+
 
         ;prep first aia observation data
         filein = *sub_point[0]
@@ -389,7 +403,6 @@ for ii=0,n_elements(big_str)-1 do begin
                      AND (catx.naxis2 le 513) $
                      AND ((catx.xcen+catx.fovx*catx.cdelt1 gt x_val) AND (catx.xcen-catx.fovx*catx.cdelt1 lt x_val)) $
                      AND ((catx.naxis1 eq x_dim) and (catx.naxis2 eq y_dim)),found_small_xrt)
-
 
         if found_small_xrt gt 1 then begin
             ;Force allow for difference size images
