@@ -78,7 +78,8 @@ for ii=0,n_elements(big_str)-1 do begin
 
     ;Create directory for output png files
     full_dir = aia_arch+strcompress(ID[best_ind],/remove_all)+'/'
-    if file_test(full_dir) eq 0 then file_mkdir,full_dir
+    ;Skip already created directories for now 2018/07/30 J. Prchlik
+    if file_test(full_dir) eq 0 then file_mkdir,full_dir else continue
 
     ;loop over all start times
     for ij = 0,n_elements(poss_t)-1 do begin 
