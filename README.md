@@ -259,6 +259,12 @@ and creates a movie with the ROI overplotted.
 Both the filenames and the output sigmoid have the IAU formatted UID.
 
 
+create_combined_movies.pro
+==========================
+Takes the movies made by make_hmi_movie, aia_movie/make_aia_movie, and make_aia_flare_movies and combines them into one directory based on their IAU indentification number.
+Currently, creates new directories and symbolic links.
+
+
 
 get_aia_files_cutout.pro
 ========================
