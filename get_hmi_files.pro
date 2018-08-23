@@ -13,7 +13,11 @@
 ;    get_hmi_files,times,hmi_arch='hmi_arch/'
 ;
 ;INPUTS
-;    times      -   A csv file containing times to analyze sigmoid filaments
+;    times      -   A csv file containing times to analyze sigmoid filaments.
+;                   File will be read with the following call 
+;                   readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;    hmi_arch   -   Directory to output the HMI files to (Default = 'hmi_arch/')
+;    cad        -   Cadence to get HMI files in seconds (Default = 30.*60)
 ;
 ;OUTPUTS
 ;    HMI files in hmi_arc
