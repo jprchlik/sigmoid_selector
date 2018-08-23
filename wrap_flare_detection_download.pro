@@ -7,7 +7,7 @@ pro wrap_flare_detection_download,years=years
     for i=0,n_elements(years)-1 do begin
         year = years[i]
         ;Associate flares with sigmoids
-        flare_cme_sigcat,'/data/tardigrade/pbolan/2018/',year,odir='./'
+;        flare_cme_sigcat,'/data/tardigrade/pbolan/2018/',year,odir='./'
         ;Download cutouts around flares
         get_aia_files_cutout,'sigmoid_id_'+year+'.sav','SigmoidCatalogAll.csv'
     endfor
