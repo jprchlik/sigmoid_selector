@@ -151,6 +151,10 @@ for ii=0,n_elements(big_str)-1 do begin
     l335 = file_search(full_dir+'*335.image.fits')
     lxrt = l335
 
+
+    ;If no files found just continue
+    if ((n_elements(size(l193)) lt 4) and (n_elements(size(l304)) lt 4) and (n_elements(size(l335)) lt 4)) then continue
+
     ;list of wavelengths for 4 panel movie
     wavs = ['193','304','335']
     ;create pointer array of paths for files
@@ -271,7 +275,7 @@ for ii=0,n_elements(big_str)-1 do begin
             ;get time min for matches
             minv = min(r_ti+p_ti,min_loc,/abs,dimension=1)
             ;get min values less than 90 minutes only
-            good_min = where(minv lt 5*img_cad,matches)
+            good_min = where(minv lt 50000*img_cad,matches)
 
             ;leave if there are no good matches
             if matches eq 0 then continue
@@ -355,8 +359,8 @@ for ii=0,n_elements(big_str)-1 do begin
         endfor
 
         ;Get regions which cover the region
-        want = where(((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) $
-                     AND (catx.ec_imty_ eq 'normal') $
+        want = where( $
+                     (catx.ec_imty_ eq 'normal') $
                      AND ((catx.ycen+catx.fovy*catx.cdelt1 gt rot_p[1]) AND (catx.ycen-catx.fovy*catx.cdelt1 lt rot_p[1])) $
                      AND (catx.chip_sum le 2) $
                      AND (catx.naxis1 le 513) $
@@ -395,8 +399,8 @@ for ii=0,n_elements(big_str)-1 do begin
 
 
         ;Get new solution with the most common values for Naxis1 and 2
-        want = where(((catx.ec_fw2_ eq 'Ti_poly') OR (catx.ec_fw1_ eq 'Al_poly') OR (catx.ec_fw1_ eq 'Be_thin')) $
-                     AND (catx.ec_imty_ eq 'normal') $
+        want = where( $
+                     (catx.ec_imty_ eq 'normal') $
                      AND ((catx.ycen+catx.fovy*catx.cdelt1 gt rot_p[1]) AND (catx.ycen-catx.fovy*catx.cdelt1 lt rot_p[1])) $
                      AND (catx.chip_sum le 2) $
                      AND (catx.naxis1 le 513) $
