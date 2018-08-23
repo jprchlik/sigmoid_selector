@@ -1,3 +1,53 @@
+;###########################################################################
+;FUNCTION
+;
+;CALL
+;    sig_id = get_iau_format(tobs,x,y,sig_start,lat=lat,lon=lon)
+;
+;INPUT
+;    tobs - Time of observation for X, Y coordinates
+;    X    - coord in HPC arcsec
+;    Y    - coord in HPC arcsec
+;    sig_start - start time to use a reference for making the IAU coordinate
+;    lat  - Carrington latitude (output)
+;    lon  - Carrington longitude (output)
+;
+;
+;OUTPUT
+;    sig_id - IAU formated Sigmoid ID number  
+;
+;###########################################################################
+function get_iau_format,tobs,x,y,sig_start,lat=lat,lon=lon
+
+;Format input variables
+gi = tobs
+xi = x
+yi = y
+t1 = sig_start
+
+;Rotate to start time
+rot_p = rot_xy(xi,yi,tstart=gi,tend=t1)
+
+;Create directory for output png files
+;Subscribe to IAU standard on output format
+iau_time = strsplit(gi,'.',/extract)
+iau_time = iau_time[0]
+
+;IAU_format for coordinates
+iau_cor = '("L",I03,"C",I03)'
+
+;Get distance to sun
+d_sun = get_sun(t1,/list)
+
+WCS_CONV_HPC_HG, rot_p[0], rot_p[1], lon, lat, dsun_obs=d_sun[0], length_units='AU',/carr, /pos_long
+iau_pos = string([round(lon),round(lat)],format=iau_cor)
+
+;Create new unique ID with IAU standard
+sig_id = 'SOL'+iau_time+iau_pos
+
+
+return,sig_id
+end
 
 ;#############################################################
 ;
@@ -98,7 +148,11 @@ pro make_aia_movie,times,aia_arch=aia_arch,out_arch=out_arch,win_w=win_w
 set_plot,'Z'
 
 ;Read in file containing TBEST
-readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;Updates with Patty's new output format 2018/06/13 J. Prchlik
+formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
 ;Set archive directory for download aia files
 if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = '../aia_arch/symlinks/'
 aia_arch = aia_arch+'/'
@@ -191,7 +245,7 @@ for p=0,n_elements(goodt)-1 do begin
 
     
     ;get index for a good time
-    gi = tbest[i]
+    gi = tobs[i]
     xi = x[i]
     yi = y[i]
     sig_id = ID[i]
@@ -367,10 +421,13 @@ for p=0,n_elements(goodt)-1 do begin
 
     ;Use aia_mkmovie to make the movie
     aia_mkmovie,t1,t2,wavs,cadence=1,/no_quality_check,/diffrot,/multi_panel,cutout=cutout,$
-                path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0);, $
+                path=sub_point,other_index=xrt_index, other_data=xrt_data,index_ref=index(0),fname=outname;, $
                 ;Remove dir out because aia_mkmovie has an error that prevents it from running outside the base directory
                 ;dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
 
+    ;Use IAU ide ane move file name to new id add 2018/08/23 J. Prchlik
+    sig_str_id = get_iau_format(gi,xi,yi,t1,lat=lat,lon=lon)
+    file_move,outname,sig_str_id+'.mp4'
   
 endfor
 end
