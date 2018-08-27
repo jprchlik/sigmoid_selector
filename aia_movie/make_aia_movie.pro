@@ -37,7 +37,7 @@ iau_time = iau_time[0]
 iau_cor = '("L",I03,"C",I03)'
 
 ;Get distance to sun
-d_sun = get_sun(t1,/list)
+d_sun = get_sun(t1)
 
 WCS_CONV_HPC_HG, rot_p[0], rot_p[1], lon, lat, dsun_obs=d_sun[0], length_units='AU',/carr, /pos_long
 iau_pos = string([round(lon),round(lat)],format=iau_cor)
@@ -250,11 +250,18 @@ for p=0,n_elements(goodt)-1 do begin
     yi = y[i]
     sig_id = ID[i]
 
+
     ;get time range to search over
     ;t1 = tbest[gi]
     ;t2 = anytim(anytim(t1)+24.,/ecs)  
     t1 = sig_start[i]
     t2 = sig_end[i]
+
+    ;Use IAU ide ane move file name to new id add 2018/08/23 J. Prchlik
+    sig_str_id = get_iau_format(gi,xi,yi,t1,lat=lat,lon=lon)
+
+    ;Do not recreate movie if already processed
+    if file_test(sig_str_id+'.mp4') then continue
   
     ;Convert to anytimes
     at1 = anytim(t1)
@@ -334,7 +341,7 @@ for p=0,n_elements(goodt)-1 do begin
 
     ;prep first aia observation data
     filein = *sub_point[0]
-    read_sdo,filein[0],index,data,/uncomp_delete,/noshell
+    read_sdo,filein[1],index,data,/uncomp_delete,/noshell
 
     ;Rotate best point to first time
     ;Plot restricted range
@@ -425,9 +432,9 @@ for p=0,n_elements(goodt)-1 do begin
                 ;Remove dir out because aia_mkmovie has an error that prevents it from running outside the base directory
                 ;dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
 
-    ;Use IAU ide ane move file name to new id add 2018/08/23 J. Prchlik
-    sig_str_id = get_iau_format(gi,xi,yi,t1,lat=lat,lon=lon)
-    file_move,outname,sig_str_id+'.mp4'
+    ;Only move movie if made
+    if file_test(outname) then file_move,outname,sig_str_id+'.mp4' $
+        else print,sig_str_id+' not created'
   
 endfor
 end
