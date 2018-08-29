@@ -103,12 +103,17 @@ select_button = '<img class=\"details_icon\" style=\"cursor:pointer;\" title=\"C
 ind_3 = '            "'
 select_button = ind_3+select_button
 
+
+
+;Table containing flare string
+flare_str_fmt = '("B: ",I4," C: ",I4," M: ",I4," X: ",I4)'
+
 ;File to write to
 openw,33,'sigmoid_webpage/json.txt'
 printf,33,'{'
 printf,33,'    "aaData": ['
 
-max_it = 2 ;maximum iterator
+max_it = 80 ;maximum iterator
 ;Loop over good indices
 ;for ii=0,n_elements(goodt)-1 do begin
 ;cut loop short for testing
@@ -130,8 +135,6 @@ for ii=0,max_it do begin
 
 
 
-    ;Table containing flare string
-    flare_str = 'B: 1, C: 0, M: 0, X: 0'
 
    
    
@@ -182,18 +185,21 @@ for ii=0,max_it do begin
     ;full_flr = flr_arch+strcompress(ID[i],/remove_all)+'/'
 
     ;get all flare movies
-    flare_files = file_search(flr_dir+'*mp4',/full,count=flare_files)
-    print,flr_dir
-    print,flare_files
+    flare_files = file_search(flr_dir+'*mp4',/full,count=flare_cnt)
 
     ;flare link
     ;if n_elements(size(flare_files)) lt 4 then continue
 
+    ;Get counters for flares
+    b_cnt = 0
+    c_cnt = 0
+    m_cnt = 0
+    x_cnt = 0
     
     ;initial flare text
     mat_flr   = '<b>Flares from this region: </b></A>'
     ;Create text for flare links
-    if flare_files gt 0 then begin
+    if flare_cnt gt 0 then begin
         for j=0,n_elements(flare_files)-1 do begin
            ;File name
            file_name = strsplit(flare_files[j],'/',/extract)
@@ -206,15 +212,26 @@ for ii=0,max_it do begin
            sclass= strmid(file_name,53,1)
 
            ;Create line with flare class and time
-           add_flare = '<br><A HREF=\"../'+flr_dir+sig_id+file_name+'.mp4\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
+           add_flare = '<br><A HREF=\"'+flare_files[j]+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
 
            ;add to matched flare text
            mat_flr = mat_flr+add_flare
+
+         case strmid(class,0,1) of 
+             'B': b_cnt += 1
+             'C': c_cnt += 1
+             'M': m_cnt += 1
+             'X': x_cnt += 1
+         endcase
 
         endfor
      endif
     ;add table break
     mat_flr = mat_flr+'</div>'
+
+
+    ;Flare string for table
+    flare_str = string([b_cnt,c_cnt,m_cnt,x_cnt],format=flare_str_fmt)
 
     ;readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
     ;       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
