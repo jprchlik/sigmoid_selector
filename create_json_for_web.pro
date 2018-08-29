@@ -61,14 +61,14 @@ end
 ;
 ;
 ;OUTPUTS
-;    Creates directory structure of symbolic links to make new sigmiod catalog. 
-;    Combines movies from HMI, sigmoid long movies, and flare movies
+;    A JSON formatted text file for use with the XRT sigmiod webpage
 ;
 ;#############################################################################
-pro create_combined_movies,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=flr_arch,out_arch=out_arch
+pro create_json_for_web,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=flr_arch,out_arch=out_arch
 
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
-formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+formats = 'LL,LL,A,A,A,F,F,A,A,A,F,A,A,A,A,A,F,F,f,F,F'
+;formats = 'A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
        length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
 
@@ -95,19 +95,28 @@ goodt = where(strlen(tobs) eq 23)
 ;format for output symbolic link directory
 out_fmt = '(A30,"/")'
 
+
+;Select button at the start of each row
+select_button = '<img class=\"details_icon\" style=\"cursor:pointer;\" title=\"Click for details\" alt=\"Open Details\" src=\"./scripts/DataTables/examples/examples_support/details_open.png\"></img>",'
+
+;3 indents for the start of each column in a raw
+ind_3 = '            "'
+select_button = ind_3+select_button
+
 ;File to write to
-openw,33,'json.txt.test'
-printf,'{',33
-printf,'}',33
+openw,33,'sigmoid_webpage/json.txt'
+printf,33,'{'
+printf,33,'    "aaData": ['
 
-free_lun,33
-
-stop
-
+max_it = 2 ;maximum iterator
 ;Loop over good indices
 ;for ii=0,n_elements(goodt)-1 do begin
 ;cut loop short for testing
-for ii=0,2 do begin
+for ii=0,max_it do begin
+
+     ;start bracket for storing data in a "row"
+     printf,33,'        ['
+
     ;Set index to value with goodt
     i = goodt[ii]
     ;get index for a good time
@@ -121,8 +130,12 @@ for ii=0,2 do begin
 
 
 
+    ;Table containing flare string
+    flare_str = 'B: 1, C: 0, M: 0, X: 0'
 
-    ;
+   
+   
+ 
 
     ;Get sigmoid start and end times
     t1 = sig_start[i]
@@ -135,6 +148,10 @@ for ii=0,2 do begin
     ;Remove : characters
     full_dir = str_replace(full_dir,':','')
     full_dir = str_replace(full_dir,'-','')
+    ;make output directory
+    hmi_dir = full_dir+'/hmi_movie/'
+    aia_dir = full_dir+'/aia_movie/'
+    flr_dir = full_dir+'/flr_movie/'
 
     ;###############################################################################
     ;
@@ -162,24 +179,99 @@ for ii=0,2 do begin
  
 
     ;Create directory for output png files
-    full_flr = flr_arch+strcompress(ID[i],/remove_all)+'/'
+    ;full_flr = flr_arch+strcompress(ID[i],/remove_all)+'/'
 
     ;get all flare movies
-    flare_files = file_search(full_flr+'*mp4',/full)
+    flare_files = file_search(flr_dir+'*mp4',/full,count=flare_files)
+    print,flr_dir
+    print,flare_files
 
     ;flare link
-    if n_elements(size(flare_files)) lt 4 then continue
+    ;if n_elements(size(flare_files)) lt 4 then continue
 
-    ;Create text for flare links
-    for j=0,n_elements(flare_files)-1 do begin
-       ;File name
-       file_name = strsplit(flare_files[j],'/',/extract)
-       file_name = file_name[n_elements(file_name)-1]
-
-
-    endfor
     
+    ;initial flare text
+    mat_flr   = '<b>Flares from this region: </b></A>'
+    ;Create text for flare links
+    if flare_files gt 0 then begin
+        for j=0,n_elements(flare_files)-1 do begin
+           ;File name
+           file_name = strsplit(flare_files[j],'/',/extract)
+           file_name = file_name[n_elements(file_name)-1]
+           month = strmid(file_name,38,2)
+           day   = strmid(file_name,40,2)
+           hour  = strmid(file_name,43,2)
+           min   = strmid(file_name,45,2)
+           class = strmid(file_name,50,2)
+           sclass= strmid(file_name,53,1)
+
+           ;Create line with flare class and time
+           add_flare = '<br><A HREF=\"../'+flr_dir+sig_id+file_name+'.mp4\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
+
+           ;add to matched flare text
+           mat_flr = mat_flr+add_flare
+
+        endfor
+     endif
+    ;add table break
+    mat_flr = mat_flr+'</div>'
+
+    ;readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+    ;       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+    ;Text to include in image information
+    ar_sstr  = '<div align=\"left\" class=\"block\"><b>AR Start: </b>'+str_replace(strmid(ar_start[i],0,16),'T',' ')
+    ar_estr   = '<br><b>AR End: </b>'+str_replace(strmid(ar_end[i],0,16),'T',' ')
+    sig_sstr = '<br><b>Sigmoid Start: </b>'+str_replace(strmid(sig_start[i],0,16),'T',' ')
+    sig_estr   = '<br><b>Sigmoid End: </b>'+str_replace(strmid(sig_end[i],0,16),'T',' ')
+    mag_mov   = '<br><b>Movies: </b><A HREF=\"../'+hmi_mov+'\">Magnetogram</A>'
+    flr_cat   = '<br><A HREF=\"http://xrt.cfa.harvard.edu/flare_catalog/full.html?search='+string(NOAA[i],format='(I5)')+'\" target=\"_blank\">'
+
+    ;Series of still images to add to the sigmoid catalog linking to solar monitor
+    
+    ;base link to webpage
+    base_solar_m = '\"https://solarmonitor.org/data/'
+
+
+     image_info = ind_3+ar_sstr+ar_estr+sig_sstr+sig_estr+mag_mov+flr_cat+mat_flr+'"'
+;    image_info = ind_3+'<div align=\"left\" class=\"block\"><b>AR Start: </b>02/26 18:03<br><b>AR End: </b>03/07 06:14<br><b>Sigmoid Start: </b>02/26 11:17<br><b>Sigmoid End: </b>02/27 11:40<br><b>Movies: </b><A HREF=\"./images/001/001_mag.mov\">Magnetogram</A><br><A HREF=\"http://xrt.cfa.harvard.edu/flare_catalog/full.html?search=2007+10944\" target=\"_blank\"><b>Flares from this region: </b></A><br>B2.5 03/02 05:29</div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_sigmoid.png\" rel=\"lightbox\">SRC=\"./images/001/001_sigmoid.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_euv.png\" rel=\"lightbox\">SRC=\"./images/001/001_euv.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_mag.png\" rel=\"lightbox\">SRC=\"./images/001/001_mag.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_halpha.png\" rel=\"lightbox\">SRC=\"./images/001/001_halpha.png\" height=\"200\" width=\"200\"></A></div>"'
+    
+    ;print sigmoid information 
+    printf,33,select_button
+    printf,33,ind_3+string(ID[i],format='(I03)')          +'",';Sigmoid ID
+    printf,33,ind_3+'0'            +'",'         ;Rating
+    printf,33,ind_3+string(NOAA[i],format='(I5)')        +'",' ;NOAA AR number
+    printf,33,ind_3+strmid(TBEST[i],0,19)       +'",' ;Best observing time in XRT images
+    printf,33,ind_3+string(X[i],format='(F6.1)')           +'",' ;X location at time T_obs
+    printf,33,ind_3+string(Y[i],format='(F6.1)')           +'",' ;Y location at time T_obs
+    printf,33,ind_3+string(length[i]      ,format='(F6.1)')+'",' ;length of the sigmoid in arcsec
+    printf,33,ind_3+string(aspect_ratio[i],format='(F6.1)')+'",' ;aspect ratio of sigmoid
+    printf,33,ind_3+orientation[i] +'",' ;Orientation of sigmoid
+    printf,33,ind_3+hemisphere[i]  +'",' ;Hemisphere of the Sigmoid
+    printf,33,ind_3+string(length_171[i],format='(F9.1)')  +'",' ;does the sigmoid have a EUV filament
+    printf,33,ind_3+string(length_304[i],format='(F9.1)')  +'",' ;Does the sigmoid have an H alpha filament
+    printf,33,ind_3+'5'            +'",' ;Number of sunspot in AR (get from HEK)
+    printf,33,ind_3+'N'            +'",' ;Flux emergence 
+    printf,33,ind_3+'N'            +'",' ;Flux cancellation 
+    printf,33,ind_3+'5.3e21'       +'",' ;get from flare crossmatch
+    printf,33,ind_3+flare_str      +'",' ;flare table string
+    printf,33,ind_3+'0'            +'",' ;Number of CMEs
+    printf,33,ind_3+'-'            +'",' ;Filament eruption
+    printf,33,ind_3+'-'            +'",' ;Transient CH
+    printf,33,ind_3+'-'            +'",' ;Flare Ribbons
+    printf,33,ind_3+'-'            +'",' ;Post-Flare Loops
+    printf,33,ind_3+'-'            +'",'  ;Nearby CH
+    printf,33,ind_3+'-'            +'",'  ;Nearby AR
+    printf,33,image_info
+    ;end bracket for storing data in a "row"
+    if i eq  max_it then printf,33,'        ]' $
+    else printf,33,'        ],'
 
 
 endfor
+
+
+;close the file
+printf,33,'    ]'
+printf,33,'}'
+free_lun,33
 end
