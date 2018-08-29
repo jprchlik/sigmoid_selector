@@ -113,7 +113,7 @@ openw,33,'sigmoid_webpage/json.txt'
 printf,33,'{'
 printf,33,'    "aaData": ['
 
-max_it = 80 ;maximum iterator
+max_it = n_elements(goodt)-1 ;maximum iterator
 ;Loop over good indices
 ;for ii=0,n_elements(goodt)-1 do begin
 ;cut loop short for testing
@@ -170,7 +170,7 @@ for ii=0,max_it do begin
     ;
     ;###############################################################################
     ;Create text for link related to sigmoid long mp4 file
-    aia_movie = aia_dir+sig_id+'.mp4'
+    aia_mov = aia_dir+sig_id+'.mp4'
 
      
 
@@ -241,7 +241,8 @@ for ii=0,max_it do begin
     sig_sstr = '<br><b>Sigmoid Start: </b>'+str_replace(strmid(sig_start[i],0,16),'T',' ')
     sig_estr   = '<br><b>Sigmoid End: </b>'+str_replace(strmid(sig_end[i],0,16),'T',' ')
     mag_mov   = '<br><b>Movies: </b><A HREF=\"../'+hmi_mov+'\">Magnetogram</A>'
-    flr_cat   = '<br><A HREF=\"http://xrt.cfa.harvard.edu/flare_catalog/full.html?search='+string(NOAA[i],format='(I5)')+'\" target=\"_blank\">'
+    sdo_mov   = '    <A HREF=\"../'+aia_mov+'\">SDO/AIA and Hinode/XRT</A>'
+    flr_cat   = '<br><A HREF=\"http://xrt.cfa.harvard.edu/flare_catalog/all_full.html?search='+string(NOAA[i],format='(I5)')+'\" target=\"_blank\">'
 
     ;Series of still images to add to the sigmoid catalog linking to solar monitor
     
@@ -249,7 +250,7 @@ for ii=0,max_it do begin
     base_solar_m = '\"https://solarmonitor.org/data/'
 
 
-     image_info = ind_3+ar_sstr+ar_estr+sig_sstr+sig_estr+mag_mov+flr_cat+mat_flr+'"'
+     image_info = ind_3+ar_sstr+ar_estr+sig_sstr+sig_estr+mag_mov+sdo_mov+flr_cat+mat_flr+'"'
 ;    image_info = ind_3+'<div align=\"left\" class=\"block\"><b>AR Start: </b>02/26 18:03<br><b>AR End: </b>03/07 06:14<br><b>Sigmoid Start: </b>02/26 11:17<br><b>Sigmoid End: </b>02/27 11:40<br><b>Movies: </b><A HREF=\"./images/001/001_mag.mov\">Magnetogram</A><br><A HREF=\"http://xrt.cfa.harvard.edu/flare_catalog/full.html?search=2007+10944\" target=\"_blank\"><b>Flares from this region: </b></A><br>B2.5 03/02 05:29</div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_sigmoid.png\" rel=\"lightbox\">SRC=\"./images/001/001_sigmoid.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_euv.png\" rel=\"lightbox\">SRC=\"./images/001/001_euv.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_mag.png\" rel=\"lightbox\">SRC=\"./images/001/001_mag.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_halpha.png\" rel=\"lightbox\">SRC=\"./images/001/001_halpha.png\" height=\"200\" width=\"200\"></A></div>"'
     
     ;print sigmoid information 
