@@ -74,7 +74,7 @@ pro get_solarmonitor_links_dirty,date,links
     ;Get Halpha page
     hal_cut = base_page[where(STRMATCH(base_page,'*full_disk*halph*indexnum=1*',/FOLD_CASE) EQ 1,hal_cnt)]
     ;Get 171 Fe line page
-    fel_cut = base_page[where(STRMATCH(base_page,'*full_disk*00171*indexnum=1*',/FOLD_CASE) EQ 1,fel_cnt)]
+    fel_cut = base_page[where(STRMATCH(base_page,'*full_disk*00171*indexnum=3*',/FOLD_CASE) EQ 1,fel_cnt)]
     ;if no 171 use SWAP 174
     if fel_cnt eq 0 then fel_cut = base_page[where(STRMATCH(base_page,'*full_disk*00174*indexnum=1*',/FOLD_CASE) EQ 1,fel_cnt)]
 
