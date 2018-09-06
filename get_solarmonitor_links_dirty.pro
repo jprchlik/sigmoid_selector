@@ -21,7 +21,6 @@
 ;############################################################
 function get_png_file_link,ref_text,base
 
-    print,ref_text
     link_arry = strsplit(ref_text,'"',/extract) 
     link_arry = link_arry[1] ;Get the element containing the php query 
     ;Query the webpage to get Full disk png file
@@ -29,10 +28,14 @@ function get_png_file_link,ref_text,base
     ;Get line with png file name
     full_file = full_page[where(STRMATCH(full_page,'*png*fulldisk*') EQ 1,full_cnt)]
     ;split array of full file
-    full_splt = strsplit(full_file)
+    full_splt = strsplit(full_file,/extract)
     ;get the location with the png file
     full_pngf = str_replace(full_splt[1],'src=','')
 
+
+    print,'################'
+    print,full_splt
+    print,full_pngf
     link_path = base+'/'+full_pngf
 
     return,link_path
