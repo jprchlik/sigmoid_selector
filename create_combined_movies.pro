@@ -200,20 +200,49 @@ for ii=0,n_elements(goodt)-1 do begin
     flare_files = file_search(full_flr+'*mp4',/full)
 
     ;flare link
-    if n_elements(size(flare_files)) lt 4 then continue
+    if n_elements(size(flare_files)) ge 4 then begin
+        ;get array of times and classes for sending to create_flux_plot 2018/09/25 J. Prchlik
+        flare_times = strarr(n_elements(flare_files))
+        flare_class = strarr(n_elements(flare_files))
 
-    ;Loop and create links
-    for j=0,n_elements(flare_files)-1 do begin
-       ;File name
-       file_name = strsplit(flare_files[j],'/',/extract)
-       file_name = file_name[n_elements(file_name)-1]
+        ;Loop and create links
+        for j=0,n_elements(flare_files)-1 do begin
+           ;File name
+           file_name = strsplit(flare_files[j],'/',/extract)
+           file_name = file_name[n_elements(file_name)-1]
 
-       ;Create symbolic link
-       if not file_test(flr_dir+sig_id+file_name) then $ 
-           file_link,flare_files[j],flr_dir+sig_id+file_name
+           ;Added to pass to hmi flux plot
+           year  = strmid(file_name,4,4)
+           month = strmid(file_name,8,2)
+           day   = strmid(file_name,10,2)
+           hour  = strmid(file_name,13,2)
+           min   = strmid(file_name,15,2)
+           class = strmid(file_name,20,2)
+           sclass= strmid(file_name,23,1)
 
-    endfor
+           ;Add flare times and class to variables
+           flare_times[j] = year+'/'+month+'/'+day+' '+hour+':'+min+':00'
+           flare_class[j] = class+'.'+sclass
+
+           ;Create symbolic link
+           if not file_test(flr_dir+sig_id+file_name) then $ 
+               file_link,flare_files[j],flr_dir+sig_id+file_name
+
+        endfor
+    endif
     
+    ;###############################################################################
+    ;
+    ;HMI Flux evolution plots
+    ;
+    ;###############################################################################
+    ;HMI  save file to use to create a png file
+    hmi_png = file_search(full_hmi+'/*sav',/FULLY_QUALIFY_PATH )
+
+    if n_elements(size(flare_files)) ge 4 then $ 
+        create_flux_plot,hmi_png[0],hmi_dir,t1,t2,f_stim=flare_times,f_scls=flare_class,fileout=flux_evo_plot $
+    else $
+        create_flux_plot,hmi_png[0],hmi_dir,t1,t2,fileout=flux_evo_plot
 
 
 endfor
