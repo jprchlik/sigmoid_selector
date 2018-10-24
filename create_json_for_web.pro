@@ -70,7 +70,7 @@ pro create_json_for_web,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=flr_a
 formats = 'LL,LL,A,A,A,F,F,A,A,A,F,A,A,A,A,A,F,F,f,F,F'
 ;formats = 'A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
-       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve_null
 
 ;Set HMI movie directory 
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie/'
@@ -114,7 +114,7 @@ printf,33,'{'
 printf,33,'    "aaData": ['
 
 max_it = n_elements(goodt)-1 ;maximum iterator
-max_it = 2 ;maximum iterator
+;max_it = 2 ;maximum iterator
 ;Loop over good indices
 ;for ii=0,n_elements(goodt)-1 do begin
 ;cut loop short for testing
@@ -165,6 +165,19 @@ for ii=0,max_it do begin
     ;get mp4 from hmi directory
     hmi_mov = hmi_dir+sig_id+'_hmi.mp4'
 
+    ;hmi flux plot
+    ;###############################################################################
+    ;
+    ;HMI Flux
+    ;
+    ;###############################################################################
+    hmi_png = file_search(hmi_dir+'*.png',/full)
+
+   
+
+
+
+
     ;###############################################################################
     ;
     ;SDO/AIA Evolution Movies
@@ -197,14 +210,22 @@ for ii=0,max_it do begin
     m_cnt = 0
     x_cnt = 0
     
+    
+    
+
     ;initial flare text
     mat_flr   = '<b>Flares from this region: </b></A>'
     ;Create text for flare links
     if flare_cnt gt 0 then begin
+        ;get array of times and classes for sending to create_flux_plot 2018/09/25 J. Prchlik
+        flare_times = strarr(n_elements(flare_files))
+        flare_class = strarr(n_elements(flare_files))
+  
         for j=0,n_elements(flare_files)-1 do begin
            ;File name
            file_name = strsplit(flare_files[j],'/',/extract)
            file_name = file_name[n_elements(file_name)-1]
+           year  = strmid(file_name,34,4)
            month = strmid(file_name,38,2)
            day   = strmid(file_name,40,2)
            hour  = strmid(file_name,43,2)
@@ -218,6 +239,11 @@ for ii=0,max_it do begin
            ;add to matched flare text
            mat_flr = mat_flr+add_flare
 
+           ;Add flare times and class to variables
+           flare_times[j] = year+'/'+month+'/'+day+' '+hour+':'+min+':00'
+           flare_class[j] = class+'.'+sclass
+  
+         ;Add one to counter if a flare class is found
          case strmid(class,0,1) of 
              'B': b_cnt += 1
              'C': c_cnt += 1
@@ -233,6 +259,10 @@ for ii=0,max_it do begin
 
     ;Flare string for table
     flare_str = string([b_cnt,c_cnt,m_cnt,x_cnt],format=flare_str_fmt)
+
+
+
+
 
     ;readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
     ;       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
@@ -251,13 +281,14 @@ for ii=0,max_it do begin
     base_solar_m = '\"https://solarmonitor.org/data/'
 
 
+    ;Commented out to test other things 2018/09/25 J. Prchlik
     ;get the solarmonitory links 
-    get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),solar_links
+    ;get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),solar_links
 
     ;Add solar monitor links in text format
     solmon_img = ''
     for k=0,n_elements(solar_links)-1 do begin
-        add_img = '<div align=\"middle\" class=\"block\"><A HREF=\"'+solar_links[k]+'\" rel=\"lightbox\">SRC=\"'+solar_links[k]+'\" height=\"200\" width=\"200\"></A></div>
+        add_img = '<div align=\"middle\" class=\"block\"><A HREF=\"'+solar_links[k]+'\" rel=\"lightbox\">SRC=\"'+solar_links[k]+'\" height=\"200\" width=\"200\"></A></div>'
         solmon_img = solmon_img+add_img
     endfor 
 
@@ -283,9 +314,9 @@ for ii=0,max_it do begin
     printf,33,ind_3+string(length_171[i],format='(F9.1)')  +'",' ;does the sigmoid have a EUV filament
     printf,33,ind_3+string(length_304[i],format='(F9.1)')  +'",' ;Does the sigmoid have an H alpha filament
     printf,33,ind_3+'5'            +'",' ;Number of sunspot in AR (get from HEK)
-    printf,33,ind_3+'N'            +'",' ;Flux emergence 
-    printf,33,ind_3+'N'            +'",' ;Flux cancellation 
-    printf,33,ind_3+'5.3e21'       +'",' ;get from flare crossmatch
+    printf,33,ind_3+'N'            +'",' ;Magnetic Flux emergence 
+    printf,33,ind_3+'N'            +'",' ;Magnetic Flux cancellation 
+    printf,33,ind_3+'<A HREF=\"'+hmi_png+'\" >Flux Plot</A>'+'",' ;Get flux values for sigmoid
     printf,33,ind_3+flare_str      +'",' ;flare table string
     printf,33,ind_3+'0'            +'",' ;Number of CMEs
     printf,33,ind_3+'-'            +'",' ;Filament eruption
@@ -296,7 +327,7 @@ for ii=0,max_it do begin
     printf,33,ind_3+'-'            +'",'  ;Nearby AR
     printf,33,image_info
     ;end bracket for storing data in a "row"
-    if i eq  max_it then printf,33,'        ]' $
+    if ii eq  max_it then printf,33,'        ]' $
     else printf,33,'        ],'
 
 
