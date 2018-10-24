@@ -70,7 +70,7 @@ pro create_combined_movies,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=fl
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
 formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
-       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve_null
 
 ;Set HMI movie directory 
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie/'
