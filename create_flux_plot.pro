@@ -1,4 +1,40 @@
 ;=====================================
+;Function 
+;    Get distance from D.C. from ROI object
+;
+;Usage
+;    r = get_mag_radius(roi_in)
+;
+;Input
+;    roi_in -- an roi object created around the magnetic field region
+;
+;Outout
+;    r -- The pixel coordinates from the ROI object converted into arcsecond HPC coordinates
+;
+;=====================================
+Function get_mag_rad,roi_in
+    ;Store X,Y positions of sigmoid center
+    cx = 4096./2.
+    cy = 4096./2.
+    delt0 = 0.504297 
+    x = fltarr(n_elements(roi_in))
+    y = fltarr(n_elements(roi_in))
+    
+    ;get coordinates from ROI objects
+    for i=0,n_elements(roi_in)-1 do begin
+        test = roi_in[i]->ComputeGeometry(centroid = cent) 
+        x[i] = (cent[0]-cx)*delt0
+        y[i] = (cent[1]-cy)*delt0
+    endfor
+    
+    ;compute distance from D.C
+    r = sqrt(x^2+y^2)
+
+
+    return,r
+end
+
+;=====================================
 ;Function
 ;    Creates a flux versuses time plot for the magnetic field under a sigmoid
 ;
@@ -19,6 +55,10 @@
 ;=====================================
 
 pro create_flux_plot,filein,outdir,s_stim,e_stim,f_stim=f_stim,f_scls=f_scls,fileout=fileout
+
+
+;Total unsigned flux in the magnetic field flux maximum
+measured_flux = 0
 
 ;Setup plotting parameters
 set_plot,'Z'
@@ -46,29 +86,23 @@ fileout = outdir+str_replace(fileonly,'sav','png')
 dummy = LABEL_DATE(DATE_FORMAT=["%M-%D"])
 
 
-;Store X,Y positions of sigmoid center
-cx = 4096./2.
-cy = 4096./2.
-delt0 = 0.504297 
-x = fltarr(n_elements(roi_save))
-y = fltarr(n_elements(roi_save))
-
-;get coordinates from ROI objects
-for i=0,n_elements(roi_save)-1 do begin
-    test = roi_save[i]->ComputeGeometry(centroid = cent) 
-    x[i] = (cent[0]-cx)*delt0
-    y[i] = (cent[1]-cy)*delt0
-endfor
-
-;compute distance from D.C
-r = sqrt(x^2+y^2)
-
+;get radius
+r = get_mag_rad(roi_save)
 ;get maximum allows radius using 60 deg cut off angle
 sun_par = get_sun(time[0])
 r_max = sun_par[1]*sin(50.*!dtor)
 
+
+;Use only perfect quality observations
+min_qual = 0
+
 ;Remove magnetic field measurements outsided alloted radius
-good_par = where(r le r_max,good_cnt)
+good_par = where((r le r_max) and (obs_qual eq min_qual),good_cnt)
+
+
+
+;HMI pixel size in arcseconds
+delt0 = 0.504297 
 
 
 ;create plot if there are good measurements
@@ -92,6 +126,10 @@ if good_cnt gt 0 then begin
     x_min = min(time)
     x_max = max(time)
     x_rng = x_max-x_min
+
+
+    ;store maximum magnetic flux
+    measured_flux = max(tot_ints[good_par]*cont)
     
     ;Set up plot
     utplot,[0,0],[0,0],'1-jan-79',ytitle="Flux [x10!U21!N Mx]",$
@@ -99,6 +137,9 @@ if good_cnt gt 0 then begin
                 xrange=[min(time)-3*3600.,max(time)+3*3600.],YSTYLE=1,$
                 /nodata,yrange=[y_min-.1*y_rng,y_max+.1*y_rng],background=cgColor('white'),color=0,$
                 charthick=3,charsize=2.5,xminor=12,xtitle='Time [UTC]' ;yrange=[80,120]
+    ;Add polygon shading
+    POLYFILL,anytim([s_stim,s_stim,e_stim,e_stim]),[y_min-.1*y_rng,y_max+.1*y_rng,y_max+.1*y_rng,y_min-.1*y_rng], $
+          color=65, TRANSPARENT=0.5,/LINE_FILL,ORIENTATION=45
     
     ;Add time evolution of magnetic field strength
     oplot,time,pos_ints,linestyle=3,color=200,thick=7
@@ -111,6 +152,9 @@ if good_cnt gt 0 then begin
 
         ;counter to vary the label y-coordinate
         y_off = 0
+  
+        ;The number of text positions to use before resetting to 0
+        y_off_max = 8
        
         ;Use line ID plot to plot the time
         for k=0,n_elements(f_stim)-1 do begin
@@ -119,20 +163,16 @@ if good_cnt gt 0 then begin
 
             ;Plot flares
             oplot,[0.,0.]+anytim(f_stim[k]),[y_min-.1*y_rng,y_max+.1*y_rng],linestyle=2,thick=4,color=100
-            xyouts,anytim(f_stim[k])-0.005*x_rng,y_min+y_rng*y_off/10.,f_scls[k],ORIENTATION=90,color=100, CHARSIZE=2, CHARTHICK=4
+            xyouts,anytim(f_stim[k])-0.005*x_rng,y_min+y_rng*y_off/float(y_off_max),f_scls[k],ORIENTATION=90,color=100, CHARSIZE=2, CHARTHICK=3
            
             ;incremenet y-counter by 1
             y_off +=1
             ;do not vary the offset by more than a factor of 10
-            if y_off gt 10 then y_off = 0
+            if y_off gt y_off_max then y_off = 0
         endfor
     endif
 
 
-    ;Add polygon shading
-    ;POLYFILL, X [, Y [, Z]] [, IMAGE_COORD=array] [, /IMAGE_INTERP] [, /LINE_FILL] [, PATTERN=array] [, SPACING=centimeters] [, TRANSPARENT=value]
-    POLYFILL,anytim([s_stim,s_stim,e_stim,e_stim]),[y_min-.1*y_rng,y_max+.1*y_rng,y_max+.1*y_rng,y_min-.1*y_rng], $
-          color=65, TRANSPARENT=0.5,/LINE_FILL,ORIENTATION=45
 
     write_png,fileout,tvrd(/true)
 
