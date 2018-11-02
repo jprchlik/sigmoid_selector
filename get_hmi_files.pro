@@ -31,7 +31,13 @@ pro get_hmi_files,times,hmi_arch=hmi_arch,cad=cad
 set_plot,'X'
 
 ;Read in file containing TBEST
-readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
+;readcol,times,dum,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A',/preserve_null
+;Updated with new file format 2018/11/02
+;Read in file containing TBEST
+formats = 'LL,LL,A,A,A,A,A,A,A,A,F,A,A,A,A,A,F,F,f,F,F'
+readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve
+
 ;Set archive directory for download aia files
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_arch/'
 hmi_arch = hmi_arch+'/'
@@ -51,8 +57,9 @@ for i=0,n_elements(goodt)-1 do begin
     ;get time range to search over
     ;t1 = tbest[gi]
     ;t2 = anytim(anytim(t1)+24.,/ecs)  
-    t1 = sig_start[i]
-    t2 = sig_end[i]
+    ;Switched to AR start and AR per Antonia's request 2018/11/02
+    t1 = ar_start[gi]
+    t2 = ar_end[gi]
     
     ;Get all hmi data in date range with 90 minute cadence
     s_f = vso_search(t1,t2,inst='hmi',provider='jsoc',physobs='los_magnetic_field',sample=cad)
