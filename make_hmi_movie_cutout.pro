@@ -783,7 +783,6 @@ for ii=0,n_elements(goodt)-1 do begin
    ;Cancel out image from memory. Leaking like a sieve
    index = 0
    data  = 0
-   stop
 endfor
 
 end
