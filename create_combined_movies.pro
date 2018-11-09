@@ -50,6 +50,58 @@ return,sig_id
 end
 
 ;#############################################################################
+;PROGRAM
+;    print_sig_IAU
+;
+;USAGE
+;    print_sig_IAU,times
+;INPUTS
+;    times      -   A csv file containing times to analyze sigmoid filaments
+;                   CSV format must be as follows:
+;                   formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+;                   readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+;                   length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+;
+;
+;OUTPUTS
+;    print the ID side by side with the IAU ID
+;#############################################################################
+;Updates with Patty's new output format 2018/06/13 J. Prchlik
+pro print_sig_IAU,times
+
+formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve_null
+
+;Loop over all sigmoids and print the Sig and IAU ID
+for i=0,n_elements(ID)-1 do begin
+
+    gi = tobs[i]
+    xi = x[i]
+    yi = y[i]
+
+    ;if there is no new measurements of the sigmoid just continue
+    if gi eq '0' then continue
+
+    ;Get sigmoid start and end times
+    t1 = sig_start[i]
+    t2 = sig_end[i]
+
+    sig_id = get_iau_format(gi,xi,yi,t1,lat=lati,lon=loni)
+
+    print,ID[i],'   ',sig_id
+
+endfor
+end
+
+
+
+;#############################################################################
+;PROGRAM
+;    create_combined_movies
+
+;USAGE
+;    create_combined_movies,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=flr_arch,out_arch=out_arch
 ;
 ;
 ;INPUTS
@@ -73,7 +125,7 @@ readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBES
        length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve_null
 
 ;Set HMI movie directory 
-if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie/'
+if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie_cutout/'
 hmi_arch = hmi_arch+'/'
 
 ;Set SDO/AIA movie directory 
@@ -140,39 +192,47 @@ for ii=0,n_elements(goodt)-1 do begin
     ;get files from hmi directory
     ;I used inconsistent start times annoyingly 2018/08/23
     ;Find nearest SOL ID
-    full_hmi = hmi_arch+string([sig_id],format=out_fmt)
-    ;Remove : characters
-    full_hmi = str_replace(full_hmi,':','')
-    full_hmi = str_replace(full_hmi,'-','')
-    ;Fix inconsistent ID
-    full_hmi = file_search(strmid(full_hmi,0,29)+'*')
+    ;full_hmi = hmi_arch+string([sig_id],format=out_fmt)
+    ;full_hmi = hmi_arch+string([sig_id],format=out_fmt)
+    full_hmi = hmi_arch+strcompress(ID[i],/remove_all)+'/'
+    ;No longer needed now that I have consistent sigmoid IDs 2018/11/09 J. Prchlik
+    ;;;Remove : characters
+    ;;full_hmi = str_replace(full_hmi,':','')
+    ;;full_hmi = str_replace(full_hmi,'-','')
+    ;;;Fix inconsistent ID
+    ;;full_hmi = file_search(strmid(full_hmi,0,29)+'*')
 
-    if n_elements(size(full_hmi)) lt 4 then begin
-        print,'Missing HMI '+string([sig_id],format=out_fmt)
-        continue
-    endif 
+    ;;if n_elements(size(full_hmi)) lt 4 then begin
+    ;;    print,'Missing HMI '+string([sig_id],format=out_fmt)
+    ;;    continue
+    ;;endif 
 
-    case 1 of
-        ((n_elements(size(full_hmi)) eq 4) and (n_elements(full_hmi) eq 1)): full_hmi = full_hmi[0]
-        ((n_elements(size(full_hmi)) eq 4) and (n_elements(full_hmi) gt 1)): begin
-            dis = fltarr(n_elements(full_hmi))
-            for j=0,n_elements(full_hmi)-1 do begin
-                cut_one = strsplit(full_hmi[j],'L',/extract) 
-                cut_one = cut_one[n_elements(cut_one)-1]
-                cut_two = fltarr(strsplit(cut_one,'C',/extract))
-                dis[j] = sqrt(total(((cut_two-[loni,lati])*[cos(!dtor*lati),1])^2))
-            endfor
-            best = where(dis eq min(dis))
-            full_hmi = full_hmi[best]
-        end
-    endcase
+    ;;case 1 of
+    ;;    ((n_elements(size(full_hmi)) eq 4) and (n_elements(full_hmi) eq 1)): full_hmi = full_hmi[0]
+    ;;    ((n_elements(size(full_hmi)) eq 4) and (n_elements(full_hmi) gt 1)): begin
+    ;;        dis = fltarr(n_elements(full_hmi))
+    ;;        for j=0,n_elements(full_hmi)-1 do begin
+    ;;            cut_one = strsplit(full_hmi[j],'L',/extract) 
+    ;;            cut_one = cut_one[n_elements(cut_one)-1]
+    ;;            cut_two = fltarr(strsplit(cut_one,'C',/extract))
+    ;;            dis[j] = sqrt(total(((cut_two-[loni,lati])*[cos(!dtor*lati),1])^2))
+    ;;        endfor
+    ;;        best = where(dis eq min(dis))
+    ;;        full_hmi = full_hmi[best]
+    ;;    end
+    ;;endcase
 
     ;HMI movie
     hmi_mov = file_search(full_hmi+'/*mp4',/FULLY_QUALIFY_PATH )
 
     ;Create symbolic link
+    ;Removed previously created symbolic link 2018/11/09 J. Prchlik
     if not file_test(hmi_dir+sig_id+'_hmi.mp4') then $ 
-        file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4'
+        file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' $
+    else begin
+        FILE_DELETE,hmi_dir+sig_id+'_hmi.mp4'
+        file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' 
+    endelse
 
     ;###############################################################################
     ;
