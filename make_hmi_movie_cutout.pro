@@ -9,6 +9,8 @@
 ;#############################################################
 
 
+
+
 ;#############################################################
 ;NAME:
 ;    get_sig    
@@ -55,14 +57,17 @@ end
 ;CATEGORY:
 ;
 ;USAGE
-;    limits = select_cutout(px,py,img_size,img_xmax,img_ymax)   
+;    limits = select_cutout(px,py,img_size,img_xmax,img_ymax,tol=tol)   
 ;
 ;INPUTS
 ;
 ;OUTPUTS
 ;
 ;#############################################################
-function select_cutout,px,py,img_size,img_xmax,img_ymax
+function select_cutout,px,py,img_size,img_xmax,img_ymax,tol=tol
+
+    ;Number of times it can look to find the solution
+    if keyword_set(tol) then tol = tol else tol = 1000
 
     
     ;compute the min and max x and y pixel ranges
@@ -71,7 +76,10 @@ function select_cutout,px,py,img_size,img_xmax,img_ymax
     pymin = py-(img_size/2.) 
     pymax = py+(img_size/2.)-1 
     
+    ;is the image a squared away at the corners
     square = 1
+    ;count for the number of loops
+    iter = 0
     ;Make sure everything is squared array before returning
     ;Prevents issues at the corners
     while square do begin
@@ -98,7 +106,18 @@ function select_cutout,px,py,img_size,img_xmax,img_ymax
                 pymin = pymin+offset-1
             end
             else: square= 0
+
         endcase 
+        ;exit when looping too long
+        ;Return the entire image for cutout
+        iter = iter+1
+        if iter gt tol then begin
+            square=0
+            pxmin = -9999.9
+            pymin = -9999.9 
+            pxmax = -9999.9 
+            pymax = -9999.9 
+        endif
      endwhile
     
     ;force integers
@@ -356,7 +375,7 @@ for ii=0,n_elements(goodt)-1 do begin
     ;hmi_prep,match_files,findgen(n_elements(match_files)),index,odata
     ;mreadfits,match_files, index,data
     ;switch to read_fits because cutout header is missing some information which causes mreadfits to be unhappy 2018/11/05 J. Prchlik
-    data = readfits(match_files[0],hdr, exten_no=0, /fpack) 
+    data = readfits(match_files[0],hdr, exten_no=0, /fpack,/silent) 
     ;hmi_prep,iindex,data,index,odata
     ;hmi_prep,hmi_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
 
@@ -393,12 +412,14 @@ for ii=0,n_elements(goodt)-1 do begin
     tot_area = [] ; Area of ROI in cm^2
     roi_save = [] ; ROI object in pixel units
     phy_save = [] ; ROI object in physical units
+    elp_save = [] ; ROI object in physical units using a fitting ellipse
+    ilp_save = [] ; ROI object in pixel units using a fitting ellipse
 
     ; plot each hmi observation
     for j=0,n_elements(match_files)-1 do begin
 
         ;read in files 1 at a time
-        data = readfits(match_files[j],hdr, exten_no=0, /fpack) 
+        data = readfits(match_files[j],hdr, exten_no=0, /fpack,/silent) 
 
         ;replace bad pixels
         bad_pix = data le -1.7
@@ -408,6 +429,10 @@ for ii=0,n_elements(goodt)-1 do begin
         ;if image quality greater than 90000 exit
         ;swtich to fits_read format
         if sxpar(hdr,'quality') gt 90000 then continue
+
+
+        ;Make sure input fits file is an image
+        if n_elements(size(data)) lt 5 then continue
         
 
         ;Get formatted date
@@ -416,7 +441,7 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;Plot restricted range
         ;Rotate coordinate to image time
-        rot_p = rot_xy(xi,yi,tstart=gi,tend=fmt_dat)
+        rot_p = rot_xy(xi,yi,tstart=gi,tend=fmt_dat,offlimb=offlimb)
 
 
         ;Get solar radius in arcsec at given time
@@ -425,7 +450,8 @@ for ii=0,n_elements(goodt)-1 do begin
         arc_phy = phy_rad/sol_rad ; cm/arcsec
 
         ;Only do the calculations for Magnetic fields less than 50 degrees on the surface
-        if asin(sqrt(total(rot_p^2))/sol_rad) gt atan(!dtor*50.) then continue
+        ;Include if point is off the limb
+        if ((sqrt(total(rot_p^2))/sol_rad gt sin(!dtor*50.)) OR (offlimb eq 1)) then continue
 
 
         ;calculate the length of sigmoid correcting for projection
@@ -461,6 +487,10 @@ for ii=0,n_elements(goodt)-1 do begin
         pix_y = (rot_p[1]/delt_y+cent_y) 
         ;Get range around pix_x and pix_y values
         lims = select_cutout(pix_x,pix_y,win_w,sxpar(hdr,'naxis1'),sxpar(hdr,'naxis2'))
+ 
+        ;If the program could not select a cutout coninue
+        bad_lims = where(lims lt 0,bad_lim_cnt)
+        if bad_lim_cnt gt 0 then continue
 
         ;Store limite seperately
         pxmin = lims[0]
@@ -514,9 +544,9 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;create spike pixel masks
         ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
-        cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0)
+        cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0,/silent)
         ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.85,imap=imap_p0)
-        cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.50,imap=imap_n)
+        cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.50,imap=imap_n,/silent)
         ;cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.85,imap=imap_n)
 
         ;Remove spikes from image
@@ -546,10 +576,19 @@ for ii=0,n_elements(goodt)-1 do begin
         ;rad_2 = 300.
         ;Use the sigmoids measured size +20 pixels to look for features
         ;rad_2 = sig_p+100. 2(half of image width)*8(rebinned pixels)
-        rad_2 =  sig_p/(2*rebinv)-1 ;win_w/(2*rebinv)-1
-        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=1,zero_crossings=[0,255])
+        rad_2 =  sig_p/(2.*rebinv)-1 ;win_w/(2*rebinv)-1
+        ;don't let rad_2 be larger than half of the image
+        if rad_2 gt win_w/rebinv/2-1 then rad_2 = win_w/rebinv/2-1
+
+        ;2sigma drop threshold assuming rad_2 is an approximation for sigma
+        thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(2.5)^2/2.)
+
+        ;Used difference of gaussian to find edges
+        edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=thres_val,zero_crossings=[0,255])
         ;gimg = abs(simg)
         ;Make gimg back to normal size then cut
+        ;nothing is found in image just continue
+        if max(edge) lt 1 then continue
 
         ;Cut image to restricted window
         img = fimg(pxmin:pxmax,pymin:pymax)
@@ -593,7 +632,7 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
         ;Create new ROI obejct using contour
-        loadct,12
+        loadct,12,/silent
         ;search for an object containing the rotated point
         search = 1
         ;index of object
@@ -610,7 +649,7 @@ for ii=0,n_elements(goodt)-1 do begin
             ;ROI in physical coordinates
             roi_phy = OBJ_NEW('IDLanROI', $
                rebinv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+borg_x, $
-               rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y) & $
+               rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y) 
                ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], b$
                ;(pathXY(*, pathInfo(0).OFFSET +line ))[1, *]) b& $
 
@@ -633,6 +672,7 @@ for ii=0,n_elements(goodt)-1 do begin
            if pnt_chk then search = 0
            ;No region found
            if ind_obj eq n_elements(PathInfo.N)-1 then search = 0 
+
 
            ;increment counter
            ind_obj = ind_obj+1
@@ -657,8 +697,6 @@ for ii=0,n_elements(goodt)-1 do begin
               rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y) & $
               ;(pathXY(*, pathInfo(0).OFFSET +line ))[0, *], $
           
-           ; ;write png file in directory 
-           ; TVLCT,r,g,b,/Get
            ; write_png,full_dir+str_replace(match_fname[j],'fits','png'),tvrd(/true),r,g,b
         endif
 
@@ -671,6 +709,30 @@ for ii=0,n_elements(goodt)-1 do begin
            rebinv*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *], $
            rebinv*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]) & $
 
+        ;ROI after fittinf for an ellipse
+        ;Fit ellipse to roi object
+        ;Create ROI in edge coordinate system
+        ;; Ellispe is not a good fit 2018/11/07 J. Prchlik
+        ;;;roi_img = OBJ_NEW('IDLanROI',(pathXY(*, pathInfo(ind_obj).OFFSET+line))[0,*],(pathXY(*, pathInfo(ind_obj).OFFSET+line))[1,*])
+        ;;;;Get where pixels are inside ROIobjec
+        ;;;mask = roi_img -> ComputeMask(Dimensions=Size(edge, /Dimensions), Mask_Rule=2)   
+        ;;;;Create image where only those pixels have values of 255
+        ;;;roiImage  = edge * (mask GT 0)       
+        ;;;;Get index location where values are 255 (i.e. the ROIobject)
+        ;;;indices = where(roiImage eq 255)
+        ;;;;Fit and ellise to the coordinates in the edge image
+        ;;;edge_size = size(edge)
+        ;;;elp_xy    = fit_ellipse(indices,xsize=edge_size[1],ysize=edge_size[2]) 
+
+
+        ;;;;create ellipse ROI in physical coordinates
+        ;;;roi_elp = OBJ_NEW('IDLanROI', $
+        ;;;    rebinv*delt_x*(elp_xy[0, *])+borg_x, $
+        ;;;    rebinv*delt_y*(elp_xy[1, *])+borg_y) 
+        ;;;;create ellipse ROI in image coordinates
+        ;;;roi_ilp = OBJ_NEW('IDLanROI', $
+        ;;;    rebinv*(elp_xy[0, *]), $
+        ;;;    rebinv*(elp_xy[1, *])) 
 
         ;Scale up object roi 2018/06/14
         ;Thought about but don't do too much could go wrong
@@ -679,8 +741,9 @@ for ii=0,n_elements(goodt)-1 do begin
         ;DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
         ;Draw ROI on plot switch to plotting line around ROI instead of ROI in draw_roi
         plots, rebinv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+borg_x, rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y,color= 200,thick=3
+        ;plots,rebinv*delt_x*(elp_xy[0, *])+borg_x,rebinv*delt_y*(elp_xy[1, *])+borg_y,color=100,thick=3
         plots,rot_p[0],rot_p[1],psym=4,symsize=3,thick=3,color=200
-        loadct,0
+        loadct,0,/silent
 
 
         ;Updated format for output file name  
@@ -726,13 +789,18 @@ for ii=0,n_elements(goodt)-1 do begin
         bin_cor_r = 0
         roi_obj = 0
         roi_phy = 0
+        roi_elp = 0
+        roi_ilp = 0
+        roi_img = 0
+
 
     endfor
 
 
     ;Save output sav file
     out_id = id[i]
-    save,sig_id,out_id,obs_time,obs_loca,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
+    save,sig_id,out_id,obs_time,obs_loca,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,$
+        roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
 
     ;create directory for symbolic links
     if file_test(full_dir+'/symlinks/') then file_delete,full_dir+'symlinks/',/recursive
@@ -772,14 +840,16 @@ for ii=0,n_elements(goodt)-1 do begin
                     '+parti4x4+partp8x8+partb8x8 -subq 7 -me_range 16 -keyint_min 1 -sc_threshold ' + $
                     '40 -i_qfactor 0.71 -rc_eq ''blurCplx^(1-qComp)'' -s '+png_size+' -b_strategy 1 ' + $
                     '-bidir_refine 1 -refs 6 -trellis 1 -x264opts ' + $
-                    'keyint='+framerate+':min-keyint=1:bframes=1 -threads 2 '
+                    'keyint='+framerate+':min-keyint=1:bframes=1 -threads=2 '
                 
     
     
+    ;Continue in the background after spawning process
+    keep_going = ' &'
     ;output file name
     outf = str_replace(sig_id,':','')+"_mag.mp4"
     outf = str_replace(outf,'-','')
-    spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
+    spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf+keep_going, result, errResult
    ;Cancel out image from memory. Leaking like a sieve
    index = 0
    data  = 0
