@@ -840,7 +840,7 @@ for ii=0,n_elements(goodt)-1 do begin
                     '+parti4x4+partp8x8+partb8x8 -subq 7 -me_range 16 -keyint_min 1 -sc_threshold ' + $
                     '40 -i_qfactor 0.71 -rc_eq ''blurCplx^(1-qComp)'' -s '+png_size+' -b_strategy 1 ' + $
                     '-bidir_refine 1 -refs 6 -trellis 1 -x264opts ' + $
-                    'keyint='+framerate+':min-keyint=1:bframes=1 -threads=2 '
+                    'keyint='+framerate+':min-keyint=1:bframes=1 -threads 2 '
                 
     
     
