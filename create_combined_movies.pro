@@ -168,9 +168,12 @@ for ii=0,n_elements(goodt)-1 do begin
     t2 = sig_end[i]
 
     sig_id = get_iau_format(gi,xi,yi,t1,lat=lati,lon=loni)
+    ;Get sigmiod catalog ID  2018/12/03 J. Prchlik
+    sig_cid= strcompress(ID[i],/remove_all)
 
     ;Directory to put the symoblic link
-    full_dir = out_arch+string([sig_id],format=out_fmt)
+    ;Now using sigmoid IDs 2018/12/03
+    full_dir = out_arch+string([sig_cid]);,format=out_fmt)
     ;Remove : characters
     full_dir = str_replace(full_dir,':','')
     full_dir = str_replace(full_dir,'-','')
@@ -223,16 +226,20 @@ for ii=0,n_elements(goodt)-1 do begin
     ;;endcase
 
     ;HMI movie
-    hmi_mov = file_search(full_hmi+'/*mp4',/FULLY_QUALIFY_PATH )
+    hmi_mov = file_search(full_hmi+'/*mp4',/FULLY_QUALIFY_PATH ,count=hmi_movie_found)
 
-    ;Create symbolic link
-    ;Removed previously created symbolic link 2018/11/09 J. Prchlik
-    if not file_test(hmi_dir+sig_id+'_hmi.mp4') then $ 
-        file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' $
-    else begin
-        FILE_DELETE,hmi_dir+sig_id+'_hmi.mp4'
-        file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' 
-    endelse
+
+    ;Only create HMI directory if there are in fact mp4 files
+    if hmi_movie_found ne 0 then begin
+        ;Create symbolic link
+        ;Removed previously created symbolic link 2018/11/09 J. Prchlik
+        if not file_test(hmi_dir+sig_id+'_hmi.mp4') then $ 
+            file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' $
+        else begin
+            FILE_DELETE,hmi_dir+sig_id+'_hmi.mp4'
+            file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' 
+        endelse
+     endif
 
     ;###############################################################################
     ;
@@ -297,12 +304,15 @@ for ii=0,n_elements(goodt)-1 do begin
     ;
     ;###############################################################################
     ;HMI  save file to use to create a png file
-    hmi_png = file_search(full_hmi+'/*sav',/FULLY_QUALIFY_PATH )
+    hmi_png = file_search(full_hmi+'/*sav',/FULLY_QUALIFY_PATH ,count=found_hmi_sav)
 
-    if n_elements(size(flare_files)) ge 4 then $ 
-        create_flux_plot,hmi_png[0],hmi_dir,t1,t2,f_stim=flare_times,f_scls=flare_class,fileout=flux_evo_plot $
-    else $
-        create_flux_plot,hmi_png[0],hmi_dir,t1,t2,fileout=flux_evo_plot
+    ;If there is no mag. field analysis for the sigmoid yet skip creating a flux evolution plot
+    if found_hmi_sav ne 0 then begin
+        if n_elements(size(flare_files)) ge 4 then $ 
+            create_flux_plot,hmi_png[0],hmi_dir,t1,t2,f_stim=flare_times,f_scls=flare_class,fileout=flux_evo_plot $
+        else $
+            create_flux_plot,hmi_png[0],hmi_dir,t1,t2,fileout=flux_evo_plot
+    endif
 
 
 endfor
