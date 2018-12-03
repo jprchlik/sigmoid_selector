@@ -67,13 +67,13 @@ end
 pro create_json_for_web,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=flr_arch,out_arch=out_arch
 
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
-formats = 'LL,LL,A,A,A,F,F,A,A,A,F,A,A,A,A,A,F,F,f,F,F'
+formats = 'LL,LL,A,A,A,F,F,A,A,A,F,A,A,A,A,A,F,F,f,F,F,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
 ;formats = 'A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
-       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve_null
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,ha_filament,ss_at_peak,format=formats,/preserve_null
 
 ;Set HMI movie directory 
-if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie/'
+if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie_cutout/'
 hmi_arch = hmi_arch+'/'
 
 ;Set SDO/AIA movie directory 
@@ -146,9 +146,12 @@ for ii=0,max_it do begin
     t2 = sig_end[i]
 
     sig_id = get_iau_format(gi,xi,yi,t1,lat=lati,lon=loni)
+    ;Used sigmoid ID because now they are unique and updated as such in create_combined_movies 2018/12/03 J. Prchlik
+    sig_cid = strcompress(ID[i],/remove_all)
 
     ;Directory to put the symoblic link
-    full_dir = out_arch+string([sig_id],format=out_fmt)
+    ;Moved to sigmoid ID 2018/12/03 J. Prhlik
+    full_dir = out_arch+string([sig_cid]);,format=out_fmt)
     ;Remove : characters
     full_dir = str_replace(full_dir,':','')
     full_dir = str_replace(full_dir,'-','')
@@ -163,7 +166,7 @@ for ii=0,max_it do begin
     ;
     ;###############################################################################
     ;get mp4 from hmi directory
-    hmi_mov = hmi_dir+sig_id+'_hmi.mp4'
+    hmi_mov = hmi_dir+sig_cid+'_hmi.mp4'
 
     ;hmi flux plot
     ;###############################################################################
@@ -284,7 +287,7 @@ for ii=0,max_it do begin
     ;Commented out to test other things 2018/09/25 J. Prchlik
     ;get the solarmonitory links 
     ;Turned back on for Halpha filament analysis
-    get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),solar_links
+    ;get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),solar_links
 
     ;Add solar monitor links in text format
     solmon_img = ''
@@ -295,7 +298,40 @@ for ii=0,max_it do begin
 
     ;<A HREF=\"./images/001/001_euv.png\" rel=\"lightbox\">SRC=\"./images/001/001_euv.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_mag.png\" rel=\"lightbox\">SRC=\"./images/001/001_mag.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_halpha.png\" rel=\"lightbox\">SRC=\"./images/001/001_halpha.png\" height=\"200\" width=\"200\"></A></div>"'
 
+    ;Check that Filament values are real and if so format
+     if length_171[i] gt 0 then $
+         fil_171 = string(length_171[i],format='(F9.1)') $
+     else $
+         fil_171 = '-'
+     if length_304[i] gt 0 then $
+         fil_304 = string(length_304[i],format='(F9.1)') $
+     else $
+         fil_304 = '-'
 
+
+    ;Check formatting of NOAA ID and set to - if no AR defined
+    if NOAA[i] gt 1 then $
+       noaa_str = string(NOAA[i],format='(I5)') $
+    else $
+       noaa_str = '-' 
+ 
+
+    ;Get maximum Magnetic flux values and difference over the life on disk
+    sav_file = hmi_arch+'/'+sig_cid+'/'+sig_cid+'.sav'
+    if file_test(sav_file) then begin
+        restore,sav_file
+        ;Get constance to convert from Gauss to Maxwell
+        sun_par = get_sun(tbest[i])
+        cont = (0.5/sun_par[1]*6.955E10)^2
+        ;Store start to finish flux and the maximum flux value
+        net_flux = string(1e-21*cont*tot_ints[n_elements(tot_ints)-1]-tot_ints[0],format='(F9.2)')
+        peak_flux= string(1e-21*cont*max(tot_ints),format='(F9.2)')
+    endif else begin
+        net_flux = '-' 
+        peak_flux = '-' 
+    endelse
+  
+    
     ;Combine all infromation into one table
     image_info = ind_3+ar_sstr+ar_estr+sig_sstr+sig_estr+mag_mov+sdo_mov+flr_cat+mat_flr+solmon_img+'"'
 ;    image_info = ind_3+'<div align=\"left\" class=\"block\"><b>AR Start: </b>02/26 18:03<br><b>AR End: </b>03/07 06:14<br><b>Sigmoid Start: </b>02/26 11:17<br><b>Sigmoid End: </b>02/27 11:40<br><b>Movies: </b><A HREF=\"./images/001/001_mag.mov\">Magnetogram</A><br><A HREF=\"http://xrt.cfa.harvard.edu/flare_catalog/full.html?search=2007+10944\" target=\"_blank\"><b>Flares from this region: </b></A><br>B2.5 03/02 05:29</div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_sigmoid.png\" rel=\"lightbox\">SRC=\"./images/001/001_sigmoid.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_euv.png\" rel=\"lightbox\">SRC=\"./images/001/001_euv.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_mag.png\" rel=\"lightbox\">SRC=\"./images/001/001_mag.png\" height=\"200\" width=\"200\"></A></div><div align=\"middle\" class=\"block\"><A HREF=\"./images/001/001_halpha.png\" rel=\"lightbox\">SRC=\"./images/001/001_halpha.png\" height=\"200\" width=\"200\"></A></div>"'
@@ -303,34 +339,38 @@ for ii=0,max_it do begin
     ;print sigmoid information 
     printf,33,select_button
     printf,33,ind_3+string(ID[i],format='(I03)')          +'",';Sigmoid ID
-    printf,33,ind_3+'0'            +'",'         ;Rating
-    printf,33,ind_3+string(NOAA[i],format='(I5)')        +'",' ;NOAA AR number
+    ;Removed Rating because it is not used in the new catalog 2018/12/03 J. Prchlik
+    ;printf,33,ind_3+'0'            +'",'         ;Rating
+    printf,33,ind_3+ noaa_str       +'",' ;NOAA AR number
     printf,33,ind_3+strmid(TBEST[i],0,19)       +'",' ;Best observing time in XRT images
     printf,33,ind_3+string(X[i],format='(F6.1)')           +'",' ;X location at time T_obs
     printf,33,ind_3+string(Y[i],format='(F6.1)')           +'",' ;Y location at time T_obs
     printf,33,ind_3+string(length[i]      ,format='(F6.1)')+'",' ;length of the sigmoid in arcsec
     printf,33,ind_3+string(aspect_ratio[i],format='(F6.1)')+'",' ;aspect ratio of sigmoid
+    printf,33,ind_3+string(float(fwhm[i]),format='(F9.1)') +'",' ;Transient CH Switched to FWHM of Sigmoid core 2018/12/03 J. Prchlik
+    printf,33,ind_3+string(float(lead_length[i]),format='(F9.1)')+'",' ;Flare Ribbons Switch to trailing short axis length 2018/12/03 J. Prchlik
+    printf,33,ind_3+string(float(trail_length[i]),format='(F9.1)')+'",' ;Post-Flare Loops Switch to leading short axis length 2018/12/03
     printf,33,ind_3+orientation[i] +'",' ;Orientation of sigmoid
     printf,33,ind_3+hemisphere[i]  +'",' ;Hemisphere of the Sigmoid
-    printf,33,ind_3+string(length_171[i],format='(F9.1)')  +'",' ;does the sigmoid have a EUV filament
-    printf,33,ind_3+string(length_304[i],format='(F9.1)')  +'",' ;Does the sigmoid have an H alpha filament
-    printf,33,ind_3+'5'            +'",' ;Number of sunspot in AR (get from HEK)
-    printf,33,ind_3+'N'            +'",' ;Magnetic Flux emergence 
-    printf,33,ind_3+'N'            +'",' ;Magnetic Flux cancellation 
+    printf,33,ind_3+fil_171  +'",' ;does the sigmoid have a EUV filament
+    printf,33,ind_3+fil_304  +'",' ;Does the sigmoid have an H alpha filament
+    printf,33,ind_3+string(ha_filament[i])+'",' ;Filament eruption Switched to does Sigmoid have an Halpha Filament 2018//12/03 J. Prchlik
+    printf,33,ind_3+strcompress(ss_at_peak[i],/remove_all)+'",' ;Number of sunspot in AR (get from HEK) 
+    printf,33,ind_3+net_flux            +'",' ;Magnetic Flux emergence  Swtiched to net flux  2018/12/03 J. Prchlik
+    printf,33,ind_3+peak_flux            +'",' ;Magnetic Flux cancellation  Switched to peak flux 2018/12/03 J. Prchlik
     printf,33,ind_3+'<A HREF=\"'+hmi_png+'\" >Flux Plot</A>'+'",' ;Get flux values for sigmoid
     printf,33,ind_3+flare_str      +'",' ;flare table string
     printf,33,ind_3+'0'            +'",' ;Number of CMEs
-    printf,33,ind_3+'-'            +'",' ;Filament eruption
-    printf,33,ind_3+'-'            +'",' ;Transient CH
-    printf,33,ind_3+'-'            +'",' ;Flare Ribbons
-    printf,33,ind_3+'-'            +'",' ;Post-Flare Loops
-    printf,33,ind_3+'-'            +'",'  ;Nearby CH
-    printf,33,ind_3+'-'            +'",'  ;Nearby AR
+    ;Removed because nearby CH and AR are not in the new catalog
+    ;printf,33,ind_3+'-'            +'",'  ;Nearby CH
+    ;printf,33,ind_3+'-'            +'",'  ;Nearby AR
     printf,33,image_info
     ;end bracket for storing data in a "row"
     if ii eq  max_it then printf,33,'        ]' $
     else printf,33,'        ],'
 
+;;;;readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+  ;;;;     length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,ha_filament,ss_at_peak,format=formats,/preserve_null
 
 endfor
 
