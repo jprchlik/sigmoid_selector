@@ -220,15 +220,51 @@ test_sig_b = CREATE_STRUCT(
 'cme_v'     ,strarr(100))     --> CME Velocity   
 
 
+get_hmi_files_cutout.pro
+================
+Retrieves HMI files given an input csv file between a sigmoid start and end date at a given cadence using JSOC cutout files.
+The default cadence is 36 minutes (3x720s).
 
 
-get_hmi_files.pro
+make_hmi_movie_cutout.pro
+==================
+Creates a movie of the evolution of a sigmoid in HMI, as well as, measures properties of the sigmoid at a given cadence (36 minutes).
+First, the code selects files from the local archive created by get_hmi_files_cutout and finds the files that best fit between the sigmoid start
+and end time with a 36 minute cadence.
+Then it creates a UID corresponding to the AIU international standard using its position in space and time at Tobs.
+N.B. this cannot be used as a unique identifier for the sigmoid catalog because the X, Y coordinates at Tbest,
+which were used early in the catalog are inconsistent with the coordiantes of X, Y at Tobs (Tobs coordinates are better).
+The Tbest coordinates were human specified,
+while Tobs comes from the sigmoid select program's automatic region finder.
+At some point opaque to me the reported X, Y values went from corresponding to Tbest to Tobs without retention of the inferior Tbest X,Y coordinates. 
+The coordinates for the UID are correspond to Tobs.
+
+
+For the analysis and movie the program will only run with SDO/HMI observations with a quality flag less than 90000.
+The first step in the analysis is to prep the HMI observation.
+To do that we rotate the image by 180 degees and select 700x700 pixel region around the position at Tobs.
+Then the code removes spikes from the image using the HMI prep code from Antonia Savecheva.
+Next, I create a Gaussian smoothed absolute image from an 8x8 pixel binned image.
+On that smoothed image I use the IDL procedure edge_dog (Difference of Gaussians) with a radius of 1. and 700./(2\*rebinv)-1
+, where the 700 comes from the pixel width of the image as long as the sigmoid long axis length is less than 350 pixels.
+If the long axis lengths is greater than 100 pixels, the widow length is twice the measure sigmoid length plus 250 pixels.
+To set the threshold value for the DoG technique we take 2.5 sigma less than the 95th percentile of the smoothed image.
+From the edges of the edge_dog procedure I create an ROI object of whatever region is nearest to the sigmoids position at Tobs accounting for rotation.
+That ROI objects is then used to measure the unsigned magnetic flux, positive magnetic flux, negative magnetic flux, and magnetic area under the sigmoid in the prepped image.
+
+Once the analysis finishes, the program writes a save file of the form:
+save,sig_id,out_id,obs_time,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'    
+and creates a movie with the ROI overplotted.
+Both the filenames and the output sigmoid have the unique sigmoid ID numbers.
+
+
+get_hmi_files.pro (OLD, MOVED TO CUTOUT files)
 ================
 Retrieves HMI files given an input csv file between a sigmoid start and end date at a given cadence using vso_search/vso_get.
 The default cadence is 30 minutes.
 
 
-make_hmi_movie.pro
+make_hmi_movie.pro (OLD, MOVED TO CUTOUT files)
 ==================
 Creates a movie of the evolution of a sigmoid in HMI, as well as, measures properties of the sigmoid at a given cadence (30 minutes).
 First, the code selects files from the local archive created by get_hmi_files and finds the files that best fit between the sigmoid start
@@ -280,6 +316,13 @@ In order for this to work, I had to hack aia_mkmovie because aia_prep does not h
 I also needed to add a ref_time keyword to aia_mkmovie, which contains anytim format times. The reason for this added 
 keyword is that aia_mkmovie uses files with a specific naming convention. That naming convention is not the same as that
 delivered by JSOC.  
+
+
+create_flux_plot.pro
+=======================
+Creates a flux plot for the webpage from the .sav file created by make_hmi_movie_cutout.pro. This module is called by create_combined_movie.pro.
+
+
  
 rjrlib
 ============
