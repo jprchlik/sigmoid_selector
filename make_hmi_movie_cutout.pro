@@ -471,7 +471,8 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Center rotated by 180 degrees
         ;Update with fits_ read syntax 2018/11/05 J. Prchlik
         ;cutouts are not rotated by 180
-        cent_pix = [sxpar(hdr,'crpix1')-sxpar(hdr,'naxis1')/2.,sxpar(hdr,'crpix2')-sxpar(hdr,'naxis2')/2.]#rot_mat
+        cent_pix = [sxpar(hdr,'crpix1')-sxpar(hdr,'naxis1')/2.,sxpar(hdr,'crpix2')-sxpar(hdr,'naxis2')/2.];#rot_mat
+
         cent_x = sxpar(hdr,'crpix1');cent_pix[0]+sxpar(hdr,'naxis1')/2.
         cent_y = sxpar(hdr,'crpix2');cent_pix[1]+sxpar(hdr,'naxis2')/2.
 
@@ -555,6 +556,40 @@ for ii=0,n_elements(goodt)-1 do begin
         fimg(where(imap_p0 eq 1))=0
         fimg(where(imap_n eq 1))=0
     
+        ;Scale down and check the scaling is by an integer
+        scale_x = fimg_size[1]/rebinv
+        scale_y = fimg_size[2]/rebinv
+
+        ;Accounts for size assuming rebin is not a integer value of the axes size 2018/11/13 J. Prchlik
+        ;check if xaxis is equal
+        if scale_x*rebinv ne fimg_size[1] then begin
+            diff_scale = abs(scale_x*rebinv-fimg_size[1]) 
+            fimg= fimg(diff_scale:fimg_size[1]-1,*)
+        endif
+        ;check if yaxis is equal
+        if scale_y*rebinv ne fimg_size[2] then begin
+            diff_scale = abs(scale_y*rebinv-fimg_size[2]) 
+            fimg= fimg(*,diff_scale:fimg_size[2]-1)
+        endif
+
+
+        ;Get new image size
+        fimg_size = size(fimg)
+
+        ;fill values outside rsun with median
+        fimg_x = dindgen(fimg_size[1]) #  (intarr((fimg_size[1])) +1)-cent_x
+        fimg_y = dindgen(fimg_size[2]) ## (intarr((fimg_size[2])) +1)-cent_y
+        fimg_x = delt_x*fimg_x
+        fimg_y = delt_y*fimg_y
+        fimg_r = sqrt(fimg_x^2+fimg_y^2)
+        ;Theta angle for each pixel 2018/11/13 J. Prchlik
+        bin_cor_t =  asin(fimg_r/sol_rad)
+
+        ;correct pixels by cos(theta)^2
+        fimg = fimg/cos(bin_cor_t)^2
+        ;zero out all pixels greater than 50 degrees
+        ;Only did for exper. Not in final draft 2018/12/03 J. Prchlik
+        ;fimg(where(bin_cor_t gt !dtor*50.)) = 0.0
 
         ;Create a low res smoothed version of the image
         simg = rebin(fimg,fimg_size[1]/rebinv,fimg_size[2]/rebinv)
@@ -565,6 +600,7 @@ for ii=0,n_elements(goodt)-1 do begin
         bin_cor_x = delt_x*rebinv*bin_cor_x
         bin_cor_y = delt_y*rebinv*bin_cor_y
         bin_cor_r = sqrt(bin_cor_x^2+bin_cor_y^2)
+
 
         ;get median value when less than solar radius
         med_sun = median(simg[where(bin_cor_r lt sol_rad)])
@@ -623,12 +659,12 @@ for ii=0,n_elements(goodt)-1 do begin
             ytitle='Y-position (arcseconds)',$
             ;Updated title to use fits_read hdr syntax 2018/11/05 J. Prchlik
             title=string([sig_id],format=title_fmt)+fmt_dat,$
-            xcharsize=1.50, $
-            ycharsize=1.50, $
-            xcharthick=1.50, $
-            ycharthick=1.50, $
-            charsize=2.,$
-            charthick=2.,Position=[0.2, 0.15, 0.95, 0.90];/nosquare
+            xcharsize =1.20*win_w/700., $
+            ycharsize =1.20*win_w/700., $
+            xcharthick=1.20*win_w/700., $
+            ycharthick=1.20*win_w/700., $
+            charsize  =1.00*win_w/700.,$
+            charthick =1.00*win_w/700.,Position=[0.2, 0.15, 0.95, 0.90];/nosquare
 
 
         ;Create new ROI obejct using contour
@@ -827,7 +863,9 @@ for ii=0,n_elements(goodt)-1 do begin
             ;ffmpeg = str_replace(ffmpeg, 'opt', 'usr')
     endif
 
-    png_size = strcompress(string([win_w,win_w],format='(I6,"x",I6)'),/remove_all)
+    ;png_size = strcompress(string([win_w,win_w],format='(I6,"x",I6)'),/remove_all)
+    ;Use static movie size 2018/12/03 J. Prchlik
+    png_size = '700x700'
     framerate= strcompress(string(8),/remove_all) ;frames per second
     bitrate = ((24*win_w)^2)*framerate/1.e6 ; number of bits per frame 24 bit colors and win_w^2 image
     bit = trim(round(bitrate))+'m'
@@ -849,7 +887,8 @@ for ii=0,n_elements(goodt)-1 do begin
     ;output file name
     outf = str_replace(sig_id,':','')+"_mag.mp4"
     outf = str_replace(outf,'-','')
-    spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf+keep_going, result, errResult
+    spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
+    wait,60
    ;Cancel out image from memory. Leaking like a sieve
    index = 0
    data  = 0
