@@ -230,14 +230,15 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
     ;Only create HMI directory if there are in fact mp4 files
+    ;And use unique sigmiod IDs 2018/12/03 J. Prchlik
     if hmi_movie_found ne 0 then begin
         ;Create symbolic link
         ;Removed previously created symbolic link 2018/11/09 J. Prchlik
-        if not file_test(hmi_dir+sig_id+'_hmi.mp4') then $ 
-            file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' $
+        if not file_test(hmi_dir+sig_cid+'_hmi.mp4') then $ 
+            file_link,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' $
         else begin
-            FILE_DELETE,hmi_dir+sig_id+'_hmi.mp4'
-            file_link,hmi_mov[0],hmi_dir+sig_id+'_hmi.mp4' 
+            FILE_DELETE,hmi_dir+sig_cid+'_hmi.mp4'
+            file_link,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' 
         endelse
      endif
 
