@@ -48,6 +48,9 @@ if keyword_set(wave) then wave = wave else wave = ['magnetogram']
 ;hmi launch date 
 if keyword_set(obs) then obs = obs else obs = anytim('2010-06-27T18:19:00')
 
+;SDO/HMI take over date
+sdo_takeover = anytim('2009-04-13T21:48:00')
+
 
 
 ;Cadence  
@@ -77,6 +80,11 @@ for ii=0,n_elements(goodt)-1 do begin
 
     ;only get hmi for sigmoids after hmi launch
     if anytim(t1) lt obs then continue
+
+    ;Use MDI if before SDO science data date
+    if anytim(t1) lt sdo_takeover then begin
+        wave = ['mdi_mag']
+    endif else wave = ['magnetogram']
          
 
     ;Get difference between start and end time in minutes and add 2 hours
@@ -92,6 +100,8 @@ for ii=0,n_elements(goodt)-1 do begin
     inp_x = X[gi]
     inp_y = Y[gi]
     inp_t = tobs[gi]
+    ;Correct for older sigmoids, which don't have Tobs
+    if inp_t eq 0 then inp_t = tbest[gi]
     rot_p = rot_xy(inp_x,inp_y,tstart=inp_t,tend=ts,offlimb=on_limb)
 
     ;output directory
