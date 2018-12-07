@@ -827,7 +827,7 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Set up length of polarity inversion line
         pol_len = 0
  
-        ;Look through ROIs until you find one nearest to sigmoid point 
+        ;Look for polarity inversion line contours inside the ROI object
         while pn_search do begin 
             pn_line = [LINDGEN(info_pn(ind_pn ).N), 0] 
             ;Pixel coordinates of the polarity invserion line
@@ -842,8 +842,9 @@ for ii=0,n_elements(goodt)-1 do begin
             ;Get interior points
             int_pnt = where(pn_in eq 1,pn_cnt)
 
-            ;If there are interior points plot them
-            if pn_cnt gt 0 then begin
+            ;If there are interior points plot them and store the length
+            ; Need at least 2 but setting a min of 4
+            if pn_cnt gt 3 then begin
                 ;Plot positve negative contour 2018/12/07 J. prchlik
                 plot_x = delt_x*pn_x[int_pnt]+borg_x
                 plot_y = delt_y*pn_y[int_pnt]+borg_y
