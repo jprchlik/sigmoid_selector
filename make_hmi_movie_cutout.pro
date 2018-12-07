@@ -414,6 +414,7 @@ for ii=0,n_elements(goodt)-1 do begin
     phy_save = [] ; ROI object in physical units
     elp_save = [] ; ROI object in physical units using a fitting ellipse
     ilp_save = [] ; ROI object in pixel units using a fitting ellipse
+    pol_lens = [] ; Stored length of the polarity inversion line 2018/12/07 J. Prchlik
 
     ; plot each hmi observation
     for j=0,n_elements(match_files)-1 do begin
@@ -451,11 +452,13 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;Only do the calculations for Magnetic fields less than 50 degrees on the surface
         ;Include if point is off the limb
-        if ((sqrt(total(rot_p^2))/sol_rad gt sin(!dtor*50.)) OR (offlimb eq 1)) then continue
+        ;Switch to 40 degrees per discussion with Antonia 2018/12/06
+        if ((sqrt(total(rot_p^2))/sol_rad gt sin(!dtor*40.)) OR (offlimb eq 1)) then continue
 
 
         ;calculate the length of sigmoid correcting for projection
-        sig_p = length[i]/sxpar(hdr,'cdelt1')*acos((sqrt(total(rot_p^2))/sol_rad)) ; sigmiod length in hmi pixels
+        ;Remove projection correction 2018/12/07 because we are going to sit at DC J. Prchlik 
+        sig_p = length[i]/sxpar(hdr,'cdelt1');*acos((sqrt(total(rot_p^2))/sol_rad)) ; sigmiod length in hmi pixels
 
 
         ;Area of pixel in cm
@@ -505,6 +508,20 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Rotate the unprepped image
         ;No longer required for cutouts 2018/11/05 J. Prchlik 
         ;fimg = rot(fimg,180)
+        ; Establish error handler. When errors occur, the index of the
+        ; error is returned in the variable Error_status:
+        CATCH, Error_status
+
+        ;if data is empty continue
+;       ;This statement begins the error handler:
+        IF Error_status NE 0 THEN BEGIN
+           PRINT, 'Error index: ', Error_status
+           PRINT, 'Error message: ', !ERROR_STATE.MSG
+           ; Handle the error by extending A:
+           CATCH, /CANCEL
+           ;If Error go to the next image
+           continue
+        ENDIF
 
         ;get sigma from image
         img_sig = get_sig(fimg)
@@ -606,7 +623,7 @@ for ii=0,n_elements(goodt)-1 do begin
         med_sun = median(simg[where(bin_cor_r lt sol_rad)])
         simg[where(bin_cor_r gt sol_rad)] = 0.0
         ;gaussian smooth image
-        gimg = gauss_smooth(abs(simg),10*8./rebinv,/edge_trunc,/NAN)
+        gimg = gauss_smooth(abs(simg),20*8./rebinv,/edge_trunc,/NAN)
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
         ;rad_2 = 300.
@@ -617,9 +634,17 @@ for ii=0,n_elements(goodt)-1 do begin
         if rad_2 gt win_w/rebinv/2-1 then rad_2 = win_w/rebinv/2-1
 
         ;2sigma drop threshold assuming rad_2 is an approximation for sigma
-        thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(2.5)^2/2.)
+        ;Switch to 5 sigma 2018/12/07 J. Prchlik
+        sig_cut = 5.0
+        thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(sig_cut)^2/2.)
+
+
+
+        ;Get sigma of smoothed image
+        ;smt_sig = get_sig(gimg)
 
         ;Used difference of gaussian to find edges
+        ;Use 3 sigma from 0 2018/12/07 J. Prchlik
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=thres_val,zero_crossings=[0,255])
         ;gimg = abs(simg)
         ;Make gimg back to normal size then cut
@@ -641,6 +666,21 @@ for ii=0,n_elements(goodt)-1 do begin
         ;get x,y origin for binned image
         borg_x = -(cent_x/rebinv)*delt_x*rebinv
         borg_y = -(cent_y/rebinv)*delt_y*rebinv
+
+
+
+        ;Try to calculate polarity inversion line 2018/12/07
+        ;gaussian smooth image
+        pn_img = gauss_smooth(simg,20*8./rebinv,/edge_trunc,/NAN)
+        ;pos_neg = gauss_smooth(simg,20*8./rebinv,/edge_trunc,/NAN)
+        edge_pn = edge_dog(pn_img,radius1=rad_1,radius2=rad_2,threshold=0.,zero_crossings=[0,255])
+
+
+        ;Get +/- Contour close=0 prevents always enclosing a contour
+        CONTOUR,edge_pn,LEVEL=1, $
+            XMARGIN = [0, 0], YMARGIN = [0, 0], $
+            /NOERASE,PATH_XY=cont_pn,PATH_INFO=info_pn, $
+            XSTYLE=5,YSTYLE=5,/PATH_DATA_COORDS,closed=0
         
   
         ;Get boundary of created countour
@@ -738,12 +778,13 @@ for ii=0,n_elements(goodt)-1 do begin
 
         
 
-
-        
         ;ROI in pixel coordinates
         roi_obj = OBJ_NEW('IDLanROI', $
            rebinv*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *], $
            rebinv*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]) & $
+
+
+      
 
         ;ROI after fittinf for an ellipse
         ;Fit ellipse to roi object
@@ -777,6 +818,50 @@ for ii=0,n_elements(goodt)-1 do begin
         ;DRAW_ROI, roi_obj, COLOR =200,/LINE_FILL
         ;Draw ROI on plot switch to plotting line around ROI instead of ROI in draw_roi
         plots, rebinv*delt_x*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[0, *]+borg_x, rebinv*delt_y*(pathXY(*, pathInfo(ind_obj).OFFSET + line))[1, *]+borg_y,color= 200,thick=3
+
+        ;Do the same thing to find the polarity inversion line
+        pn_search = 1
+        ind_pn = 0
+        pn_dists = []
+
+        ;Set up length of polarity inversion line
+        pol_len = 0
+ 
+        ;Look through ROIs until you find one nearest to sigmoid point 
+        while pn_search do begin 
+            pn_line = [LINDGEN(info_pn(ind_pn ).N), 0] 
+            ;Pixel coordinates of the polarity invserion line
+            pn_x =  rebinv*(cont_pn(*, info_pn(ind_pn).OFFSET + line))[0, *]
+            pn_y =  rebinv*(cont_pn(*, info_pn(ind_pn).OFFSET + line))[1, *]
+
+
+            ;Find values of the polarity inversion line inside the ROI
+            pn_in = roi_obj -> ContainsPoints(pn_x,pn_y)
+
+
+            ;Get interior points
+            int_pnt = where(pn_in eq 1,pn_cnt)
+
+            ;If there are interior points plot them
+            if pn_cnt gt 0 then begin
+                ;Plot positve negative contour 2018/12/07 J. prchlik
+                plot_x = delt_x*pn_x[int_pnt]+borg_x
+                plot_y = delt_y*pn_y[int_pnt]+borg_y
+                ;Get the polarity inversion line length if IDL find more than one add to the previous length
+                pol_len = sqrt(ts_diff(plot_x,1)^2+ts_diff(plot_y,1)^2)+pol_len
+                ; plot by value with the larger dynamic range
+                if max(plot_x)-min(plot_x) gt max(plot_y)-min(plot_y) then $
+                    sort_y = sort(plot_x) $
+                else  sort_y = sort(plot_y)
+                 
+                plots, plot_x[sort_y],plot_y[sort_y],color= 100,thick=3
+            endif
+            ;increment counter
+            ind_pn  = ind_pn +1
+            ;No region found
+            if ind_pn  eq n_elements(info_pn.N)-1 then pn_search = 0 
+        endwhile
+
         ;plots,rebinv*delt_x*(elp_xy[0, *])+borg_x,rebinv*delt_y*(elp_xy[1, *])+borg_y,color=100,thick=3
         plots,rot_p[0],rot_p[1],psym=4,symsize=3,thick=3,color=200
         loadct,0,/silent
@@ -814,6 +899,7 @@ for ii=0,n_elements(goodt)-1 do begin
         tot_area = [tot_area,maskArea*are_pix] ; Area of ROI in cm^2
         roi_save = [roi_save,roi_obj] ;ROI object in pixels
         phy_save = [phy_save,roi_phy] ;ROI object in physical coordinates
+        pol_lens = [pol_lens,pol_len] ; length of the polarity inversion line Add 2018/12/07 J. Prchlik
 
 
         ;Cancel out image from memory. Leaking like a sieve
@@ -836,7 +922,7 @@ for ii=0,n_elements(goodt)-1 do begin
     ;Save output sav file
     out_id = id[i]
     save,sig_id,out_id,obs_time,obs_loca,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,$
-        roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
+        roi_save,phy_save,pol_lens,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'
 
     ;create directory for symbolic links
     if file_test(full_dir+'/symlinks/') then file_delete,full_dir+'symlinks/',/recursive
@@ -892,6 +978,7 @@ for ii=0,n_elements(goodt)-1 do begin
    ;Cancel out image from memory. Leaking like a sieve
    index = 0
    data  = 0
+
 endfor
 
 end
