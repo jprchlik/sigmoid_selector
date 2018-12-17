@@ -234,11 +234,15 @@ for ii=0,n_elements(goodt)-1 do begin
     if hmi_movie_found ne 0 then begin
         ;Create symbolic link
         ;Removed previously created symbolic link 2018/11/09 J. Prchlik
+        ;Switch to file_copy as opposed to symbolic link 2018/12/17 J. Prchlik
         if not file_test(hmi_dir+sig_cid+'_hmi.mp4') then $ 
-            file_link,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' $
+            ;file_link,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' $
+            file_copy,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' $
         else begin
             FILE_DELETE,hmi_dir+sig_cid+'_hmi.mp4'
-            file_link,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' 
+            ;file_link,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' 
+            ;Switch to file_copy as opposed to symbolic link 2018/12/17 J. Prchlik
+            file_copy,hmi_mov[0],hmi_dir+sig_cid+'_hmi.mp4' 
         endelse
      endif
 
@@ -250,7 +254,9 @@ for ii=0,n_elements(goodt)-1 do begin
     ;Create link related to sigmoid long mp4 file
     aia_file = file_search(aia_arch+sig_id+'.mp4',/fully)
     if ((not file_test(aia_dir+sig_id+'.mp4')) and (n_elements(size(aia_file)) gt 3)) then begin
-        file_link,aia_file[0],aia_dir+sig_id+'.mp4'
+        ;Switch to file_copy as opposed to symbolic link 2018/12/17 J. Prchlik
+        ;file_link,aia_file[0],aia_dir+sig_id+'.mp4'
+        file_copy,aia_file[0],aia_dir+sig_id+'.mp4'
     endif
      
 
@@ -294,7 +300,9 @@ for ii=0,n_elements(goodt)-1 do begin
 
            ;Create symbolic link
            if not file_test(flr_dir+sig_id+file_name) then $ 
-               file_link,flare_files[j],flr_dir+sig_id+file_name
+               ;file_link,flare_files[j],flr_dir+sig_id+file_name
+                ;Switch to file_copy as opposed to symbolic link 2018/12/17 J. Prchlik
+               file_copy,flare_files[j],flr_dir+sig_id+file_name
 
         endfor
     endif
