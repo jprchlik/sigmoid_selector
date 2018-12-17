@@ -287,7 +287,8 @@ for ii=0,max_it do begin
     ;Commented out to test other things 2018/09/25 J. Prchlik
     ;get the solarmonitory links 
     ;Turned back on for Halpha filament analysis
-    ;get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),solar_links
+    ;Added full directory to input which allows for the files to be downloaded in the file directory for each sigmoid
+    get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),full_dir,solar_linksr
 
     ;Add solar monitor links in text format
     solmon_img = ''
