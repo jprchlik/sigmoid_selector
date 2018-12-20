@@ -416,6 +416,10 @@ for ii=0,n_elements(goodt)-1 do begin
     ilp_save = [] ; ROI object in pixel units using a fitting ellipse
     pol_lens = [] ; Stored length of the polarity inversion line 2018/12/07 J. Prchlik
 
+
+    ;Set Threshold  2018/12/20 Use to set a static threshold for each observations, which keeps ROI at a consisent size
+    set_threshold = 1
+
     ; plot each hmi observation
     for j=0,n_elements(match_files)-1 do begin
 
@@ -519,6 +523,8 @@ for ii=0,n_elements(goodt)-1 do begin
            PRINT, 'Error message: ', !ERROR_STATE.MSG
            ; Handle the error by extending A:
            CATCH, /CANCEL
+           ;Make sure to set color table back to default
+           loadct,0
            ;If Error go to the next image
            continue
         ENDIF
@@ -543,6 +549,7 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
         ;Remove noisy values
+        ;This is level1 data with cutout, so try without rejection of pixels 2018/12/19 J. Prchlik
         bzzero = where(abs(fimg) le  zero_lev)
         fimg(bzzero) = 0.0                                ; All pixels below a certain value are set to zero
 
@@ -561,15 +568,14 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
         ;create spike pixel masks
+        ;Switched back to old way 2018/12/19 J. Prchlik
         ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
         cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0,/silent)
-        ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.85,imap=imap_p0)
+        ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.85,imap=imap_p0,/silent)
         cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.50,imap=imap_n,/silent)
-        ;cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.85,imap=imap_n)
+        ;cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.85,imap=imap_n,/silent)
 
         ;Remove spikes from image
-        ;img(where(imap_p0 eq 1))=0
-        ;img(Where(imap_n eq 1))=0
         fimg(where(imap_p0 eq 1))=0
         fimg(where(imap_n eq 1))=0
     
@@ -606,7 +612,9 @@ for ii=0,n_elements(goodt)-1 do begin
         fimg = fimg/cos(bin_cor_t)^2
         ;zero out all pixels greater than 50 degrees
         ;Only did for exper. Not in final draft 2018/12/03 J. Prchlik
-        ;fimg(where(bin_cor_t gt !dtor*50.)) = 0.0
+        ;Re implimented for getting sigma from image
+        ;Readded limb rejection 2018/12/20 J. Prchlik
+        fimg(where(bin_cor_t gt !dtor*65.)) = !values.F_NAN ;0.0
 
         ;Create a low res smoothed version of the image
         simg = rebin(fimg,fimg_size[1]/rebinv,fimg_size[2]/rebinv)
@@ -623,7 +631,12 @@ for ii=0,n_elements(goodt)-1 do begin
         med_sun = median(simg[where(bin_cor_r lt sol_rad)])
         simg[where(bin_cor_r gt sol_rad)] = 0.0
         ;gaussian smooth image
-        gimg = gauss_smooth(abs(simg),20*8./rebinv,/edge_trunc,/NAN)
+        ;edge zero cuts too far into the image although it is faster (2018/12/18 J. Prchlik)
+        ;gimg = gauss_smooth(abs(simg),20*8./rebinv,/edge_trunc,/NAN,kernel=img_kernel)
+        ;2D Gaussian function describing the image kernel
+        ;Switched to zeroing out edges 2018/12/18 J. Prchlik (it is faster than using gauss_smooth, 2 images per minute compared to 3.5-4)
+        img_kernel = GAUSSIAN_FUNCTION([1,1]*20*8./rebinv)
+        gimg = CONVOL(abs(simg),img_kernel,total(img_kernel),/edge_trunc,/NAN);,INVALID=255,MISSING=0)
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
         ;rad_2 = 300.
@@ -633,11 +646,20 @@ for ii=0,n_elements(goodt)-1 do begin
         ;don't let rad_2 be larger than half of the image
         if rad_2 gt win_w/rebinv/2-1 then rad_2 = win_w/rebinv/2-1
 
-        ;2sigma drop threshold assuming rad_2 is an approximation for sigma
-        ;Switch to 5 sigma 2018/12/07 J. Prchlik
-        sig_cut = 5.0
-        thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(sig_cut)^2/2.)
 
+
+        ;Only do if threshold value for this observation is no set 2018/12/20 J. Prchlik
+        if set_threshold then begin
+            ;2sigma drop threshold assuming rad_2 is an approximation for sigma
+            ;Switch to 5 sigma 2018/12/07 J. Prchlik
+            sig_cut = 3.0
+            thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(sig_cut)^2/2.)
+
+            ;Use image sigma 2018/12/19 J. Prchlik
+            ;get sigma from image
+            ;thres_val = abs(get_sig(gimg))
+            print,thres_val
+        endif
 
 
         ;Get sigma of smoothed image
@@ -671,20 +693,24 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;Try to calculate polarity inversion line 2018/12/07
         ;gaussian smooth image
-        pn_img = gauss_smooth(simg,20*8./rebinv,/edge_trunc,/NAN)
+        ;pn_img = gauss_smooth(simg,20*8./rebinv,/edge_zero,/NAN)
+        pn_img = convol(simg,img_kernel,total(img_kernel),/edge_trunc,/NAN)
         ;pos_neg = gauss_smooth(simg,20*8./rebinv,/edge_trunc,/NAN)
-        edge_pn = edge_dog(pn_img,radius1=rad_1,radius2=rad_2,threshold=0.,zero_crossings=[0,255])
+        ;Trying emboss filter 2018/12/19 J. Prchlik
+        ;edge_pn = abs(roberts(pn_img))
+        edge_pn = edge_dog(pn_img,threshold=0.,zero_crossings=[0,255])
 
 
         ;Get +/- Contour close=0 prevents always enclosing a contour
-        CONTOUR,edge_pn,LEVEL=1, $
+        CONTOUR,edge_pn,NLEVEL=1, $
             XMARGIN = [0, 0], YMARGIN = [0, 0], $
             /NOERASE,PATH_XY=cont_pn,PATH_INFO=info_pn, $
             XSTYLE=5,YSTYLE=5,/PATH_DATA_COORDS,closed=0
         
   
         ;Get boundary of created countour
-        CONTOUR,edge, LEVEL = 1,  $
+        ;Switched to N levels instead of LEVEL, which just picked the top value, although the image is binary 2018/12/19
+        CONTOUR,edge, NLEVEL = 1,  $
                XMARGIN = [0, 0], YMARGIN = [0, 0], $
                /NOERASE, PATH_INFO = pathInfo, PATH_XY = pathXY, $
                XSTYLE = 5, YSTYLE = 5, /PATH_DATA_COORDS;/NODATA
@@ -915,6 +941,11 @@ for ii=0,n_elements(goodt)-1 do begin
         roi_elp = 0
         roi_ilp = 0
         roi_img = 0
+
+
+       ;If the program get this far then it successfully ran for this observation. Therefore, there is no need to refind the threshold value 
+       ;Threfore, keep the threshold static for the remaining observations of this particular sigmoid 2108/12/20 J. Prchlik
+       set_threshold = 0
 
 
     endfor
