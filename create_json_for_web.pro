@@ -288,12 +288,12 @@ for ii=0,max_it do begin
     ;get the solarmonitory links 
     ;Turned back on for Halpha filament analysis
     ;Added full directory to input which allows for the files to be downloaded in the file directory for each sigmoid
-    get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),full_dir,solar_linksr
+    get_solarmonitor_links_dirty,str_replace(strmid(TBEST[i],0,10),'-',''),full_dir,solar_links
 
     ;Add solar monitor links in text format
     solmon_img = ''
     for k=0,n_elements(solar_links)-1 do begin
-        add_img = '<div align=\"middle\" class=\"block\"><A HREF=\"'+solar_links[k]+'\" rel=\"lightbox\">SRC=\"'+solar_links[k]+'\" height=\"200\" width=\"200\"></A></div>'
+        add_img = '<div align=\"middle\" class=\"block\"><A HREF=\"../'+solar_links[k]+'\" rel=\"lightbox\">SRC=\"../'+solar_links[k]+'\" height=\"200\" width=\"200\"></A></div>'
         solmon_img = solmon_img+add_img
     endfor 
 
