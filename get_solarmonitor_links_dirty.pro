@@ -81,7 +81,7 @@ pro get_solarmonitor_links_dirty,date,outdir,links
 
     ;If local files already exist return the links and move on 2018/12/17 J. Prchlik
     if ((tst_mag) AND (tst_xrt) AND (tst_hal) AND (tst_euv)) then begin
-        links = [out_mag,out_xrt,out_hal,out_hal]
+        links = [out_mag,out_xrt,out_hal,out_euv]
     endif else begin
 
 
