@@ -570,7 +570,9 @@ for ii=0,n_elements(goodt)-1 do begin
         ;create spike pixel masks
         ;Switched back to old way 2018/12/19 J. Prchlik
         ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
-        cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0,/silent)
+        ;cormag_dp_p0=nospike(cormag_p0,thre=0.65,bright=0.99,imap=imap_p0,/silent)
+        ;Switch to same lower threshold as - ddata 2018/12/21 J. Prchlik
+        cormag_dp_p0=nospike(cormag_p0,thre=0.5,bright=0.99,imap=imap_p0,/silent)
         ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.85,imap=imap_p0,/silent)
         cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.50,imap=imap_n,/silent)
         ;cormag_dp_ni =nospike(cormag_n,thre=0.9,bright=0.85,imap=imap_n,/silent)
@@ -655,10 +657,10 @@ for ii=0,n_elements(goodt)-1 do begin
             sig_cut = 3.0
             thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(sig_cut)^2/2.)
 
+
             ;Use image sigma 2018/12/19 J. Prchlik
             ;get sigma from image
             ;thres_val = abs(get_sig(gimg))
-            print,thres_val
         endif
 
 
