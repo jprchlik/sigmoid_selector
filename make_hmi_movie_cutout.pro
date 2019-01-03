@@ -567,6 +567,23 @@ for ii=0,n_elements(goodt)-1 do begin
         cormag_n(where(fimg lt 0)) =fimg(where(fimg lt 0))
 
 
+        ;#######################################################################
+        ;NAN out pixels off the limb 2019/01/02 J. Prchlik
+        ;This way the distribution of used for spike correction is similar
+        ;Get image size
+        fimg_size = size(fimg)
+
+        ;fill values outside rsun with median
+        fimg_x = dindgen(fimg_size[1]) #  (intarr((fimg_size[1])) +1)-cent_x
+        fimg_y = dindgen(fimg_size[2]) ## (intarr((fimg_size[2])) +1)-cent_y
+        fimg_x = delt_x*fimg_x
+        fimg_y = delt_y*fimg_y
+        fimg_r = sqrt(fimg_x^2+fimg_y^2)
+        fimg_s =  fimg_r/sol_rad
+
+        fimg(where(fimg_s gt 1.)) = !values.F_NAN ;0.0
+        ;#######################################################################
+
         ;create spike pixel masks
         ;Switched back to old way 2018/12/19 J. Prchlik
         ;cormag_dp_p0=nospike(cormag_p0,thre=0.9,bright=0.99,imap=imap_p0)
