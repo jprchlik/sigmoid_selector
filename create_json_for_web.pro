@@ -67,10 +67,10 @@ end
 pro create_json_for_web,times,hmi_arch=hmi_arch,aia_arch=aia_arch,flr_arch=flr_arch,out_arch=out_arch
 
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
-formats = 'LL,LL,A,A,A,F,F,A,A,A,F,A,A,A,A,A,F,F,f,F,F,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
+formats = 'LL,LL,A,A,A,F,F,A,A,A,F,A,A,A,A,A,F,F,f,F,F,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
 ;formats = 'A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
-       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,ha_filament,ss_at_peak,format=formats,/preserve_null
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,ha_filament,ss_at_peak,good_mag,IAU_ID,filament_eruption,transient_CH,flare_ribbons,postflare_loops,nearby_CH,nearby_AR,format=formats,/preserve_null
 
 ;Set HMI movie directory 
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_movie_cutout/'
@@ -175,6 +175,9 @@ for ii=0,max_it do begin
     ;
     ;###############################################################################
     hmi_png = file_search(hmi_dir+'*.png',/full)
+    
+    ;Convert to relative path 2018/12/21 J. Prchlik
+    hmi_png = '../combined_movies/'+sig_cid+'/hmi_movie/'+sig_cid+'.png'
 
    
 
@@ -237,7 +240,9 @@ for ii=0,max_it do begin
            sclass= strmid(file_name,53,1)
 
            ;Create line with flare class and time
-           add_flare = '<br><A HREF=\"'+flare_files[j]+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
+           ;Switch to relative path 2018/12/21 J. Prchlik
+           ;add_flare = '<br><A HREF=\"'+flare_files[j]+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
+           add_flare = '<br><A HREF=\"../combined_movies/'+sig_cid+'/flr_movie/'+file_name+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
 
            ;add to matched flare text
            mat_flr = mat_flr+add_flare
@@ -325,7 +330,7 @@ for ii=0,max_it do begin
         sun_par = get_sun(tbest[i])
         cont = (0.5/sun_par[1]*6.955E10)^2
         ;Store start to finish flux and the maximum flux value
-        net_flux = string(1e-21*cont*tot_ints[n_elements(tot_ints)-1]-tot_ints[0],format='(F9.2)')
+        net_flux = string(1e-21*cont*(tot_ints[n_elements(tot_ints)-1]-tot_ints[0]),format='(F9.2)')
         peak_flux= string(1e-21*cont*max(tot_ints),format='(F9.2)')
     endif else begin
         net_flux = '-' 
@@ -365,6 +370,12 @@ for ii=0,max_it do begin
     ;Removed because nearby CH and AR are not in the new catalog
     ;printf,33,ind_3+'-'            +'",'  ;Nearby CH
     ;printf,33,ind_3+'-'            +'",'  ;Nearby AR
+    ;Added back CH and AR into the new catalog 2018/12/21 J. Prchlik
+    printf,33,ind_3+filament_eruption[i]+'",' ; Filament eruption observed in SDO/AIA movie
+    printf,33,ind_3+transient_CH[i]+'",' ; Transient CH observed in SDO/AIA movie
+    printf,33,ind_3+flare_ribbons[i]+'",' ;flare ribbons visible in SDO/AIA movie
+    printf,33,ind_3+postflare_loops[i]+'",' ; Post flare loops visible in SDO/AIA movie
+    printf,33,ind_3+nearby_CH[i]+'",' ; Stable nearby CH in SDO/AIA movie
     printf,33,image_info
     ;end bracket for storing data in a "row"
     if ii eq  max_it then printf,33,'        ]' $
