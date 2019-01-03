@@ -83,7 +83,8 @@ end
 ;    make_aia_flare_movies,times,aia_arch='aia_arch/'
 ;
 ;INPUTS
-;    flare_sav  -   A sav file containing flare times and positions
+;    flare_sav  -   A sav file containing flare times and positions. This file is created by flare_cme_sigcat.pro.
+;                   This program can only run after running get_aia_files_cutout.pro.
 ;    times      -   A csv file containing sigmoid information
 ;
 ;OUTPUTS
