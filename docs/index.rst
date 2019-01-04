@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Sigmoid_Catalog's documentation!
+Welcome to the Sigmoid Catalog's documentation!
 ===========================================
 
 .. toctree::
@@ -25,6 +25,25 @@ Version 2 of the catalog, of which the code is detailed here, expands the initia
 This expansion creates a database of more than 300 sigmoids.
 In addition, we measure new parameters, not in the first iteration of the catalog.
 Here I will detail the code used to analyze Sigmoids in version 2 of the Sigmoid Catalog.
+
+.. _toplevel-downloading-code:
+Downloading Codes
+-----------------
+.. toctree::
+   :maxdepth:1
+   
+   downloading_code/get_hmi_files_cutout/index
+
+
+.. _toplevel-manual-measurement-code:
+Manual Measurement Codes
+------------------------
+
+.. _toplevel-automated-measurement-code:
+Automated Measurement/Analysis Codes
+------------------------------------
+
+
 
 
 
