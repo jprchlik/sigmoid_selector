@@ -1,7 +1,7 @@
 |alpha|
    alpha the first letter of the Greek alphabet.
 
-.. |alpha| replace:: :math:`{\alpha}`
+.. |alpha| replace:: :math:`{\\alpha}`
 
 
 get_solarmonitor_links_dirty
