@@ -33,6 +33,7 @@ Downloading Codes
    :maxdepth:1
    
    downloading_code/get_hmi_files_cutout/index
+   downloading_code/get_aia_files_cutout/index
 
 
 .. _toplevel-manual-measurement-code:
