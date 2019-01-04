@@ -9,7 +9,7 @@ Welcome to the Sigmoid Catalog's documentation!
 .. image:: ../_static/banner.png
    :alt: Sigmoid Catalog Image
    :align: right
-   :scale: 150%
+   :scale: 70%
 
 .. toctree::
    :maxdepth: 2
