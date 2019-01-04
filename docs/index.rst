@@ -70,10 +70,10 @@ The codes linked below measure sigmoid properties without user input.
    :maxdepth:1
 
 
-    automated_measurement_code/create_combined_movies/index.rst
-	automated_measurement_code/make_aia_flare_movies/index.rst
-	automated_measurement_code/make_hmi_movie_cutout/index.rst
-	automated_measurement_code/get_solarmonitor_links_dirty/index.rst
+    automated_measurement_code/create_combined_movies/index
+	automated_measurement_code/make_aia_flare_movies/index
+	automated_measurement_code/make_hmi_movie_cutout/index
+	automated_measurement_code/get_solarmonitor_links_dirty/index
 
 
 
