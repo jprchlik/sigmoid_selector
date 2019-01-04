@@ -1,7 +1,7 @@
 get_solarmonitor_links_dirty
 ============================
 This code "queries" `solarmonitor.org <https://www.solarmonitor.org>`_ for four different full sun images 
-(Line-of-Sight (LoS) Magnetic Fields, Hinode-XRT, H&alpha;, and ~171&Aring;).
+(Line-of-Sight (LoS) Magnetic Fields, Hinode-XRT, H :math:r`\alpha`, and ~171&Aring;).
 The query works by making text requests for a specified date to solarmonitor then parsing the text for png files related to observations in all four wavelengths.
 If the program finds a file, then it downloads the file locally.
 In preceeding iterations, the program checks that the file does not already exist locally before trying to download the four images.
