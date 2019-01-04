@@ -10,4 +10,4 @@ Normally, get_solarmonitor_links_dirty runs from within `create_json_for_web <..
 but may also run independently.
 An example of the code is below downloads all files not currently stored locally in output_dir/ and stores the path to all local files in links, even if they were previously downloaded.
 
- sswidl>>>get_solarmonitor_links_dirty,'2019/01/04','output_dir/',links
+ sswidl>get_solarmonitor_links_dirty,'2019/01/04','output_dir/',links
