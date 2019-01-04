@@ -27,7 +27,7 @@ As such, studying Sigmoids has practical and physical benefits.
 The initial sigmoid catalog `(Savcheva et al. 2014) <https://ui.adsabs.harvard.edu/?#abs/2014SoPh..289.3297S>`_
 contains 79 sigmoids discovered by searching twice daily syntopic Hinode X-ray Telescope (XRT) observations between 2007 and 2012 (`catalog webpage <http://aia.cfa.harvard.edu/sigmoid/>`_).
 Version 2 of the catalog, of which the code is detailed here,
- expands the initial Sigmoid Catalog through 2017.
+expands the initial Sigmoid Catalog through 2017.
 This expansion creates a database of more than 300 sigmoids.
 In addition, we measure new parameters, not in the first iteration of the catalog.
 Here I will detail the code used to analyze sigmoids in version 2 of the Sigmoid Catalog.
