@@ -14,7 +14,7 @@ Sigmoids, aptly named for their S-shaped coronal field lines,
 frequently produce both Coronal Mass Ejections (CMEs) and flares,
 which are drivers of space weather at Earth.
 Space weather may cause everything from aurorae to power black outs,
-so studying Sigmoids is partically important.
+so studying sigmoids are partically important.
 Along with their practical importance, 
 Sigmoids are likely due to theortically proposed flux ropes.
 As such, studying Sigmoids has practical and physical benefits.
@@ -26,23 +26,54 @@ This expansion creates a database of more than 300 sigmoids.
 In addition, we measure new parameters, not in the first iteration of the catalog.
 Here I will detail the code used to analyze Sigmoids in version 2 of the Sigmoid Catalog.
 
+
+******************
+User Documentation
+******************
+
 .. _toplevel-downloading-code:
 Downloading Codes
 -----------------
+
+The codes linked below will download the required files for the Sigmoid Catalog. 
+
 .. toctree::
    :maxdepth:1
    
    downloading_code/get_hmi_files_cutout/index
    downloading_code/get_aia_files_cutout/index
+   downloading_code/get_aia_files/index
 
 
 .. _toplevel-manual-measurement-code:
 Manual Measurement Codes
 ------------------------
 
+The codes linked below measure sigmoid properties with user input.
+
+.. toctree::
+   :maxdepth:1
+  
+   manual_measurement_code/sigmoidsize_adv/index
+   manual_measurement_code/filament_selector/index
+   
+
+
+
 .. _toplevel-automated-measurement-code:
 Automated Measurement/Analysis Codes
 ------------------------------------
+
+The codes linked below measure sigmoid properties without user input.
+
+.. toctree::
+   :maxdepth:1
+
+
+	automated_measurement_code/get_solarmonitor_links_dirty/index.rst
+	automated_measurement_code/make_aia_flare_movies/index.rst
+	automated_measurement_code/make_hmi_movie_cutout/index.rst
+
 
 
 
