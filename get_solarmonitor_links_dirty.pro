@@ -59,6 +59,8 @@ end
 ;    links -- An array of links to the solar monitor website
 ;
 ;
+;EXAMPLE
+;    get_solarmonitor_links_dirty,'2019/01/04','output_dir/',links
 ;
 ;############################################################
 pro get_solarmonitor_links_dirty,date,outdir,links
