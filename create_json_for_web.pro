@@ -330,8 +330,11 @@ for ii=0,max_it do begin
         sun_par = get_sun(tbest[i])
         cont = (0.5/sun_par[1]*6.955E10)^2
         ;Store start to finish flux and the maximum flux value
+        ;remove NaN values 2019/01/08 J. Prchlik
+        tot_ints = tot_ints[where(finite(tot_ints))]
         net_flux = string(1e-21*cont*(tot_ints[n_elements(tot_ints)-1]-tot_ints[0]),format='(F9.2)')
-        peak_flux= string(1e-21*cont*max(tot_ints),format='(F9.2)')
+        ;Added NaN Keyword 2019/01/08 J. Prchlik
+        peak_flux= string(1e-21*cont*max(tot_ints,/NAN),format='(F9.2)')
     endif else begin
         net_flux = '-' 
         peak_flux = '-' 
