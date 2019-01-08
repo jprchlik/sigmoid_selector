@@ -163,6 +163,7 @@ end
 ;
 ;#############################################################
 
+;Running with Rebin = 32 2019/01/08 J. Prchlik
 pro make_hmi_movie_cutout,times,hmi_arch=hmi_arch,out_arch=out_arch,rebinv=rebinv
 ;set plot to Z Window
 set_plot,'Z'
@@ -529,6 +530,28 @@ for ii=0,n_elements(goodt)-1 do begin
            continue
         ENDIF
 
+
+        ;NaN out off limb pixels because they mess up sigma levels 2019/07/08 J. Prchlik
+        ;Confirmed to Fix 2019/01/08 J. Prchlik
+        ;This is because there is Extra 0 sigma data from the edges of the HMI image
+        ;#######################################################################
+        ;NAN out pixels off the limb 2019/01/02 J. Prchlik
+        ;This way the distribution of used for spike correction is similar
+        ;Get image size
+        fimg_size = size(fimg)
+
+        ;fill values outside rsun with median
+        fimg_x = dindgen(fimg_size[1]) #  (intarr((fimg_size[1])) +1)-cent_x
+        fimg_y = dindgen(fimg_size[2]) ## (intarr((fimg_size[2])) +1)-cent_y
+        fimg_x = delt_x*fimg_x
+        fimg_y = delt_y*fimg_y
+        fimg_r = sqrt(fimg_x^2+fimg_y^2)
+        fimg_s =  fimg_r/sol_rad
+
+        fimg(where(fimg_s gt 1.)) = !values.F_NAN ;0.0
+        ;#######################################################################
+
+
         ;get sigma from image
         img_sig = get_sig(fimg)
 
@@ -567,22 +590,6 @@ for ii=0,n_elements(goodt)-1 do begin
         cormag_n(where(fimg lt 0)) =fimg(where(fimg lt 0))
 
 
-        ;#######################################################################
-        ;NAN out pixels off the limb 2019/01/02 J. Prchlik
-        ;This way the distribution of used for spike correction is similar
-        ;Get image size
-        fimg_size = size(fimg)
-
-        ;fill values outside rsun with median
-        fimg_x = dindgen(fimg_size[1]) #  (intarr((fimg_size[1])) +1)-cent_x
-        fimg_y = dindgen(fimg_size[2]) ## (intarr((fimg_size[2])) +1)-cent_y
-        fimg_x = delt_x*fimg_x
-        fimg_y = delt_y*fimg_y
-        fimg_r = sqrt(fimg_x^2+fimg_y^2)
-        fimg_s =  fimg_r/sol_rad
-
-        fimg(where(fimg_s gt 1.)) = !values.F_NAN ;0.0
-        ;#######################################################################
 
         ;create spike pixel masks
         ;Switched back to old way 2018/12/19 J. Prchlik
@@ -627,8 +634,12 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Theta angle for each pixel 2018/11/13 J. Prchlik
         bin_cor_t =  asin(fimg_r/sol_rad)
 
+        ;This must be corrected in Level1 images because you can see a spike in the 
+        ;Magnetic Flux near the Edges 2019/01/08 J. Prchlik
+        ;Cannot Confirm this, so leaving in
         ;correct pixels by cos(theta)^2
         fimg = fimg/cos(bin_cor_t)^2
+
         ;zero out all pixels greater than 50 degrees
         ;Only did for exper. Not in final draft 2018/12/03 J. Prchlik
         ;Re implimented for getting sigma from image
@@ -1025,9 +1036,10 @@ for ii=0,n_elements(goodt)-1 do begin
     outf = str_replace(sig_id,':','')+"_mag.mp4"
     outf = str_replace(outf,'-','')
     spawn, ffmpeg +' '+ call1 + full_dir+'symlinks/%4d.png'+' ' + call2 + full_dir+outf, result, errResult
-    wait,60
-   ;Cancel out image from memory. Leaking like a sieve
-   index = 0
+   ;Remove Wait 2019/01/08 J. Prchlik
+   ; wait,60
+    ;Cancel out image from memory. Leaking like a sieve
+    index = 0
    data  = 0
 
 endfor
