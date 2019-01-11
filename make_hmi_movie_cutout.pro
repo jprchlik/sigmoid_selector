@@ -372,6 +372,19 @@ for ii=0,n_elements(goodt)-1 do begin
     ;if no files found then continue
     if file_cnt eq 0 then continue
   
+
+    ;Change order of files so first file calculated is in the middle
+    ;This way the threshold values are set by an observation "on disk" 2019/01/11 J. Prchlik
+    ;Get half way file
+    match_moveu = fix(n_elements(match_files)/2)
+    ;Get file name of removed file
+    first_filen = match_files[match_moveu]
+    ;Remove that file from array
+    remove,match_moveu,match_files
+    ;Add file back in at the beginning
+    match_files = [first_filen,match_files]
+
+
     ;prep hmi data
     ;hmi_prep,match_files,findgen(n_elements(match_files)),index,odata
     ;mreadfits,match_files, index,data
@@ -697,7 +710,8 @@ for ii=0,n_elements(goodt)-1 do begin
             ;Going to try 5% (roughly 2$\sigma$ if you assume normal dist.) 2019/01/09
             ;thres_val = cgpercentiles(abs(gimg),percentiles=.05);*exp(-(sig_cut)^2/2.)
             ;5% did not work very well 2019/01/09
-            thres_val = cgpercentiles(abs(gimg),percentiles=.01);*exp(-(sig_cut)^2/2.)
+            ;1% was a bit too inclusive trying 2.5% 2019/01/11 J. Prchlik
+            thres_val = cgpercentiles(abs(gimg),percentiles=.001);*exp(-(sig_cut)^2/2.)
             
 
         endif
