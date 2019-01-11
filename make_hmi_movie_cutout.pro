@@ -548,6 +548,7 @@ for ii=0,n_elements(goodt)-1 do begin
         fimg_r = sqrt(fimg_x^2+fimg_y^2)
         fimg_s =  fimg_r/sol_rad
 
+        ;If you use 0.0 you will skew the sigma levels 2019/01/08
         fimg(where(fimg_s gt 1.)) = !values.F_NAN ;0.0
         ;#######################################################################
 
@@ -665,7 +666,8 @@ for ii=0,n_elements(goodt)-1 do begin
         ;gimg = gauss_smooth(abs(simg),20*8./rebinv,/edge_trunc,/NAN,kernel=img_kernel)
         ;2D Gaussian function describing the image kernel
         ;Switched to zeroing out edges 2018/12/18 J. Prchlik (it is faster than using gauss_smooth, 2 images per minute compared to 3.5-4)
-        img_kernel = GAUSSIAN_FUNCTION([1,1]*20*8./rebinv)
+        ker_val = 20*8./rebinv
+        img_kernel = GAUSSIAN_FUNCTION([1,1]*ker_val)
         gimg = CONVOL(abs(simg),img_kernel,total(img_kernel),/edge_trunc,/NAN);,INVALID=255,MISSING=0)
         ;Find the boundaries in the smoothed image
         rad_1 = 1.
@@ -682,13 +684,22 @@ for ii=0,n_elements(goodt)-1 do begin
         if set_threshold then begin
             ;2sigma drop threshold assuming rad_2 is an approximation for sigma
             ;Switch to 5 sigma 2018/12/07 J. Prchlik
-            sig_cut = 3.0
-            thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(sig_cut)^2/2.)
+            ;sig_cut = 3.0
+            ;thres_val = cgpercentiles(abs(gimg),percentiles=.95)*exp(-(sig_cut)^2/2.)
+            ;Use a bottom up approach rather than top down 2019/01/08 J. Prchlik
+            ;Use computed image sigma multiply that value by the summation of pixels
+            ;which gives you the sigma floor value after binnning.
+            ;Then multiply the value by the integral of Gaussian Kernel, which we used
+            ;to smooth the image 2019/01/09 J. Prchlik (remember img_sig is 2*sigma,
+            ; so a 3 sigma detection)
+            ;thres_cal  = (3./2.)*img_sig*rebinv^2*sqrt(2.*!PI)*ker_val
+            ;Tried 1% on 2019/01/08 (also rebin 32). It works okay, but occassionally got too much,
+            ;Going to try 5% (roughly 2$\sigma$ if you assume normal dist.) 2019/01/09
+            ;thres_val = cgpercentiles(abs(gimg),percentiles=.05);*exp(-(sig_cut)^2/2.)
+            ;5% did not work very well 2019/01/09
+            thres_val = cgpercentiles(abs(gimg),percentiles=.01);*exp(-(sig_cut)^2/2.)
+            
 
-
-            ;Use image sigma 2018/12/19 J. Prchlik
-            ;get sigma from image
-            ;thres_val = abs(get_sig(gimg))
         endif
 
 
@@ -933,6 +944,9 @@ for ii=0,n_elements(goodt)-1 do begin
         TVLCT,r,g,b,/Get
         write_png,full_dir+png_output,tvrd(/true),r,g,b,xresolution=600,yresolution=600
 
+        ;Change off limb NAN values to 0.0 for summation 2019/01/08
+        fimg(where(fimg eq  !values.f_nan)) = 0.0
+
         ;create mask for image based on edge detection
         ;Switched to img_size because if you can't beat em join em
         ;Switched to fimg since fimg and simg/gimg have the same FoV
@@ -1042,6 +1056,7 @@ for ii=0,n_elements(goodt)-1 do begin
     index = 0
    data  = 0
 
+   ;stop
 endfor
 
 end
