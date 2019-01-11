@@ -77,6 +77,12 @@ if keyword_set(obs_time) then begin
 
     ;get anytime format of dates
     time = anytim(obs_time)
+
+
+    ;Sort by time because the are no longer calculated in order
+    ;since started using the middle image for the floor value
+    ;on 2019/01/11 J. Prchlik
+    ;Actually Sort in the save rather than here
     
     
     ;Get the filename part of the plot only

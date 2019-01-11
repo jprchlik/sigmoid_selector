@@ -705,14 +705,61 @@ for ii=0,n_elements(goodt)-1 do begin
             ;Then multiply the value by the integral of Gaussian Kernel, which we used
             ;to smooth the image 2019/01/09 J. Prchlik (remember img_sig is 2*sigma,
             ; so a 3 sigma detection)
-            ;thres_cal  = (3./2.)*img_sig*rebinv^2*sqrt(2.*!PI)*ker_val
+            ;Trying 5 sigma on 2019/01/11
+            ;thres_val  = (3./2.)*img_sig*rebinv^2*sqrt(2.*!PI)*ker_val
+            ;;gimg_sig = get_sig(gimg)
+            ;;;Set threshold value to 1 sigma above the floor
+            ;;thres_val = img_sig+min(gimg,/nan)
             ;Tried 1% on 2019/01/08 (also rebin 32). It works okay, but occassionally got too much,
             ;Going to try 5% (roughly 2$\sigma$ if you assume normal dist.) 2019/01/09
             ;thres_val = cgpercentiles(abs(gimg),percentiles=.05);*exp(-(sig_cut)^2/2.)
             ;5% did not work very well 2019/01/09
             ;1% was a bit too inclusive trying 2.5% 2019/01/11 J. Prchlik
-            thres_val = cgpercentiles(abs(gimg),percentiles=.001);*exp(-(sig_cut)^2/2.)
+            ;thres_val = cgpercentiles(abs(gimg),percentiles=.001);*exp(-(sig_cut)^2/2.)
+            ;Use smallest contour level to set min 2019/01/11 J. Prchlik 
+            ;DOES NOT WORK and is unpredictable 2019/01/11 J. Prchlik
+            ;contour,gimg,path_info=test_info,closed=0,nlevels=100
+            ;thres_val = min(test_info.value)
+           
+            ;Get values of inner pixels to find sigma value for threshold
+            size_gimg = size(gimg)
+ 
+            ;Use FFT filter to remove lower level of data 2019/01/11
+            fft_gimg = fft(gimg, /center)
+
+            ;Compute the power spectrum of the transform and
+            ;apply a log scale.
+            pS_gimg = abs(fft_gimg)^2
+            lpS_gimg = alog10(pS_gimg)
+
+            ;Set the log power scale maximum to 0
+            PS0_gimg = lpS_gimg - min(lps_gimg)
+
+            ;Set "noise" threshold
+            mask = real_part(PS0_gimg) gt -8
+
             
+
+            ; Apply the mask to the transform to exclude the noise.
+            mask_fft_gimg = fft_gimg*mask
+
+            ;invert the transform
+            denoised_gimg = real_part(fft(mask_fft_gimg,/inverse,/center))
+
+
+            ;Set the threshold value to the "noise" floor
+            thres_val = min(denoised_gimg,/nan)
+ 
+            ;set min and maximum values of an inner square
+            ;Recall the input image will be a square
+            ;min_pix = size_gimg[1]/4
+            ;max_pix = (size_gimg[1]*3)/4
+
+            ;;Get sigma of inner half of the image and use for the threshold value
+            ;thres_val = get_sig(gimg[min_pix:max_pix,min_pix:max_pix])
+            
+            
+            print,thres_val
 
         endif
 
@@ -974,7 +1021,7 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
         ;Save variables
-        obs_loca = [obs_loca,[rot_p[0],rot_p[1]]]
+        obs_loca = [[obs_loca],[rot_p[0],rot_p[1]]]
         obs_time = [obs_time,fmt_dat] ; observation time
         obs_qual = [obs_qual,sxpar(hdr,'quality')] ; observation time
         tot_ints = [tot_ints,tot_intensity] ; Total magnetic field intensity
@@ -1007,6 +1054,28 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
     endfor
+
+
+    ;Do not save any information if no objects are found 2019/01/11 J. Prchlik
+    if obs_time eq !NULL then continue
+
+    ;Resort so middle file is back in sequence
+    ; 2019/01/11 J. Prchlik
+    real_time = anytim(obs_time)
+    sort_time = sort(real_time)
+
+    ;resort all variables as a function of time
+    obs_time = obs_time[sort_time]
+    obs_loca = obs_loca[*,sort_time]
+    obs_qual = obs_qual[sort_time]
+    tot_ints = tot_ints[sort_time]
+    pos_ints = pos_ints[sort_time]
+    neg_ints = neg_ints[sort_time]
+    pix_area = pix_area[sort_time]
+    tot_area = tot_area[sort_time]
+    roi_save = roi_save[sort_time]
+    phy_save = phy_save[sort_time]
+    pol_lens = pol_lens[sort_time]    
 
 
     ;Save output sav file
