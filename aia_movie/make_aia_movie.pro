@@ -152,7 +152,7 @@ set_plot,'Z'
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
 formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
 readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
-       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+       length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve
 ;Set archive directory for download aia files
 if keyword_set(aia_arch) then aia_arch = aia_arch else aia_arch = '../aia_arch/symlinks/'
 aia_arch = aia_arch+'/'
@@ -260,8 +260,19 @@ for p=0,n_elements(goodt)-1 do begin
     ;Use IAU ide ane move file name to new id add 2018/08/23 J. Prchlik
     sig_str_id = get_iau_format(gi,xi,yi,t1,lat=lat,lon=lon)
 
-    ;Do not recreate movie if already processed
-    if file_test(sig_str_id+'.mp4') then continue
+
+    ;Get 3 character sigmoid ID
+    sig_id_str = string(sig_id,format='(I03)')
+
+    ;Do not recreate movie if already processed in old format 2019/02/07 J. Prchlik
+    if file_test(sig_str_id+'.mp4') then begin
+        file_move,sig_str_id+'.mp4',sig_id_str+'.mp4'
+        continue
+    endif
+
+    ;Skip file if new file format using sigmoid id already created 2019/02/07 J. Prchlik
+    if file_test(sig_id_str+'.mp4') then continue
+
   
     ;Convert to anytimes
     at1 = anytim(t1)
@@ -433,8 +444,8 @@ for p=0,n_elements(goodt)-1 do begin
                 ;dir_out=out_arch+string([sig_id],format='("/",I03,"/")')
 
     ;Only move movie if made
-    if file_test(outname) then file_move,outname,sig_str_id+'.mp4' $
-        else print,sig_str_id+' not created'
+    if file_test(outname) then file_move,outname,sig_id_str+'.mp4' $
+        else print,sig_id_str+' not created'
   
 endfor
 end
