@@ -171,6 +171,9 @@ for ii=0,n_elements(goodt)-1 do begin
     ;Get sigmiod catalog ID  2018/12/03 J. Prchlik
     sig_cid= strcompress(ID[i],/remove_all)
 
+    ;Get sigmoid catalog ID in I03 format 2019/02/07 J. Prchlik
+    sig_fid = string(ID[i],format='(I03)')
+
     ;Directory to put the symoblic link
     ;Now using sigmoid IDs 2018/12/03
     full_dir = out_arch+string([sig_cid]);,format=out_fmt)
@@ -252,11 +255,13 @@ for ii=0,n_elements(goodt)-1 do begin
     ;
     ;###############################################################################
     ;Create link related to sigmoid long mp4 file
-    aia_file = file_search(aia_arch+sig_id+'.mp4',/fully)
-    if ((not file_test(aia_dir+sig_id+'.mp4')) and (n_elements(size(aia_file)) gt 3)) then begin
+    ;Updated with I03 formatted sigmoid ID string 2019/02/07 J. Prchlik
+    aia_file = file_search(aia_arch+sig_fid+'.mp4',/fully)
+    if ((not file_test(aia_dir+sig_fid+'.mp4')) and (n_elements(size(aia_file)) gt 3)) then begin
         ;Switch to file_copy as opposed to symbolic link 2018/12/17 J. Prchlik
+        ;Updated with I03 formatted sigmoid ID string 2019/02/07 J. Prchlik
         ;file_link,aia_file[0],aia_dir+sig_id+'.mp4'
-        file_copy,aia_file[0],aia_dir+sig_id+'.mp4'
+        file_copy,aia_file[0],aia_dir+sig_fid+'.mp4'
     endif
      
 
