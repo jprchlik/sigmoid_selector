@@ -149,6 +149,9 @@ for ii=0,max_it do begin
     ;Used sigmoid ID because now they are unique and updated as such in create_combined_movies 2018/12/03 J. Prchlik
     sig_cid = strcompress(ID[i],/remove_all)
 
+    ;Get sigmoid catalog ID in I03 format 2019/02/07 J. Prchlik
+    sig_fid = string(ID[i],format='(I03)')
+
     ;Directory to put the symoblic link
     ;Moved to sigmoid ID 2018/12/03 J. Prhlik
     full_dir = out_arch+string([sig_cid]);,format=out_fmt)
@@ -190,7 +193,9 @@ for ii=0,max_it do begin
     ;
     ;###############################################################################
     ;Create text for link related to sigmoid long mp4 file
-    aia_mov = aia_dir+sig_id+'.mp4'
+    ;aia_mov = aia_dir+sig_id+'.mp4'
+    ;Updated to just sigmoid id of AIA movie 2019/02/08 J. Prchlik
+    aia_mov = aia_dir+sig_fid+'.mp4'
 
      
 
