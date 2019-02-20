@@ -242,7 +242,7 @@ sigloc = sigloc+'/'
 ;Output directory
 if keyword_set(odir) then odir = odir else odir = sigloc
 ;Text file with sigmoid catalog
-if keyword_set(sigcat) then sigcat = sigcat else sigcat = 'SigmoidCatalogAll.csv' 
+if keyword_set(sigcat) then sigcat = sigcat else sigcat = 'SigmoidCatalogAll_filament.csv' 
 
 ;directory location in the hinode archive
 xrt_arch = '/archive/hinode/xrt/level1/'
