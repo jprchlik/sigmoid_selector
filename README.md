@@ -248,7 +248,9 @@ Next, I create a Gaussian smoothed absolute image from an 8x8 pixel binned image
 On that smoothed image I use the IDL procedure edge_dog (Difference of Gaussians) with a radius of 1. and 700./(2\*rebinv)-1
 , where the 700 comes from the pixel width of the image as long as the sigmoid long axis length is less than 350 pixels.
 If the long axis lengths is greater than 100 pixels, the widow length is twice the measure sigmoid length plus 250 pixels.
-To set the threshold value for the DoG technique we take 2.5 sigma less than the 95th percentile of the smoothed image.
+The best way I found to set the threshold value was manually unfortunately.
+For this there is the program make_hmi_movie_cutout_man_thres.pro, which will allow you to set the threshold value at the center of the observations dynamically. 
+After you run that program, come back and run make_hmi_movie_cut with the /man_thres flag set.
 From the edges of the edge_dog procedure I create an ROI object of whatever region is nearest to the sigmoids position at Tobs accounting for rotation.
 That ROI objects is then used to measure the unsigned magnetic flux, positive magnetic flux, negative magnetic flux, and magnetic area under the sigmoid in the prepped image.
 
@@ -256,6 +258,13 @@ Once the analysis finishes, the program writes a save file of the form:
 save,sig_id,out_id,obs_time,obs_qual,tot_ints,pos_ints,neg_ints,pix_area,tot_area,roi_save,phy_save,filename=full_dir+'/'+str_replace(sig_id,':','')+'.sav'    
 and creates a movie with the ROI overplotted.
 Both the filenames and the output sigmoid have the unique sigmoid ID numbers.
+
+
+
+make_hmi_movie_cutout_man_thres.pro
+===============
+This allows you to manaully set the threshold value you want to send to the make_hmi_movie_cut. 
+As far as I can tell, the most accurate way to get mangetical field information about the sigmoids is to manually set the threshold value using this program.
 
 
 get_hmi_files.pro (OLD, MOVED TO CUTOUT files)
