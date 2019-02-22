@@ -91,6 +91,8 @@ out_arch = out_arch+'/'
 
 ;good sigmoid tbest times (i.e. contains time string)
 goodt = where(strlen(tobs) eq 23)
+;Get all sigmoids not just ones with AIA observations 2019/02/22 J. Prchlik
+goodt = dindgen(n_elements(tobs))
 
 ;format for output symbolic link directory
 out_fmt = '(A30,"/")'
