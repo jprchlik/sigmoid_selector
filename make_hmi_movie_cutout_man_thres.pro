@@ -217,13 +217,18 @@ rot_mat = [[-1.,0.],[0.,-1.]]
 store_thres = fltarr(n_elements(tobs))-9999.9
 
 ;Name for output save file with the manual threshold values
-thres_file = 'manual_edge_dog_threshold.sav'
+;thres_file = 'manual_edge_dog_threshold.sav'
+;Try using a text file instead 2019/02/26 J. Prchlik
+thres_file = 'manual_edge_dog_threshold.txt'
 
 ;restore previous manual thresholds if applicable
 if file_test(thres_file) then begin
     ;Manually threshold allow for updating 2019/02/21 J. Prchlik
-    restore,thres_file
+    ;restore,thres_file
+    readcol,thres_file,ID,store_thres,format='A,F'
 endif
+
+
 
 ;Initalize window as an X window
 set_plot,'X'
@@ -682,7 +687,9 @@ for ii=0,n_elements(goodt)-1 do begin
     store_thres[i] = thres_val
 
     ;Manually threshold 2019/02/21 J. Prchlik
-    save,ID,store_thres,rebinv,filename=thres_file
+    ;save,ID,store_thres,rebinv,filename=thres_file
+    ;Try using text file instead of save file for easier editing
+    writecol,'manual_edge_dog_threshold.txt',ID,store_thres
 
 
 endfor
