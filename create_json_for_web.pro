@@ -1,5 +1,173 @@
 ;###########################################################################
-;PROGRAM
+;FUNCTION
+;
+;CALL
+;    flares = look_up_flares(ar_num)
+;
+;INPUT
+;    ar_num - The NOAA Active Region number
+;
+;OUTPUT
+;    flares - A string list of flares associated with that Active Region
+;
+;###########################################################################
+function look_up_flares,ar_num
+
+case ar_num of
+    10944: flares = ['B2.5 03/02 05:29']
+    10949: flares = ['B1.0 03/28 19:28','B2.2 03/31 01:43']
+
+
+    10956: flares = ['B2.0 05/14 07:47', $
+                    'B4.2 05/15 04:35', $
+                    'B1.1 05/15 05:14', $
+                    'C1.0 05/15 15:37', $
+                    'B1.7 05/15 17:05', $
+                    'B3.2 05/15 18:09', $
+                    'B2.7 05/15 19:07', $
+                    'B2.0 05/15 23:15', $
+                    'B1.0 05/16 01:13', $
+                    'B2.0 05/16 01:53', $
+                    'B2.6 05/16 02:22', $
+                    'B1.9 05/16 06:01', $
+                    'B1.8 05/16 12:22', $
+                    'B1.8 05/16 13:05', $
+                    'C2.9 05/16 17:41', $
+                    'B1.7 05/16 19:04', $
+                    'B2.3 05/17 03:10', $
+                    'B5.5 05/17 12:56', $
+                    'B1.4 05/17 13:47', $
+                    'B1.0 05/17 14:45', $
+                    'B1.8 05/17 18:05', $
+                    'B9.5 05/19 13:02', $
+                    'B6.7 05/20 05:56', $
+                    'B2.7 05/22 23:25']
+    10958: flares = ['B1.6 05/31 10:22']
+    10964: flares = ['B2.9 07/16 01:01']
+    10977: flares = ['B7.0 12/02 20:05', $
+                     'B1.1 12/05 04:15', $
+                     'B1.4 12/07 04:41']
+    10987: flares = ['B5.1 03/24 02:44', $
+                     'B4.8 03/27 16:36']
+    11007: flares = ['B7.2 11/02 15:05', $
+                     'B5.7 11/02 20:15', $
+                     'B2.4 11/03 22:56', $
+                     'C1.0 11/04 03:30']
+    11040: flares = ['B1.3 01/07 21:28', $
+                     'B1.4 01/08 17:46', $
+                     'B1.1 01/09 06:10', $
+                     'B2.1 01/09 07:52', $
+                     'B1.5 01/09 08:48', $
+                     'B3.6 01/09 11:14', $
+                     'C1.0 01/09 15:03', $
+                     'B6.1 01/09 22:58', $
+                     'B2.5 01/10 00:35', $
+                     'B4.4 01/10 02:50', $
+                     'B3.7 01/10 11:57', $
+                     'B6.1 01/11 12:01', $
+                     'C1.1 01/12 13:20', $
+                     'B3.0 01/14 01:21', $
+                     'B1.8 01/14 03:39', $
+                     'B2.2 01/14 04:36', $
+                     'B8.1 01/14 21:39', $
+                     'C1.3 01/15 08:41', $
+                     'B3.9 01/16 12:40', $
+                     'B1.9 01/16 17:23', $
+                     'B3.5 01/16 18:30', $
+                     'B1.5 01/16 20:57']
+    11045: flares = ['B9.0 02/06 14:36', $
+                     'C3.4 02/06 15:39', $
+                     'M2.9 02/06 18:59', $
+                     'M1.3 02/06 21:37', $
+                     'C2.2 02/06 22:31', $
+                     'C2.7 02/06 22:59', $
+                     'M6.4 02/07 02:34', $
+                     'C1.1 02/07 03:29', $
+                     'C9.9 02/07 04:52', $
+                     'B6.3 02/07 06:48', $
+                     'B7.4 02/07 08:01', $
+                     'B8.3 02/07 18:36', $
+                     'C4.2 02/07 21:15', $
+                     'C4.2 02/07 21:39', $
+                     'C1.0 02/07 22:31', $
+                     'C1.4 02/08 00:16', $
+                     'B5.8 02/08 01:14', $
+                     'B7.0 02/08 01:29', $
+                     'B7.4 02/08 02:37', $
+                     'B8.3 02/08 02:52', $
+                     'C6.2 02/08 03:17', $
+                     'C2.4 02/08 03:58', $
+                     'C7.7 02/08 04:15', $
+                     'C8.6 02/08 05:23', $
+                     'C6.8 02/08 06:06', $
+                     'C1.9 02/08 07:03', $
+                     'M4.0 02/08 07:43', $
+                     'C1.9 02/08 08:07', $
+                     'C2.8 02/08 09:58', $
+                     'C1.8 02/08 11:14', $
+                     'M1.1 02/08 12:03', $
+                     'M2.0 02/08 13:47', $
+                     'C1.2 02/08 15:03', $
+                     'C1.3 02/08 15:36', $
+                     'C3.8 02/08 15:52', $
+                     'C1.3 02/08 17:07', $
+                     'B7.0 02/08 17:26', $
+                     'B7.7 02/08 17:49', $
+                     'C1.3 02/08 18:08', $
+                     'B7.8 02/08 18:25', $
+                     'C2.4 02/08 19:10', $
+                     'C1.7 02/08 19:38', $
+                     'B8.6 02/08 20:06', $
+                     'M1.0 02/08 21:23', $
+                     'C2.2 02/08 21:58', $
+                     'B8.4 02/08 22:39', $
+                     'B6.1 02/09 00:29', $
+                     'C2.7 02/09 01:25', $
+                     'C2.4 02/09 04:17', $
+                     'B6.5 02/09 08:49', $
+                     'B8.6 02/10 06:14', $
+                     'B4.8 02/10 07:09', $
+                     'C1.2 02/10 15:06', $
+                     'C3.7 02/10 15:14', $
+                     'B3.5 02/11 01:51', $
+                     'M1.1 02/12 18:08']
+    11051: flares = ['B1.6 02/27 19:29', $
+                     'B1.1 02/27 22:24']
+    
+    11057: flares = ['B7.3 03/25 04:33', $
+                     'B3.2 03/25 11:06', $
+                     'B3.6 03/25 14:13', $
+                     'B6.0 03/25 14:37', $
+                     'B4.5 03/25 15:04', $
+                     'B1.7 03/25 22:44', $
+                     'B3.0 03/26 02:23', $
+                     'C2.5 03/26 21:16', $
+                     'C1.2 03/27 05:15', $
+                     'C2.0 03/27 07:57', $
+                     'C1.5 03/27 10:14', $
+                     'B3.1 03/27 12:21', $
+                     'C3.8 03/27 18:29', $
+                     'B3.8 03/28 03:34', $
+                     'B3.3 03/28 09:37', $
+                     'B1.7 04/03 00:02']
+ 
+    11059: flares = ['B7.4 04/03 09:54']
+ 
+    11066: flares = ['B1.0 05/03 21:53', $
+                     'B4.0 05/05 16:18']
+
+    else: flares = ['']
+endcase
+
+
+return,flares
+end
+
+
+;###########################################################################
+
+;###########################################################################
+;FUNCTION
 ;
 ;CALL
 ;    sig_id = get_iau_format(tobs,x,y,sig_start,lat=lat,lon=lon)
@@ -210,13 +378,6 @@ for ii=0,max_it do begin
 
     ;Create directory for output png files
     ;full_flr = flr_arch+strcompress(ID[i],/remove_all)+'/'
-
-    ;get all flare movies
-    flare_files = file_search(flr_dir+'*mp4',/full,count=flare_cnt)
-
-    ;flare link
-    ;if n_elements(size(flare_files)) lt 4 then continue
-
     ;Get counters for flares
     b_cnt = 0
     c_cnt = 0
@@ -228,46 +389,81 @@ for ii=0,max_it do begin
 
     ;initial flare text
     mat_flr   = '<b>Flares from this region: </b></A>'
-    ;Create text for flare links
-    if flare_cnt gt 0 then begin
-        ;get array of times and classes for sending to create_flux_plot 2018/09/25 J. Prchlik
-        flare_times = strarr(n_elements(flare_files))
-        flare_class = strarr(n_elements(flare_files))
+
+    ;Only do this for sigmoids after AIA observations starts otherwise get from historical sigmoid catalog
+    if ID[i] gt 29 then begin
+
+        ;get all flare movies
+        flare_files = file_search(flr_dir+'*mp4',/full,count=flare_cnt)
+
+        ;flare link
+        ;if n_elements(size(flare_files)) lt 4 then continue
+
+        ;Create text for flare links
+        if flare_cnt gt 0 then begin
+            ;get array of times and classes for sending to create_flux_plot 2018/09/25 J. Prchlik
+            flare_times = strarr(n_elements(flare_files))
+            flare_class = strarr(n_elements(flare_files))
   
-        for j=0,n_elements(flare_files)-1 do begin
-           ;File name
-           file_name = strsplit(flare_files[j],'/',/extract)
-           file_name = file_name[n_elements(file_name)-1]
-           year  = strmid(file_name,34,4)
-           month = strmid(file_name,38,2)
-           day   = strmid(file_name,40,2)
-           hour  = strmid(file_name,43,2)
-           min   = strmid(file_name,45,2)
-           class = strmid(file_name,50,2)
-           sclass= strmid(file_name,53,1)
+            for j=0,n_elements(flare_files)-1 do begin
+               ;File name
+               file_name = strsplit(flare_files[j],'/',/extract)
+               file_name = file_name[n_elements(file_name)-1]
+               year  = strmid(file_name,34,4)
+               month = strmid(file_name,38,2)
+               day   = strmid(file_name,40,2)
+               hour  = strmid(file_name,43,2)
+               min   = strmid(file_name,45,2)
+               class = strmid(file_name,50,2)
+               sclass= strmid(file_name,53,1)
 
-           ;Create line with flare class and time
-           ;Switch to relative path 2018/12/21 J. Prchlik
-           ;add_flare = '<br><A HREF=\"'+flare_files[j]+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
-           add_flare = '<br><A HREF=\"../combined_movies/'+sig_cid+'/flr_movie/'+file_name+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
+               ;Create line with flare class and time
+               ;Switch to relative path 2018/12/21 J. Prchlik
+               ;add_flare = '<br><A HREF=\"'+flare_files[j]+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
+               add_flare = '<br><A HREF=\"../combined_movies/'+sig_cid+'/flr_movie/'+file_name+'\">'+class+'.'+sclass+' '+month+'/'+day+' '+hour+':'+min+'</A>'
 
-           ;add to matched flare text
-           mat_flr = mat_flr+add_flare
+               ;add to matched flare text
+               mat_flr = mat_flr+add_flare
 
-           ;Add flare times and class to variables
-           flare_times[j] = year+'/'+month+'/'+day+' '+hour+':'+min+':00'
-           flare_class[j] = class+'.'+sclass
+               ;Add flare times and class to variables
+               flare_times[j] = year+'/'+month+'/'+day+' '+hour+':'+min+':00'
+               flare_class[j] = class+'.'+sclass
   
-         ;Add one to counter if a flare class is found
-         case strmid(class,0,1) of 
-             'B': b_cnt += 1
-             'C': c_cnt += 1
-             'M': m_cnt += 1
-             'X': x_cnt += 1
-         endcase
+             ;Add one to counter if a flare class is found
+             case strmid(class,0,1) of 
+                 'B': b_cnt += 1
+                 'C': c_cnt += 1
+                 'M': m_cnt += 1
+                 'X': x_cnt += 1
+             endcase
+
+            endfor
+         endif
+    endif else begin
+        ;Look up flares in table if before AIA using AR number
+        leg_flares = look_up_flares(fix(NOAA[i]))
+        ;Loop through all Legacy flares
+        for j=0,n_elements(leg_flares)-1 do begin
+
+             ;Skip empty flares
+             if leg_flares[j] eq '' then continue
+             ;Add flare to list 
+             add_flare = '<br><A\">'+leg_flares[j]+'</A>'
+             ;add to matched flare text
+             mat_flr = mat_flr+add_flare
+
+             ;Add one to counter if a flare class is found
+             case strmid(leg_flares[j],0,1) of 
+                 'B': b_cnt += 1
+                 'C': c_cnt += 1
+                 'M': m_cnt += 1
+                 'X': x_cnt += 1
+             endcase
 
         endfor
-     endif
+
+
+    endelse
     ;add table break
     mat_flr = mat_flr+'</div>'
 
