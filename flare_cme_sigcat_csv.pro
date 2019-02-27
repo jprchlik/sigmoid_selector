@@ -81,10 +81,6 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
             fl_cl = her.fl.FL_GOESCLS
 
 
-            ;Moved inside flare loop only 2018/03/29 J. Prchlik
-            ;Rotation array
-            rot_p = fltarr([2,n_elements(fl_x)])
-
 
             ;Rotate position to obs time
             for j=0, n_elements(fl_x)-1 do begin
@@ -122,34 +118,12 @@ function get_sigmoid_flares,obs_tim_s,obs_tim_e,obs_time_c,xbox,ybox,cx,cy,arnum
                 fl_x[j] = round(float(hpc_x)) 
                 fl_y[j] = round(float(hpc_y)) 
 
-                ;rotate to observed central sigmoid time
-                rot_p[*,j] = rot_xy(hpc_x, hpc_y, tstart=fl_tp[j], tend=obs_time_c)
             endfor
 
        
-            ;Store x,y in separate array
-            rot_x = rot_p[0,*]
-            rot_y = rot_p[1,*]
- 
-            ;get flares inside box after rotation
-            ;Compute x and y limit functions
-            lims = comp_limits(xbox,ybox)
             
-            ;Create array of 1 and 0 for box
-            ;change to using ROI J. Prchlik 2018/07/11
-            ;xmin = rot_x ge lims[1]*rot_y+lims[0]
-            ;xmax = rot_x le lims[3]*rot_y+lims[2]
-            ;ymin = rot_y le lims[5]*rot_x+lims[4]
-            ;ymax = rot_y ge lims[7]*rot_x+lims[6]
-
-            ;compute sigmoid roi box in physical coordinates
-            roi_phy = OBJ_NEW('IDLanROI',xbox,ybox)
-
-            ;check if flare point is in ROI object
-            pnt_chk = roi_phy -> containsPoints(rot_x,rot_y)
-
             ;Add NOAA number deg along with inside ROI box
-            vbox = where((pnt_chk and (fix(her.fl.ar_noaanum) eq 0)) or (fix(her.fl.ar_noaanum) eq fix(arnum)),cnt)
+            vbox = where((fix(her.fl.ar_noaanum) eq fix(arnum)),cnt)
 
             
             ;Get the flares inside the sigmoid box
@@ -212,7 +186,7 @@ end
 ;####################################################################
 ;
 ;NAME:
-;    flare_cme_sigcat
+;    flare_cme_sigcat_csv
 ;
 ;PURPOSE:
 ;    Program to determine CME and flare in the same time and space range 
@@ -232,7 +206,7 @@ end
 ;
 ;
 ;####################################################################
-pro flare_cme_sigcat,sigcat=sigcat
+pro flare_cme_sigcat_csv,sigcat=sigcat
 
 
 ;Text file with sigmoid catalog
@@ -256,8 +230,8 @@ for i=0,n_elements(noaa)-1 do begin
     sig_id = real_sig_id[i]
 
     ;leave if sig id is a long string (i.e. file skipped)
-    type_sig = strlen(sig_id)
-    if type_sig ge 4 then continue
+    ;type_sig = strlen(sig_id)
+    ;if type_sig ge 4 then continue
    
     ;find where sigmoid ids match the input value
     ;this_sig = sigmoids.sig_id eq sig_id
@@ -269,7 +243,7 @@ for i=0,n_elements(noaa)-1 do begin
 
 
     ;Comment out if LOCKHEED MARTIN is down for the day
-    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,sigmoids[cntr_idx].NOAA_ID,$
+    outvals = get_sigmoid_flares(min_date,max_date,cnt_date,xvals,yvals,cnt_x,cnt_y,noaa[i],$
                                  ffl_x,ffl_y,ffl_ts,ffl_te,ffl_tp,ffl_mx,ffl_cl)
 
 
@@ -291,10 +265,6 @@ for i=0,n_elements(noaa)-1 do begin
     cmevl_v = strarr(100) ;CME Velocity
 
 
-    ;Match Sigmiod in save file with sigmiod in text file
-    test_ar = where(this_sig)
-    best_ind = where(fix(noaa) eq fix(sigmoids[test_ar[0]].NOAA_ID), count_match)
-
     ;Create fixed width arrays containing flare info
     for m=0,n_elements(ffl_x)-1 do begin
         flare_x[m] = ffl_x[m]
@@ -308,9 +278,9 @@ for i=0,n_elements(noaa)-1 do begin
 
      ;Create single row in structure
      tmp = {test_sig_b,$
-         sigmoid_id:fix(real_sig_id[best_ind[0]]),$ ;Use index in sav file to call real ID in csv file input to make save file
-         sigmd_s:SIG_START[best_ind[0]],$ ;Use index in sav file to call sigmiod start time in csv file input to make save file
-         sigmd_e:SIG_END[best_ind[0]],$ ;Use index in sav file to call sigmoid end time in csv file input to make save file
+         sigmoid_id:fix(real_sig_id[i]),$ ;Use index in sav file to call real ID in csv file input to make save file
+         sigmd_s:SIG_START[i],$ ;Use index in sav file to call sigmiod start time in csv file input to make save file
+         sigmd_e:SIG_END[i],$ ;Use index in sav file to call sigmoid end time in csv file input to make save file
          cross_m:cross_m,$; Time flare crossed the meridian 
          flare_x:flare_x,$;FLARE X POSITION
          flare_y:flare_y,$;FLARE Y POSITION
