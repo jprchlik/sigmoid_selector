@@ -145,7 +145,7 @@ end
 ;    Program, movie creation
 ;
 ;USAGE
-;    make_hmi_movie,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=8
+;    make_hmi_movie_cutout,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=16,man_thres=man_thres
 ;
 ;INPUTS
 ;    times      -   A csv file containing times to analyze sigmoid filaments
@@ -157,6 +157,8 @@ end
 ;    cad        -   Cadence to get HMI files in seconds (Default = 30.*60)
 ;    out_arch   -   Where to put the output movies and save files (Default = 'hmi_movie_cutout/')
 ;    rebinv     -   Rebinning pixel value for median smoothing computationally effciently (Default = 8)
+;    man_thres  -   A keyword to use the manually selected threshold value over the one currently selected by fft
+;    
 ;
 ;OUTPUTS
 ;    HMI movie and sav files in hmi_arc
@@ -164,7 +166,7 @@ end
 ;#############################################################
 
 ;Running with Rebin = 32 2019/01/08 J. Prchlik
-pro make_hmi_movie_cutout,times,hmi_arch=hmi_arch,out_arch=out_arch,rebinv=rebinv
+pro make_hmi_movie_cutout,times,hmi_arch=hmi_arch,out_arch=out_arch,rebinv=rebinv,man_thres=man_thres
 ;set plot to Z Window
 set_plot,'Z'
 
@@ -174,7 +176,7 @@ loadct,0
 ;readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A'
 ;Updates with Patty's new output format 2018/06/13 J. Prchlik
 formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
-readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+readcol,times,dum,ID_read,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
        length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats,/preserve_null
 ;Set archive directory for download aia files
 if keyword_set(hmi_arch) then hmi_arch = hmi_arch else hmi_arch = 'hmi_arch_cutout/'
@@ -184,8 +186,27 @@ hmi_arch = hmi_arch+'/'
 if keyword_set(out_arch) then out_arch = out_arch else out_arch = 'hmi_movie_cutout/'
 out_arch = out_arch+'/'
 
-if keyword_set(rebinv) then rebinv = rebinv else rebinv = 8
+if keyword_set(rebinv) then rebinv = rebinv else rebinv = 16
 
+
+if keyword_set(man_thres) then begin
+    ;Name for output save file with the manual threshold values
+    ;thres_file = 'manual_edge_dog_threshold.sav'
+    ;Switch to text file 2019/02/26 J. Prchlik
+    thres_file = 'manual_edge_dog_threshold.txt'
+    ;Also updates the rebin value to the value used in make_him_movie_cutout_man_thres
+    ;Restores variables ID and store_thres
+    ;restore,thres_file
+    ;Switch to text file 2019/02/26 J. Prchlik
+    readcol,thres_file,thres_id,store_thres,format='A,F'
+    ;rename ID to thres_id to avoid any confusion
+    ;thres_id = ID
+ 
+;Set man_thres to 0 if keyword is not set
+endif else man_thres = 0
+
+;Fix ID variable name to standard ID had to work around in case man_thres is set 2019/02/21 J. Prchlik
+ID = ID_read
 
 ;Solar radius in cm
 phy_rad = 6.957E10 ;cm
@@ -431,8 +452,20 @@ for ii=0,n_elements(goodt)-1 do begin
     pol_lens = [] ; Stored length of the polarity inversion line 2018/12/07 J. Prchlik
 
 
-    ;Set Threshold  2018/12/20 Use to set a static threshold for each observations, which keeps ROI at a consisent size
-    set_threshold = 1
+    ;Do not set threshold automaticall if man_thres is set 2019/02/21 J. Prchlik
+    if keyword_set(man_thres) then begin
+        ;match index in read sigmoid catalog file to manual thres_hold value
+        match_ind = where(thres_id eq ID[i])
+        ;Update the threshold value to manually set threshold value
+        thres_val = store_thres[match_ind]
+
+        ;note that the threshold value is already set so no need to compute automatically
+        set_threshold = 0
+
+    endif else begin
+        ;Set Threshold  2018/12/20 Use to set a static threshold for each observations, which keeps ROI at a consisent size
+        set_threshold = 1
+    endelse
 
     ; plot each hmi observation
     for j=0,n_elements(match_files)-1 do begin
@@ -733,10 +766,10 @@ for ii=0,n_elements(goodt)-1 do begin
             lpS_gimg = alog10(pS_gimg)
 
             ;Set the log power scale maximum to 0
-            PS0_gimg = lpS_gimg - min(lps_gimg)
+            ;PS0_gimg = lpS_gimg - max(lps_gimg)
 
             ;Set "noise" threshold
-            mask = real_part(PS0_gimg) gt -8
+            mask = real_part(lpS_gimg) gt 2.5+min(real_part(lpS_gimg))
 
             
 
@@ -749,6 +782,9 @@ for ii=0,n_elements(goodt)-1 do begin
 
             ;Set the threshold value to the "noise" floor
             thres_val = min(denoised_gimg,/nan)
+
+            ;Don't let threshold value be less than 0
+            if thres_val lt 0 then thres_val = 0.01
  
             ;set min and maximum values of an inner square
             ;Recall the input image will be a square
@@ -758,8 +794,6 @@ for ii=0,n_elements(goodt)-1 do begin
             ;;Get sigma of inner half of the image and use for the threshold value
             ;thres_val = get_sig(gimg[min_pix:max_pix,min_pix:max_pix])
             
-            
-            print,thres_val
 
         endif
 
@@ -768,7 +802,6 @@ for ii=0,n_elements(goodt)-1 do begin
         ;smt_sig = get_sig(gimg)
 
         ;Used difference of gaussian to find edges
-        ;Use 3 sigma from 0 2018/12/07 J. Prchlik
         edge = edge_dog(abs(gimg),radius1=rad_1,radius2=rad_2,threshold=thres_val,zero_crossings=[0,255])
         ;gimg = abs(simg)
         ;Make gimg back to normal size then cut
@@ -983,7 +1016,9 @@ for ii=0,n_elements(goodt)-1 do begin
                     sort_y = sort(plot_x) $
                 else  sort_y = sort(plot_y)
                  
-                plots, plot_x[sort_y],plot_y[sort_y],color= 100,thick=3
+                
+                ;Do not plot PIL it is not a good calculation 2019/02/21 J. Prchlik
+                ;plots, plot_x[sort_y],plot_y[sort_y],color= 100,thick=3
             endif
             ;increment counter
             ind_pn  = ind_pn +1
