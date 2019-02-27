@@ -105,11 +105,18 @@ if keyword_set(obs_time) then begin
     
     ;Use only perfect quality observations
     min_qual = 0
+
+    ;Remove all sigmoid observations that deviate more than 3*sigma from a mean area value 2019/02/27 J. Prchlik
+    mean_area = median(tot_area)
+    ;Get sigma from assuming at Gaussian in the inner core
+    core_per = cgpercentiles(tot_area,percentiles=[0.32,0.68])
+    core_sig = (core_per[1]-core_per[0])/2.
     
-    ;Remove magnetic field measurements outsided alloted radius
-    good_par = where((r le r_max) and (obs_qual eq min_qual),good_cnt)
+    
+    ;Remove magnetic field measurements outsided alloted radius 
+    good_par = where((abs(tot_area-mean_area) le 6.*core_sig),good_cnt)
     ;Skip this step 2018/12/03 J. Prchlik
-    good_par = where(time gt 0, good_cnt)
+    ;good_par = where(time gt 0, good_cnt)
     
     
     
