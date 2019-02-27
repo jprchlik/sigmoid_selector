@@ -3,6 +3,19 @@ The software suite contains various programs for the XRT sigmoid catalog.
 Unfortunately, the code is a bit less a pipeline than I initially imagined due the impersisence of unique IDs (UIDs). 
 I recommend the next time this endeavour is undertaken that UIDs be established from the start.
 
+
+
+Syncing to Webserver
+====================
+In order to sync the webserver, go through the following steps.
+First, know there are two important directories to sync to the webserver: sigmoid_webpage and combined_movies. 
+The sigmoid_webpage directory contains the basic webpage layout and a json file containing information about the sigmoids. 
+The combined_movies directory contains all movies, images, and plots used by the sigmoid webpage.
+To updated the sigmoid webpage you will need to log into the account associated with the xrt webserver. 
+Then sync the folders to the sigmoid23-24 directory in the aia public html directory. 
+Contact the system admin if you do not the location of this directory.
+
+
 sigmoidsize_adv,dir=dir
 =======================
 
