@@ -79,7 +79,7 @@ for ii=0,n_elements(goodt)-1 do begin
     
 
     ;only get hmi for sigmoids after hmi launch
-    if anytim(t1) lt obs then continue
+    ;if anytim(t1) lt obs then continue
 
     ;Use MDI if before SDO science data date
     if anytim(t1) lt sdo_takeover then begin
@@ -99,7 +99,14 @@ for ii=0,n_elements(goodt)-1 do begin
     ;rotate sigmoid center to ts
     inp_x = X[gi]
     inp_y = Y[gi]
-    inp_t = tobs[gi]
+ 
+    ;Try to order HMI jsoc cutouts
+    if wave[0] eq 'mdi_mag' then begin
+        inp_t = tobs[gi]
+    endif else begin
+        inp_t = tbest[gi]
+    endelse
+
     ;Correct for older sigmoids, which don't have Tobs
     if inp_t eq 0 then inp_t = tbest[gi]
     rot_p = rot_xy(inp_x,inp_y,tstart=inp_t,tend=ts,offlimb=on_limb)
@@ -114,8 +121,16 @@ for ii=0,n_elements(goodt)-1 do begin
     ;if on_limb eq 1 then continue
     
     ;Get all hmi data in date range with 90 minute cadence
-    sdo_orderjsoc,strmid(ts,0,16),diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
-                  xsize=750,ysize=750,cadence=cad,requestidents,requestsizes
+    ;Try to order MDI JSOC cutuots
+    if wave[0] eq 'mdi_mag' then begin
+        soho_orderjsoc,strmid(ts,0,16),diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
+                      xsize=750,ysize=750,cadence='90m',requestidents,requestsizes
+        ;Some reason it is double for HMI
+        requestsizes = requestsizes[0]
+    endif else begin
+        sdo_orderjsoc,strmid(ts,0,16),diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
+                      xsize=750,ysize=750,cadence=cad,requestidents,requestsizes
+    endelse
     ;Download files
     if requestsizes gt 1 then begin 
         ;make directory if not already created
@@ -124,6 +139,7 @@ for ii=0,n_elements(goodt)-1 do begin
         wait,3*60
         sdo_getjsoc,requestidents,full_dir
     endif
+    stop
     ;cd back to base directory because sdo_getjsoc goes down a level
     ;cd,'../'
 
