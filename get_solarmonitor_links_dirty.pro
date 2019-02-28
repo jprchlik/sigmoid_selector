@@ -99,30 +99,55 @@ pro get_solarmonitor_links_dirty,date,outdir,links
         ;Get 171 Fe line page
         fel_cut = base_page[where(STRMATCH(base_page,'*full_disk*00171*indexnum=3*',/FOLD_CASE) EQ 1,fel_cnt)]
         ;if no 171 use SWAP 174
-        if fel_cnt eq 0 then fel_cut = base_page[where(STRMATCH(base_page,'*full_disk*00174*indexnum=1*',/FOLD_CASE) EQ 1,fel_cnt)]
+        if fel_cnt eq 0 then fel_cut = base_page[where(STRMATCH(base_page,'*full_disk*0017[1-4]*indexnum=1*',/FOLD_CASE) EQ 1,fel_cnt)]
 
+        ;Just keep the first 171 image if multiple 2019/02/28 J. Prchlik
+        if fel_cnt gt 1 then begin
+            fel_cut = fel_cut[0] 
+            fel_cnt = 1
+        endif
 
         links = []
 
         ;Add check to see if local file exists before downloading 2018/12/17 J. Prchlik
+        ;MAG Field check
         if ((mag_cnt gt 0) AND (tst_mag eq 0)) then begin $
            mag_link = get_png_file_link(mag_cut,base)
            spawn,"wget -q "+mag_link+" -O "+out_mag
            links = [out_mag]
         endif
+        if (tst_mag eq 1) then begin $
+           links = [out_mag]
+        endif
+
+        ;XRT check
         if ((xrt_cnt gt 0) AND (tst_xrt eq 0)) then begin $
            xrt_link = get_png_file_link(xrt_cut,base)
            spawn,"wget -q "+xrt_link+" -O "+out_xrt
            links = [links,out_xrt]
         endif
+        if (tst_xrt eq 1) then begin $
+           links = [links,out_xrt]
+        endif
+
+        ;Halpha check
         if ((hal_cnt gt 0) AND (tst_hal eq 0)) then begin $
            hal_link = get_png_file_link(hal_cut,base)
            spawn,"wget -q "+hal_link+" -O "+out_hal 
            links = [links,out_hal]
         endif
+        if (tst_hal eq 1) then begin $
+           links = [links,out_hal]
+        endif
+
+
+        ;Test 171 SOHO or AIA
         if ((fel_cnt gt 0) AND (tst_euv eq 0)) then begin $
            fel_link = get_png_file_link(fel_cut,base)
            spawn,"wget -q "+fel_link+" -O "+out_euv 
+           links = [links,out_euv]
+        endif
+        if (tst_euv eq 1) then begin $
            links = [links,out_euv]
         endif
 
