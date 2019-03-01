@@ -10,14 +10,16 @@
 ;    Program, data gathering
 ;
 ;USAGE
-;    get_aia_files,times,aia_arch='aia_arch/'
+;    get_aia_files,times,aia_arch='aia_arch_cutout/',wave=['193','304','335']
 ;
 ;INPUTS
 ;    flare_sav  -   A sav file containing flare times and positions
 ;    times      -   A csv file containing times to analyze sigmoid filaments
+;    aia_arch   -   The directory containing the flare files. Subdirecties exist for each sigmoid's flares by Sigmoid ID
+;    wave       -   Wavelengths to download for use in the flare movies
 ;
 ;OUTPUTS
-;    aia files in aia_arc
+;    aia files in aia_arch
 ;
 ;#############################################################
 pro get_aia_files_cutout,flare_sav,times,aia_arch=aia_arch,wave=wave
@@ -124,6 +126,7 @@ for ii=0,n_elements(big_str)-1 do begin
         ;Get all aia data in date range with 90 minute cadence
         sdo_orderjsoc,ts,diff_t,rot_p[0],rot_p[1],email,name,wavs=wave,$
                       xsize=750,ysize=750,cadence=cad,requestidents,requestsizes
+
         ;Download files
         if requestsizes gt 1 then begin 
             ;Wait 3 minute before sending query about files
