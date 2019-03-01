@@ -251,13 +251,11 @@ rad_2 = 15.
 
 
 ;good sigmoid tbest times (i.e. contains time string)
-goodt = where(strlen(tobs) eq 23)
+goodt = where(strlen(tbest) eq 23)
 
 ;Cadance for image creation in seconds
 img_cad = 30.*60.
 
-;title format
-title_fmt = '("HMI ID: ",A3," ")'
 
 ;format for output png file directory
 out_fmt = '(A30,"/")'
@@ -269,21 +267,39 @@ iau_cor = '("L",I03,"C",I03)'
 ;Not needed anymore 2018/07/23 J. Prchlik
 ;restore,'Sigmoids2007to2017.sav'
 
+;SDO/HMI take over date
+sdo_takeover = anytim('2010-06-13T21:48:00')
 
 ;Rotate images by given angle
 rot_mat = [[-1.,0.],[0.,-1.]]
+
+;Reseting rebinv used for switching from hmi to mdi
+rebinv_tmp = rebinv
 
 ;Download HMI data for all the best times
 for ii=0,n_elements(goodt)-1 do begin
 
 
+    ;title format
+    title_fmt = '("HMI ID: ",A3," ")'
 
     ;Set index to value with goodt
     i = goodt[ii]
     
+    ;Start of observation
+    t1 = ar_start[i]
     ;get index for a good time
     ;Now x, y are measured at tobs instead of tbest 2018/06/14 J. Prchlik
-    gi = tobs[i]
+    ;Use MDI if before SDO science data date 2019/03/01 J. Prchlik
+    if anytim(t1) lt sdo_takeover then begin
+        ;tell program it is MDI
+        mdi = 1
+        gi = tbest[i]
+        ;title format
+        title_fmt = '("MDI ID: ",A3," ")'
+
+    endif else gi = tobs[i]
+    
     xi = x[i]
     yi = y[i]
 
@@ -388,7 +404,9 @@ for ii=0,n_elements(goodt)-1 do begin
     if file_test(full_dir+'/'+str_replace(sig_id,':','')+'.sav') eq 1 then continue
 
     ;get list of local files
-    match_files = file_search(hmi_arch+'/'+sig_id+"/*hmi*fits",count=file_cnt,/full)
+    ;Add mdi to the search 2019/03/01 J. Prchlik
+    if mdi eq 1 then match_files = file_search(hmi_arch+'/'+sig_id+"/*mdi*fits",count=file_cnt,/full) $
+    else match_files = file_search(hmi_arch+'/'+sig_id+"/*hmi*fits",count=file_cnt,/full)
 
     ;if no files found then continue
     if file_cnt eq 0 then continue
@@ -415,8 +433,9 @@ for ii=0,n_elements(goodt)-1 do begin
     ;hmi_prep,hmi_list[chk_i],[1]findgen(n_elements(chk_i)-1),index,data
 
 
-    ;width of image window in pixels
-    win_w= 700
+    ;width of image window in pixels different hmi and mdi
+    if mdi then win_w=160 $
+    else win_w= 700
     sc = 3
 
     ;Get dynamic window to make for larger sigmiods
@@ -458,6 +477,8 @@ for ii=0,n_elements(goodt)-1 do begin
         match_ind = where(thres_id eq ID[i])
         ;Update the threshold value to manually set threshold value
         thres_val = store_thres[match_ind]
+        ;If the threshold value is less than 0 (i.e., not set skip this set of sigmoids) 2019/03/01 J. Prchlik
+        if thres_val lt 0 then continue
 
         ;note that the threshold value is already set so no need to compute automatically
         set_threshold = 0
@@ -470,6 +491,9 @@ for ii=0,n_elements(goodt)-1 do begin
     ; plot each hmi observation
     for j=0,n_elements(match_files)-1 do begin
 
+        ;Reset rebinv in case scaled by mdi
+        rebinv = rebinv_tmp
+
         ;read in files 1 at a time
         data = readfits(match_files[j],hdr, exten_no=0, /fpack,/silent) 
 
@@ -480,7 +504,9 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;if image quality greater than 90000 exit
         ;swtich to fits_read format
-        if sxpar(hdr,'quality') gt 90000 then continue
+        if anytim(t1) gt sdo_takeover then begin
+            if sxpar(hdr,'quality') gt 90000 then continue
+        endif
 
 
         ;Make sure input fits file is an image
@@ -540,8 +566,17 @@ for ii=0,n_elements(goodt)-1 do begin
         ;Get center pixel value
         pix_x = (rot_p[0]/delt_x+cent_x)
         pix_y = (rot_p[1]/delt_y+cent_y) 
+
+        ;Get image data to plot
+        fimg = data
+
         ;Get range around pix_x and pix_y values
-        lims = select_cutout(pix_x,pix_y,win_w,sxpar(hdr,'naxis1'),sxpar(hdr,'naxis2'))
+        ;If larger than size of download just use full window 2019/03/01 J. Prchlik
+        size_fimg =size(fimg)
+        if ((win_w gt size_fimg[1]) OR (win_w gt size_fimg[2]) OR (mdi eq 1)) then begin
+            lims = [0,size_fimg[1]-1,0,size_fimg[2]-1]
+            win_w = min(size_fimg(1:2))-1
+        endif else lims = select_cutout(pix_x,pix_y,win_w,size_fimg[1],size_fimg[2])
  
         ;If the program could not select a cutout coninue
         bad_lims = where(lims lt 0,bad_lim_cnt)
@@ -553,8 +588,6 @@ for ii=0,n_elements(goodt)-1 do begin
         pymin = lims[2]
         pymax = lims[3]
 
-        ;Get image data to plot
-        fimg = data
 
         ;Rotate the unprepped image
         ;No longer required for cutouts 2018/11/05 J. Prchlik 
@@ -573,7 +606,8 @@ for ii=0,n_elements(goodt)-1 do begin
            ;Make sure to set color table back to default
            loadct,0
            ;If Error go to the next image
-           continue
+           ;continue
+           stop
         ENDIF
 
 
@@ -652,6 +686,10 @@ for ii=0,n_elements(goodt)-1 do begin
         fimg(where(imap_p0 eq 1))=0
         fimg(where(imap_n eq 1))=0
     
+        ;If mdi scale down the rebinning 2019/03/01 J. Prchlik
+        if mdi then rebinv = rebinv/4    
+
+
         ;Scale down and check the scaling is by an integer
         scale_x = fimg_size[1]/rebinv
         scale_y = fimg_size[2]/rebinv
@@ -671,6 +709,12 @@ for ii=0,n_elements(goodt)-1 do begin
 
         ;Get new image size
         fimg_size = size(fimg)
+
+
+        ;Check the clipped window for rebinning is not smaller than the maximum called index 2019/03/01 J. Prchlik
+        if pxmax ge fimg_size[1] then pxmax = fimg_size[1]-1
+        if pymax ge fimg_size[2] then pymax = fimg_size[2]-1
+ 
 
         ;fill values outside rsun with median
         fimg_x = dindgen(fimg_size[1]) #  (intarr((fimg_size[1])) +1)-cent_x
@@ -712,7 +756,11 @@ for ii=0,n_elements(goodt)-1 do begin
         ;gimg = gauss_smooth(abs(simg),20*8./rebinv,/edge_trunc,/NAN,kernel=img_kernel)
         ;2D Gaussian function describing the image kernel
         ;Switched to zeroing out edges 2018/12/18 J. Prchlik (it is faster than using gauss_smooth, 2 images per minute compared to 3.5-4)
-        ker_val = 20*8./rebinv
+        ;Change scaling for hmi vs. mdi
+        if mdi eq 1 then  ker_val = 20*8./rebinv/4 $
+        else ker_val = 20*8./rebinv
+
+
         img_kernel = GAUSSIAN_FUNCTION([1,1]*ker_val)
         gimg = CONVOL(abs(simg),img_kernel,total(img_kernel),/edge_trunc,/NAN);,INVALID=255,MISSING=0)
         ;Find the boundaries in the smoothed image
@@ -798,6 +846,7 @@ for ii=0,n_elements(goodt)-1 do begin
         endif
 
 
+
         ;Get sigma of smoothed image
         ;smt_sig = get_sig(gimg)
 
@@ -850,6 +899,9 @@ for ii=0,n_elements(goodt)-1 do begin
                /NOERASE, PATH_INFO = pathInfo, PATH_XY = pathXY, $
                XSTYLE = 5, YSTYLE = 5, /PATH_DATA_COORDS;/NODATA
 
+        ;Scale up text size for mdi observations
+        scale_txt = 1
+        if mdi eq 1 then scale_txt = 2
         
         ;Plot image with rotation
         plot_image,img,min=-150,max=150,$
@@ -860,12 +912,12 @@ for ii=0,n_elements(goodt)-1 do begin
             ytitle='Y-position (arcseconds)',$
             ;Updated title to use fits_read hdr syntax 2018/11/05 J. Prchlik
             title=string([sig_id],format=title_fmt)+fmt_dat,$
-            xcharsize =1.20*win_w/700., $
-            ycharsize =1.20*win_w/700., $
-            xcharthick=1.20*win_w/700., $
-            ycharthick=1.20*win_w/700., $
-            charsize  =1.00*win_w/700.,$
-            charthick =1.00*win_w/700.,Position=[0.2, 0.15, 0.95, 0.90];/nosquare
+            xcharsize =1.20*scale_txt*win_w/700., $
+            ycharsize =1.20*scale_txt*win_w/700., $
+            xcharthick=1.20*scale_txt*win_w/700., $
+            ycharthick=1.20*scale_txt*win_w/700., $
+            charsize  =1.00*scale_txt*win_w/700.,$
+            charthick =1.00*scale_txt*win_w/700.,Position=[0.2, 0.15, 0.95, 0.90];/nosquare
 
 
         ;Create new ROI obejct using contour
