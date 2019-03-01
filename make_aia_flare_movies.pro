@@ -80,12 +80,14 @@ end
 ;    Program, data gathering
 ;
 ;USAGE
-;    make_aia_flare_movies,times,aia_arch='aia_arch/'
+;    make_aia_flare_movies,flare_sav,times,aia_arch='aia_arch_cutout/',wave=['193','304','335']
 ;
 ;INPUTS
 ;    flare_sav  -   A sav file containing flare times and positions. This file is created by flare_cme_sigcat.pro.
 ;                   This program can only run after running get_aia_files_cutout.pro.
 ;    times      -   A csv file containing sigmoid information
+;    aia_arch   -   The directory containing the flare files. Subdirecties exist for each sigmoid's flares by Sigmoid ID
+;    wave       -   Wavelengths to use in the flare movies
 ;
 ;OUTPUTS
 ;    aia movies
