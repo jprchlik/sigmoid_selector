@@ -49,7 +49,7 @@ if keyword_set(wave) then wave = wave else wave = ['magnetogram']
 if keyword_set(obs) then obs = obs else obs = anytim('2010-06-27T18:19:00')
 
 ;SDO/HMI take over date
-sdo_takeover = anytim('2009-04-13T21:48:00')
+sdo_takeover = anytim('2010-06-13T21:48:00')
 
 
 
@@ -139,7 +139,6 @@ for ii=0,n_elements(goodt)-1 do begin
         wait,3*60
         sdo_getjsoc,requestidents,full_dir
     endif
-    stop
     ;cd back to base directory because sdo_getjsoc goes down a level
     ;cd,'../'
 
