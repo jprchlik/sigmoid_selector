@@ -7,16 +7,23 @@
 ;
 ;Input
 ;    roi_in -- an roi object created around the magnetic field region
+;    mdi    -- Whether the observation are MDI or HMI observatiosn (mdi = 1 for MDI observations)
 ;
 ;Outout
 ;    r -- The pixel coordinates from the ROI object converted into arcsecond HPC coordinates
 ;
 ;=====================================
-Function get_mag_rad,roi_in
+Function get_mag_rad,roi_in,mdi=mdi
     ;Store X,Y positions of sigmoid center
-    cx = 4096./2.
-    cy = 4096./2.
-    delt0 = 0.504297 
+    if mdi then begin
+        cx = 1024./2.
+        cy = 1024./2.
+        delt0 = 1.985652
+    endif else begin
+        cx = 4096./2.
+        cy = 4096./2.
+        delt0 = 0.504297 
+    endelse
     x = fltarr(n_elements(roi_in))
     y = fltarr(n_elements(roi_in))
     
@@ -71,6 +78,11 @@ outdir = outdir+'/'
 ;Restore save file created by make_hmi_movie
 restore,filein
 
+;SDO/HMI take over date
+sdo_takeover = anytim('2010-06-13T21:48:00')
+
+;MDI or HMI
+mdi = 0
 
 ;check to see if anything is in the save file. If not skip creation of plots
 if keyword_set(obs_time) then begin
@@ -79,6 +91,8 @@ if keyword_set(obs_time) then begin
     time = anytim(obs_time)
 
 
+    ;Set MDI keyword if before the sdo takeover time
+    if time lt sdo_takeover then mdi = 1
     ;Sort by time because the are no longer calculated in order
     ;since started using the middle image for the floor value
     ;on 2019/01/11 J. Prchlik
@@ -97,7 +111,7 @@ if keyword_set(obs_time) then begin
     
     
     ;get radius
-    r = get_mag_rad(roi_save)
+    r = get_mag_rad(roi_save,mdi=mdi)
     ;get maximum allows radius using 60 deg cut off angle
     sun_par = get_sun(time[0])
     r_max = sun_par[1]*sin(50.*!dtor)
@@ -121,8 +135,9 @@ if keyword_set(obs_time) then begin
     
     
     
-    ;HMI pixel size in arcseconds
-    delt0 = 0.504297 
+    ;HMI or MDI pixel size in arcseconds
+    if mdi then delt0 =1.985652 $
+    else delt0 = 0.504297 
     
     
     ;create plot if there are good measurements
