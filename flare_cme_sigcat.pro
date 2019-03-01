@@ -258,7 +258,8 @@ cname = "Sigmoids"+year+".csv"
 readcol,sigloc+cname,format='I,I,A,A,F,F,A,A,A,A',real_sig_id,rating,noaa,ar_start,b_x,b_y,AR_END,SIG_START,SIG_END,TBEST
 ;Switch to final sigmoid catalog
 ;Does not work because X,Y coordinates are no good with Tbest or Tobs in catalog
-;readcol,sigcat,format='I,I,A,A,F,F,A,A,A,A,A',dum,real_sig_id,NOAA,AR,AR_START,b_X,b_Y,AR_END,SIG_START,SIG_END,lifetime,TBEST_old,TBEST,/preserve
+;They are now as fixed by J. Prchlik 2019/02/20
+readcol,sigcat,format='I,I,A,A,F,F,A,A,A,A,A',dum,real_sig_id,NOAA,AR,AR_START,b_X,b_Y,AR_END,SIG_START,SIG_END,lifetime,TBEST_old,TBEST,/preserve
 
 ;convert NA to zeors in noaa
 noaa[where(noaa eq 'NA')] = '0'
