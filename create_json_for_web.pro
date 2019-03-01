@@ -1,4 +1,4 @@
-;###########################################################################
+;[0]###########################################################################
 ;FUNCTION
 ;
 ;CALL
@@ -283,12 +283,17 @@ openw,33,'sigmoid_webpage/json.txt'
 printf,33,'{'
 printf,33,'    "aaData": ['
 
+;SDO/HMI take over date
+sdo_takeover = anytim('2010-06-13T21:48:00')
+
 max_it = n_elements(goodt)-1 ;maximum iterator
 ;max_it = 2 ;maximum iterator
 ;Loop over good indices
 ;for ii=0,n_elements(goodt)-1 do begin
 ;cut loop short for testing
 for ii=0,max_it do begin
+    ;MDI or HMI
+    mdi = 0
 
      ;start bracket for storing data in a "row"
      printf,33,'        ['
@@ -306,8 +311,8 @@ for ii=0,max_it do begin
 
 
 
-
-   
+    ;Use HMI or MDI observations
+    if anytim(ar_start[i]) lt sdo_takeover then mdi = 1
    
  
 
@@ -531,13 +536,32 @@ for ii=0,max_it do begin
         restore,sav_file
         ;Get constance to convert from Gauss to Maxwell
         sun_par = get_sun(tbest[i])
-        cont = (0.5/sun_par[1]*6.955E10)^2
+        ;HMI or MDI pixel size in arcseconds
+        if mdi then delt0 =1.985652 $
+        else delt0 = 0.504297 
+        ;Remove all sigmoid observations that deviate more than 3*sigma from a mean area value 2019/02/27 J. Prchlik
+        mean_area = median(tot_area)
+        ;Get sigma from assuming at Gaussian in the inner core
+        core_per = cgpercentiles(tot_area,percentiles=[0.32,0.68])
+        core_sig = (core_per[1]-core_per[0])/2.
+    
+    
+        ;Remove magnetic field measurements outsided alloted radius 
+        good_par = where((finite(tot_ints) AND (abs(tot_area-mean_area) le 6.*core_sig)),good_cnt)
+
+        cont = (delt0/sun_par[1]*6.955E10)^2
         ;Store start to finish flux and the maximum flux value
         ;remove NaN values 2019/01/08 J. Prchlik
-        tot_ints = tot_ints[where(finite(tot_ints))]
-        net_flux = string(1e-21*cont*(tot_ints[n_elements(tot_ints)-1]-tot_ints[0]),format='(F9.2)')
-        ;Added NaN Keyword 2019/01/08 J. Prchlik
-        peak_flux= string(1e-21*cont*max(tot_ints,/NAN),format='(F9.2)')
+        if good_cnt gt 0 then begin
+            tot_ints = tot_ints[good_par]
+            net_flux = string(1e-21*cont*(tot_ints[n_elements(tot_ints)-1]-tot_ints[0]),format='(F9.2)')
+            ;Added NaN Keyword 2019/01/08 J. Prchlik
+            peak_flux= string(1e-21*cont*max(tot_ints,/NAN),format='(F9.2)')
+        ;Do not error if no good measurements found
+        endif else begin 
+            net_flux = '-' 
+            peak_flux = '-' 
+        endelse
     endif else begin
         net_flux = '-' 
         peak_flux = '-' 
