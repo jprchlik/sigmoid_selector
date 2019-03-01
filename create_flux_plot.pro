@@ -92,7 +92,7 @@ if keyword_set(obs_time) then begin
 
 
     ;Set MDI keyword if before the sdo takeover time
-    if time lt sdo_takeover then mdi = 1
+    if time[0] lt sdo_takeover then mdi = 1
     ;Sort by time because the are no longer calculated in order
     ;since started using the middle image for the floor value
     ;on 2019/01/11 J. Prchlik
