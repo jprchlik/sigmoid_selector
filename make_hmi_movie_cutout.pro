@@ -606,8 +606,7 @@ for ii=0,n_elements(goodt)-1 do begin
            ;Make sure to set color table back to default
            loadct,0
            ;If Error go to the next image
-           ;continue
-           stop
+           continue
         ENDIF
 
 
@@ -634,7 +633,11 @@ for ii=0,n_elements(goodt)-1 do begin
 
 
         ;get sigma from image
-        img_sig = get_sig(fimg)
+        ;Try static sigma for MDI 2019/03/04 J. Prchlik
+        if mdi eq 1 then $
+            img_sig = 25. $
+        else $
+            img_sig = get_sig(fimg)
 
         ;set noise thresholds
         zero_lev = 2*img_sig    ; zero level in G
