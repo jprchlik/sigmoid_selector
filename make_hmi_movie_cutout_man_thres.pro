@@ -363,9 +363,9 @@ for ii=0,n_elements(goodt)-1 do begin
 
     ;if image quality greater than 90000 exit
     ;swtich to fits_read format
-    if anytim(t1) gt sdo_takeover then begin
-        if sxpar(hdr,'quality') gt 90000 then continue
-    endif
+    ;if anytim(t1) gt sdo_takeover then begin
+    ;    if sxpar(hdr,'quality') gt 90000 then continue
+    ;endif
 
 
     ;Make sure input fits file is an image
@@ -389,7 +389,8 @@ for ii=0,n_elements(goodt)-1 do begin
     ;Only do the calculations for Magnetic fields less than 50 degrees on the surface
     ;Include if point is off the limb
     ;Switch to 40 degrees per discussion with Antonia 2018/12/06
-    if ((sqrt(total(rot_p^2))/sol_rad gt sin(!dtor*40.)) OR (offlimb eq 1)) then continue
+    ;Do not do this for setting threshold
+    ;if ((sqrt(total(rot_p^2))/sol_rad gt sin(!dtor*40.)) OR (offlimb eq 1)) then continue
 
 
     ;calculate the length of sigmoid correcting for projection
@@ -427,10 +428,12 @@ for ii=0,n_elements(goodt)-1 do begin
     pix_y = (rot_p[1]/delt_y+cent_y) 
     ;Get range around pix_x and pix_y values
     ;If larger than size of download just use full window 2019/03/01 J. Prchlik
-    if ((win_w gt sxpar(hdr,'naxis1')) OR (win_w gt sxpar(hdr,'naxis2'))) then begin
-        lims = [0, sxpar(hdr,'naxis1'),0, sxpar(hdr,'naxis2')]
-        win_w = min([sxpar(hdr,'naxis1'),sxpar(hdr,'naxis2')])
-    endif else lims = select_cutout(pix_x,pix_y,win_w,sxpar(hdr,'naxis1'),sxpar(hdr,'naxis2'))
+    size_fimg =size(data)
+    if ((win_w gt size_fimg[1]) OR (win_w gt size_fimg[2]) OR (mdi eq 1)) then begin
+        lims = [0,size_fimg[1]-1,0,size_fimg[2]-1]
+        win_w = min(size_fimg(1:2))-1
+    endif else lims = select_cutout(pix_x,pix_y,win_w,size_fimg[1],size_fimg[2])
+    print,lims
  
     ;If the program could not select a cutout coninue
     bad_lims = where(lims lt 0,bad_lim_cnt)
