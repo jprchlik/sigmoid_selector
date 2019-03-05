@@ -163,7 +163,7 @@ for ii=0,n_elements(goodt)-1 do begin
     yi = y[i]
 
     ;if there is no new measurements of the sigmoid just continue
-    if gi eq '0' then continue
+    ;if gi eq '0' then continue
 
     ;Get sigmoid start and end times
     t1 = sig_start[i]
