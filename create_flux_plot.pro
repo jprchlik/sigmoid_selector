@@ -126,12 +126,23 @@ if keyword_set(obs_time) then begin
     core_per = cgpercentiles(tot_area,percentiles=[0.32,0.68])
     core_sig = (core_per[1]-core_per[0])/2.
     
+
+    ;Check on quality of image before plottin observation
+    if mdi eq 1 then begin
+        ;This is bit 7 set to 1. Seems to be the default will be the only flag I will allow in MDI observations 2019/03/04 J. Prchlik
+        ;I think this happens because it is a cutout
+        ;http://soi.stanford.edu/production/QUALITY/DATASWtable.html
+        check_qual = obs_qual le 640
+    endif else begin
+        ;http://jsoc.stanford.edu/~jsoc/keywords/AIA/AIA02840_K_AIA-SDO_FITS_Keyword_Document.pdf Appendix 3
+        ;Only keep prestine observations 
+        check_qual = obs_qual eq 0
+    endelse
     
     ;Remove magnetic field measurements outsided alloted radius 
-    good_par = where((abs(tot_area-mean_area) le 6.*core_sig),good_cnt)
+    good_par = where((abs(tot_area-mean_area) le 6.*core_sig) and check_qual ,good_cnt)
     ;Skip this step 2018/12/03 J. Prchlik
     ;good_par = where(time gt 0, good_cnt)
-    
     
     
     
