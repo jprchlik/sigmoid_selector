@@ -1,7 +1,7 @@
 ;#############################################################
 ;
 ;NAME:
-;    get_aia_files    
+;    get_aia_files_cutout
 ;
 ;PURPOSE
 ;    Download range of aia files
@@ -10,19 +10,20 @@
 ;    Program, data gathering
 ;
 ;USAGE
-;    get_aia_files,times,aia_arch='aia_arch_cutout/',wave=['193','304','335']
+;    get_aia_files_cutout,times,aia_arch='aia_arch_cutout/',wave=['193','304','335'],sel_id=0
 ;
 ;INPUTS
 ;    flare_sav  -   A sav file containing flare times and positions
 ;    times      -   A csv file containing times to analyze sigmoid filaments
 ;    aia_arch   -   The directory containing the flare files. Subdirecties exist for each sigmoid's flares by Sigmoid ID
 ;    wave       -   Wavelengths to download for use in the flare movies
+;    sel_id     -   Only download files associated with a specific sigmoid ID
 ;
 ;OUTPUTS
 ;    aia files in aia_arch
 ;
 ;#############################################################
-pro get_aia_files_cutout,flare_sav,times,aia_arch=aia_arch,wave=wave
+pro get_aia_files_cutout,flare_sav,times,aia_arch=aia_arch,wave=wave,sel_id=sel_id
 
 
 
@@ -39,6 +40,9 @@ aia_arch = aia_arch+'/'
 ;Set wavelength to download AIA files
 if keyword_set(wave) then wave = wave else wave = ['193','304','335']
 
+;Only download files for a given sigmoid ID
+if keyword_set(sel_id) then sel_id = sel_id else sel_id
+
 ;restore save files with flare association (big_str)
 restore,flare_sav
 
@@ -53,11 +57,21 @@ name = ''
 for ii=0,n_elements(big_str)-1 do begin
 
 
+    ;Check to see if only a specific flare ID is set 2019/03/01 J. Prchlik
+    if sel_id ne 0 then begin
+  
+        ;If keyword is set and it is the given ID just skip dowloading
+        if fix(sel_id) ne fix(big_str[ii].sigmoid_id) then continue
+
+    endif
+
     ;get index in sigmoid catalog csv file where tbest are equal
-    ;best_ind = where(ID eq big_str[ii].sigmoid_id,match_count)
+    ;Can switch back to original ID matching if using sav file from flare_cme_sigcat_csv.pro 2019/03/04 J. Prchlik
+    best_ind = where(ID eq big_str[ii].sigmoid_id,match_count)
+    
 
     ;Switch to sigmoid start and end time because sigmiod ID changed  2018/07/12
-    best_ind = where(((SIG_START eq big_str[ii].sigmd_s) and (SIG_END eq big_str[ii].sigmd_e)),match_count)
+    ;best_ind = where(((SIG_START eq big_str[ii].sigmd_s) and (SIG_END eq big_str[ii].sigmd_e)),match_count)
 
     ;get location of nearest sigmoids in catalog csv file
     ;dif_pos = fltarr(n_elements(X))
