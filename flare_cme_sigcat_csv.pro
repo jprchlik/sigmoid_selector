@@ -238,8 +238,9 @@ for i=0,n_elements(noaa)-1 do begin
 
 
     ;Get maximum and minimum analysis data
-    min_date = anytim(AR_START[i])
-    max_date = anytim(AR_END[i])
+    ;The AR start and end dates are not ideal for searching so expanding search range 2019/03/04 J. Prchlik
+    min_date = anytim(AR_START[i])-3600.*24.*7
+    max_date = anytim(AR_END[i])+3600.*24.*7
 
 
     ;Comment out if LOCKHEED MARTIN is down for the day
