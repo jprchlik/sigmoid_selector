@@ -19,13 +19,13 @@ Sigmoids, aptly named for their S-shaped coronal field lines,
 frequently produce both Coronal Mass Ejections (CMEs) and flares,
 which are drivers of space weather at Earth.
 Space weather may cause everything from aurorae to power black outs,
-so studying sigmoids are partically important.
-Along with their practical importance, 
-Sigmoids are likely due to theortically proposed flux ropes.
+so studying sigmoids are practically important.
+Along with their practical importance,
+Sigmoids are likely due to theoretically proposed flux ropes.
 As such, studying Sigmoids has practical and physical benefits.
 
 The initial sigmoid catalog `(Savcheva et al. 2014) <https://ui.adsabs.harvard.edu/?#abs/2014SoPh..289.3297S>`_
-contains 79 sigmoids discovered by searching twice daily syntopic Hinode X-ray Telescope (XRT) observations between 2007 and 2012 (`catalog webpage <http://aia.cfa.harvard.edu/sigmoid/>`_).
+contains 79 sigmoids discovered by searching twice daily synoptic Hinode X-ray Telescope (XRT) observations between 2007 and 2012 (`catalog webpage <http://aia.cfa.harvard.edu/sigmoid/>`_).
 Version 2 of the catalog, of which the code is detailed here,
 expands the initial Sigmoid Catalog through 2017.
 This expansion creates a database of 295 sigmoids.
@@ -37,15 +37,22 @@ Here I will detail the code used to analyze sigmoids in version 2 of the Sigmoid
 User Documentation
 ******************
 
+.. _toplevel-code-overview
+Code Suite overview
+--------------------
+A brief overview on how the sigmoid catalog works.
+overview/index
+
+
 .. _toplevel-downloading-code:
 Downloading Codes
 -----------------
 
-The codes linked below will download the required files for the Sigmoid Catalog. 
+The codes linked below will download the required files for the Sigmoid Catalog.
 
 .. toctree::
    :maxdepth:1
-   
+
    downloading_code/get_hmi_files_cutout/index
    downloading_code/get_aia_files_cutout/index
    downloading_code/get_aia_files/index
@@ -60,11 +67,11 @@ The codes linked below measure sigmoid properties with user input.
 
 .. toctree::
    :maxdepth:1
-  
+
    manual_measurement_code/sigmoidsize_adv/index
    manual_measurement_code/filament_selector/index
    manual_measurement_code/make_hmi_movie_cutout_man_thres/index
-   
+
 
 
 
