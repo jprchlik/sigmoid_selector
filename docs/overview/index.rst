@@ -9,6 +9,8 @@ First, you need to identify a list of sigmoids you are interested in analyzing a
 The csv file should contain at least the following information in the same order.
 That is the first parameter listed here should be the first column in the csv file.
 Below are a list of columns and a brief explanation of their meaning and how to format them.
+
+
 1) ID --> The unique identification (UID) of the sigmoid. The current version of the code suite forces
 this to be an integer, but you could easily modify the code to suit you.
 Keep for simplicity keep set this UID early and keep it constant throughout your analysis.
