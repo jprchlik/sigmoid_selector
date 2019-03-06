@@ -349,6 +349,8 @@ Creates a flux plot for the webpage from the .sav file created by make_hmi_movie
 rjrlib
 ============
 Zipped IDL library containing the functions sdo_orderjsoc.pro and sdo_getjsoc.pro, which we exploit to get high cadence cutout images for the catalog. You will need to add these programs to your IDL path.
+I did need to modify the code in the few places to get MDI and HMI high fidelity observations, 
+so it is not exactly the same as the code you can download.
 Full documentation for see http://www.staff.science.uu.nl/~rutte101/rridl/
 
 
