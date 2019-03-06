@@ -3,7 +3,7 @@ sigmoidsize_adv
 
 
 sigmoidsize_adv performs a few measurements of sigmoids with some user intervention.
-The only input to the program is a directory containing any number of sigmoid files. 
+The only input to the program is a keyword directory containing any number of sigmoid files (dir). 
 First, the program sets the scale for each observation.
 Note that XRT images in the catalog are already normalized by exposure time,
 but that does not reset the EXPTIME header in the fits file. 
@@ -51,7 +51,7 @@ two new windows will pop up in the upper left.
 The farthest to the left is an image of the sigmoid rotated by the slope of the line selected in the sigmoid core.
 Highlight in the image is the region used to calculate the sigmoids FWHM. 
 If you notice any irregularities due to structures not a part of the sigmoid
- reclassify the sigmoid using a new box that exclues the structure.
+reclassify the sigmoid using a new box that exclues the structure.
 
 
 The calculation of the FWHM is a little tricky,
