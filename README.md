@@ -4,6 +4,12 @@ Unfortunately, the code is a bit less a pipeline than I initially imagined due t
 I recommend the next time this endeavour is undertaken that UIDs be established from the start.
 
 
+Documentation
+=============
+This README file is useful for a quick understanding of the processes used for the sigmoid catalog.
+If you want more detailed information head over to the full documentation at [readthedocs](https://sigmoid-catalog.readthedocs.io/en/latest/).
+
+
 
 Syncing to Webserver
 ====================
