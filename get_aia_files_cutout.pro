@@ -95,7 +95,7 @@ for ii=0,n_elements(big_str)-1 do begin
     ;Create directory for output png files
     full_dir = aia_arch+strcompress(ID[best_ind],/remove_all)+'/'
     ;Skip already created directories for now 2018/07/30 J. Prchlik
-    if file_test(full_dir) eq 0 then file_mkdir,full_dir else continue
+    if file_test(full_dir) eq 0 then file_mkdir,full_dir; else continue
 
     ;loop over all start times
     for ij = 0,n_elements(poss_t)-1 do begin 
@@ -123,6 +123,15 @@ for ii=0,n_elements(big_str)-1 do begin
         inp_t = tobs[best_ind]
         rot_p = rot_xy(inp_x,inp_y,tstart=inp_t,tend=ts,offlimb=on_limb)
 
+        ;get flare peak time and class
+        t_peak = big_str[ii].flare_p[i]
+        f_clas = big_str[ii].flare_c[i]
+
+        ;Filename of output movie (This prevents you from downloading files that already exist as movies
+        file_out_fmt = 'AIA_'+str_replace(str_replace(t_peak,'-',''),':','')+'_'+str_replace(f_clas,'.','_')+'.mp4'
+        ;Do not rerun movie if already created 2018/08/06 J. Prchlik
+        if file_test(full_dir+'/'+file_out_fmt) then continue
+        print,file_out_fmt
 
         ;Add check for limb. If on limb just use y value on limb
         ;Do not do limb flares
