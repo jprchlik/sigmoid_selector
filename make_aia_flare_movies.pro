@@ -80,7 +80,7 @@ end
 ;    Program, data gathering
 ;
 ;USAGE
-;    make_aia_flare_movies,flare_sav,times,aia_arch='aia_arch_cutout/',wave=['193','304','335']
+;    make_aia_flare_movies,flare_sav,times,aia_arch='aia_arch_cutout/',wave=['193','304','335'],sel_id=0
 ;
 ;INPUTS
 ;    flare_sav  -   A sav file containing flare times and positions. This file is created by flare_cme_sigcat.pro.
@@ -88,12 +88,13 @@ end
 ;    times      -   A csv file containing sigmoid information
 ;    aia_arch   -   The directory containing the flare files. Subdirecties exist for each sigmoid's flares by Sigmoid ID
 ;    wave       -   Wavelengths to use in the flare movies
+;    sel_id     -   Only download files associated with a specific sigmoid ID
 ;
 ;OUTPUTS
 ;    aia movies
 ;
 ;#############################################################
-pro make_aia_flare_movies,flare_sav,times,aia_arch=aia_arch,wave=wave,win_w=win_w
+pro make_aia_flare_movies,flare_sav,times,aia_arch=aia_arch,wave=wave,win_w=win_w,sel_id=sel_id
 
 ;Set window size
 if keyword_set(win_w) then win_w = win_w else win_w = 700
@@ -101,6 +102,9 @@ if keyword_set(win_w) then win_w = win_w else win_w = 700
 
 ;set plot to X Window
 set_plot,'X'
+
+;Only Movies for a given sigmoid ID
+if keyword_set(sel_id) then sel_id = sel_id else sel_id
 
 ;Read in file containing TBEST
 formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
@@ -123,9 +127,19 @@ img_cad = 45. ;45 Seconds
 ;Download aia data for all the best times
 for ii=0,n_elements(big_str)-1 do begin
 
+    ;Check to see if only a specific flare ID is set 2019/03/04 J. Prchlik
+    if sel_id ne 0 then begin
+  
+        ;If keyword is set and it is the given ID just skip dowloading
+        if fix(sel_id) ne fix(big_str[ii].sigmoid_id) then continue
+
+    endif
 
     ;Switch to sigmoid start and end time because sigmiod ID changed  2018/07/12
-    best_ind = where(((SIG_START eq big_str[ii].sigmd_s) and (SIG_END eq big_str[ii].sigmd_e)),match_count)
+    ;best_ind = where(((SIG_START eq big_str[ii].sigmd_s) and (SIG_END eq big_str[ii].sigmd_e)),match_count)
+    ;best_ind = where(((SIG_START eq big_str[ii].sigmd_s) and (SIG_END eq big_str[ii].sigmd_e) and ),match_count)
+    ;Fixed with new catalog values 2019/03/01 J. Prchlik
+    best_ind = where((ID eq big_str[ii].sigmoid_id),match_count)
 
 
     ;;Get index of nearest sigmoid
@@ -348,6 +362,8 @@ for ii=0,n_elements(big_str)-1 do begin
         ;If no XRT files found make movie with just AIA and continue
         if n_elements(size(ofiles)) lt 4 then begin
             aia_mkmovie,ts,te,wavs,cadence=1,/multi_panel,path=sub_point,/sequential,ref_times=aia_time,fname=file_out,/delete
+            ;Move flare movie to new directory
+            file_move,file_out,full_dir+'/'+file_out_fmt
             continue
         endif
 
@@ -410,6 +426,8 @@ for ii=0,n_elements(big_str)-1 do begin
                      AND (catx.naxis2 le 513) $
                      AND ((catx.xcen+catx.fovx*catx.cdelt1 gt x_val) AND (catx.xcen-catx.fovx*catx.cdelt1 lt x_val)) $
                      AND ((catx.naxis1 eq x_dim) and (catx.naxis2 eq y_dim)),found_small_xrt)
+
+
 
         if found_small_xrt gt 1 then begin
             ;Force allow for difference size images
