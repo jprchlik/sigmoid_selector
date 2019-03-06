@@ -81,7 +81,7 @@ The codes linked below measure sigmoid properties without user input.
    automated_measurement_code/make_hmi_movie_cutout/index
 
 
-.. _toplevel-automated-measurement-code:
+.. _toplevel-webpage-formatting-code:
 Webpage Formatting Codes
 ------------------------------------
 
