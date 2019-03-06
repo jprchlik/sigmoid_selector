@@ -82,7 +82,7 @@ The codes linked below measure sigmoid properties without user input.
 
 
 .. _toplevel-automated-measurement-code:
-Automated Measurement/Analysis Codes
+Webpage Formatting Codes
 ------------------------------------
 
 The codes format the obseravtions into a nice package, which we use in the webpage.
@@ -90,8 +90,9 @@ The codes format the obseravtions into a nice package, which we use in the webpa
 .. toctree::
    :maxdepth:1
 
-   automated_measurement_code/create_json_for_web/index
-   automated_measurement_code/create_combined_movies/index
+   webpage_formatting_code/create_json_for_web/index
+   webpage_formatting_code/create_combined_movies/index
+   webpage_formatting_code/create_flux_plot/index
 
 
 
