@@ -1,4 +1,4 @@
-get_aia_files_cutout
+get_aia_files.py
 ====================
 
 .. toctree::
