@@ -49,7 +49,7 @@ The codes linked below will download the required files for the Sigmoid Catalog.
    downloading_code/get_hmi_files_cutout/index
    downloading_code/get_aia_files_cutout/index
    downloading_code/get_aia_files/index
-   automated_measurement_code/get_solarmonitor_links_dirty/index
+   downloading_code/get_solarmonitor_links_dirty/index
 
 
 .. _toplevel-manual-measurement-code:
@@ -63,7 +63,7 @@ The codes linked below measure sigmoid properties with user input.
   
    manual_measurement_code/sigmoidsize_adv/index
    manual_measurement_code/filament_selector/index
-   automated_measurement_code/make_hmi_movie_cutout_man_thres/index
+   manual_measurement_code/make_hmi_movie_cutout_man_thres/index
    
 
 
