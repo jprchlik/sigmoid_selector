@@ -41,7 +41,12 @@ User Documentation
 Code Suite overview
 --------------------
 A brief overview on how the sigmoid catalog works.
-overview/index
+
+
+.. toctree::
+   :maxdepth:1
+
+   overview/index
 
 
 .. _toplevel-downloading-code:
