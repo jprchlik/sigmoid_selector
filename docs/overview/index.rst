@@ -46,4 +46,33 @@ Below are a list of columns and a brief explanation of their meaning and how to 
 
     #. 304_length --> The length of a 304 Å filament in arcsec during T-Best. If no filament was located the column contains a value of -9999.
 
+    #. size --> Measurement of the long axis of the sigmoid in arcsec.
+
+    #. tail_length --> The length of the trailing edge of the sigmoid's short axis (arcsec).
+
+    #. lead_length --> The length of the leading edge of the sigmoid's short axis (arcsec).
+
+    #. aspect_ratio -->  Ratio of the long axis to the average short axis.
+
+    #. fwhm --> The full width at half maximum of the sigmoid's core at T-obs (arcsec).
+ 
+    #. height --> The peak of the sigmoid's core at T-obs (DN/s/arcsec^2).
+
+    #. ha_filament --> Is there an Ha filament present during T-Best? Y = Yes, N = No, and ? = Undetermined
+
+    #. ss_at_peak --> The number of sunspots at T-best.
+
+    #. good_mag --> Now meaningless as all magnetic fields are okay.
+
+    #. IAU_ID --> The Internation Astronomical Union (IAU) unique identifier (UID) of the sigmoid at T-best. Not really every used because the X,Y defintion was changed from referencing T-best to T-obs. 
+
+    #. filament_eruption --> Did a filament erupt while the region showed a sigmoidal shape (Y = Yes, N = No, and M = Maybe).
+
+    #. transient_CH --> If there was a Transient Coronal Hole observed during sigmoid lifetime (Y = Yes and N = No, and M = Maybe).
+
+    #. flare_ribbons --> Were there Flare Ribbons observed after a flare? (Y = Yes and N = No).
+
+    #. postflare_loops --> Were there Post-Flare Loops observed after a flare? (Y = Yes and N = No.)
+
+    #. nearby_CH --> If there was a Coronal Hole observed next to the region. (Y = Yes, N = No, and M = Maybe.)
 
