@@ -1,3 +1,5 @@
+.. _sigmoidsize_adv_details:
+
 sigmoidsize_adv
 ===============
 
