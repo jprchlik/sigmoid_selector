@@ -76,3 +76,12 @@ Below are a list of columns and a brief explanation of their meaning and how to 
 
     #. nearby_CH --> If there was a Coronal Hole observed next to the region. (Y = Yes, N = No, and M = Maybe.)
 
+
+
+Synoptic Observations
+-------------
+
+The first step in this pipeline is to figure out some rough properties of the sigmoid. These rough properties include ID, X, Y, T-best, SIG_START, SIG_END.
+From those properties, you need to gather one XRT image of each sigmoid you would like to analyze in some directory. Then you may run sigmoidsize_adv :ref:`sigmoidsize_adv_details` and specify the 
+dir keyword to the directory that contains the sigmoids you are interested. sigmoidsize_adv outputs a sav file, which will clobber any save file in the same directory.
+As such, you should not put too many sigmoid files in the same directory for sanity's sake. This version broke up the sigmoid's by year.
