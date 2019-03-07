@@ -82,6 +82,25 @@ Synoptic Observations
 -------------
 
 The first step in this pipeline is to figure out some rough properties of the sigmoid. These rough properties include ID, X, Y, T-best, SIG_START, SIG_END.
-From those properties, you need to gather one XRT image of each sigmoid you would like to analyze in some directory. Then you may run sigmoidsize_adv :ref:`sigmoidsize_adv_details` and specify the 
+From those properties, you need to gather one XRT image of each sigmoid you would like to analyze in some directory.
+The files you put in the directory should be the highest resolution observations of the sigmoid near T-best.
+It is possible to use `a python script <https://github.com/jprchlik/cms2_python_helpers>`_ created for CMS2 for this,
+but it requires a bit of hacking. Basically, you could comment all other lines in the `download_all <https://github.com/jprchlik/cms2_python_helpers/blob/master/grab_sigmoid_fits_files.py>`_ funciton except for self.get_hinode().
+
+Sigmoid Size Measurements
+-------------------------
+
+Next, you may run :ref:`sigmoidsize_adv_details` and specify the 
 dir keyword to the directory that contains the sigmoids you are interested. sigmoidsize_adv outputs a sav file, which will clobber any save file in the same directory.
 As such, you should not put too many sigmoid files in the same directory for sanity's sake. This version broke up the sigmoid's by year.
+From your measurements, you will determine the following parameters in the file csv file: T-obs (and the corresponding X,Y coordinates), size, tail_length, lead_length, aspect_ratio, fwhm, and height.
+Those parameters were ingested into the main csv using pandas and readsav in python.
+
+Filament Size Measurements
+-------------------------
+
+The next things measured were the filaments observed in 171 Å and 304 Å. The :ref:`filament_selector` reads a csv file with the following IDL command: readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A',
+where all variables were defined above, except rating were defined above. Rating was dropped from this catalog but remained as an artifact in this early program. Unlike the sigmoid measurements there is no need to split the files into year long runs.
+Note that this program downloads the required SDO/AIA files as needed.
+
+
