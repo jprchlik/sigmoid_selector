@@ -1,3 +1,5 @@
+.. _get_aia_files:
+
 get_aia_files.py
 ====================
 

@@ -137,3 +137,41 @@ observations of Hinode-XRT observerations. I am unsure why this failure is true 
 you wanted it to because the movies are how the sigmoid catalog counts the number of flares associated with each region. While this way of counting the flares seems nonintuitive, it is really
 useful if you use the region, not AR, flare association in :ref:`flare_cme_sigcat_csv`. As such, you may delete the files that are not associated with a give sigmoid after visiual inspection.
 This way of count also means it is better to have a blank movie of a flare than no movie referencing a flare.
+
+
+Downloading Sigmoid Evolution Files
+----------------------------------
+
+Unlike the flare files, the sigmoid evolution files come from a python program, :ref:`get_aia_files`. 
+There reason it is a python program is because the files may be easily downloaded in parallel, 
+which makes getting the full resolution, full sun images quick. You may hack the program
+as needed, if you want to download solar images for a particular sigmoid, but I had not issues 
+with just letting this program run for a week. Note that the program downloads files for the 
+length of the sigmoid, not the length of the AR. If I had to do this again, perhaps I would use
+cutout files that run the length of the AR to save on space.
+
+Creating Evolution Movies
+-------------------------
+
+:ref:`make_aia_evolution_movies` creates a 4-panel movie of the evolution of a sigmoid using 193, 304, 335, and the most common Hinode-XRT observation in the location of the sigmoid.
+This program is the only program that is not in the main directory, instead it is in the aia_movie sub-directory. The only required input to this program is the final format of the sigmoid
+csv file. 
+
+
+Download Magnetic Field Files
+----------------------------
+
+The :ref:`get_hmi_files_cutout` code is very similar to the flare downloading program, except it of course downloads either MDI or HMI observations. The downloading of the high fidelitity magnetic field
+observations is the primary reason that I needed to modify `rjrlib <http://www.staff.science.uu.nl/~rutte101/rridl/>`_. Normally, it only downloads the high cadence HMI files.
+This program creates a new directory for each sigmoid, after checking whether that directory already exists. If the directory already exists, then the program will continue to the next sigmoids.
+
+Create Magnetic Field Movies and Measure Evolution
+--------------------------------------------------
+
+:ref:`make_hmi_movie_cutout` both creates magnetic field evolution movies and measures the magnetic field evolution. The process for measuring the magnetic field is complex, thus will be described in
+depth in the linked documentation. The code works on both HMI and MDI observations. Like many of the other program, :ref:`make_hmi_movie_cutout` primarily only requires the final csv file for input.
+However, I strongly encourage the /man_thres keyword is set, which requires you to set a threshold for magnetic field feature detection for each sigmoid.
+
+
+
+

@@ -1,3 +1,5 @@
+.. _get_hmi_files_cutout:
+
 get_hmi_files_cutout
 ====================
 
