@@ -99,8 +99,41 @@ Those parameters were ingested into the main csv using pandas and readsav in pyt
 Filament Size Measurements
 -------------------------
 
-The next things measured were the filaments observed in 171 Å and 304 Å. The :ref:`filament_selector` reads a csv file with the following IDL command: readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A',
+The next things measured were the filaments observed in 171 Å and 304 Å. The :ref:`filament_selector` reads a csv file with the following IDL command\: readcol,times,ID,RATING,NOAA,AR_START,X,Y,AR_END,SIG_START,SIG_END,TBEST,format='LL,I,A,A,F,F,A,A,A,A',
 where all variables were defined above, except rating were defined above. Rating was dropped from this catalog but remained as an artifact in this early program. Unlike the sigmoid measurements there is no need to split the files into year long runs.
-Note that this program downloads the required SDO/AIA files as needed.
+Note that this program downloads the required full sun SDO/AIA files as needed.
+
+Flare Association with Sigmoids
+-------------------------------
+
+:ref:`flare_cme_sigcat_csv` associates flares with sigmoidal regions based on AR number using the HEK. The program can also associated based on location,
+but you should not use location alone for the flare association. I found many flares near the limb, which had poor locations, thus poor associations.
+The program takes the final formatted csv file as an argument. You need to run this program before starting to download and create flare movies because
+those program require the sav file output by this program. 
 
 
+Downloading Flare Files
+---------------------
+
+After running the flare assocication, you may begin downloading all flares associated with a particular sigmoid. This flare correlation includes anytime the region was on disk, not only when the region is sigmoidal.
+ Note this flare association will only work for sigmoid's with ARs,
+unless you turn on the region association in :ref:`flare_cme_sigcat_csv`. This program uses a hacked version of `rjrlib <http://www.staff.science.uu.nl/~rutte101/rridl/>`_,
+which is available at the `github <https://github.com/jprchlik/sigmoid_selector>`_ page for this program suite. Note the downloading program, :ref:`get_aia_files_cutout`, 
+will only download files which do not have movies created for them. This step was added because JSOC may be a bit touchy from time to time, and you do not want to redownload all 50 
+flares associated with a particular sigmoid. Therefore, I suggest that if downloading fails for any reason to create flare movies, then delete the flare movies that do not 
+contain any observations of the flare (discussed more below). Also note, claims to not allow more than 10 connections from a single IP address at a time; however, I can only
+download 3 flares at a time before JSOC starts refusing my http requests.
+This program will not download flares over the limb because rotating a given coordinate over the limb gives the coordinate -9999,-9999, which is meaningless to a JSOC request.
+As such, you may notice the last flare in a few (around 5) sigmoids does not have a movie.
+Final hacky note, if you computer does not have wget, then the rjrlib downloading will not work.
+You can get around that by creating an alias to wget as "curl -O" in your .*rc file.
+
+Creating Flare movies
+--------------------
+
+Use :ref:`make_aia_flare_movies` to create movies for each flare associated with the sigmoid. The program needs a slightly hacked version of aia_mkmovie to work. That hack is needed because the file 
+format of the SDO/AIA files from JSOC are not what aia_mkmovie expects. Instead, the hacked aia_mkmovie reads the information from the fits headers. The program tries, and fails to match high cadence
+observations of Hinode-XRT observerations. I am unsure why this failure is true because the sigmoid evolution videos do this same task successfully. You should very this program created all the movies
+you wanted it to because the movies are how the sigmoid catalog counts the number of flares associated with each region. While this way of counting the flares seems nonintuitive, it is really
+useful if you use the region, not AR, flare association in :ref:`flare_cme_sigcat_csv`. As such, you may delete the files that are not associated with a give sigmoid after visiual inspection.
+This way of count also means it is better to have a blank movie of a flare than no movie referencing a flare.

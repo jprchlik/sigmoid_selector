@@ -1,3 +1,4 @@
+.. _make_aia_flare_movies
 make_aia_flare_movies
 =====================
 
