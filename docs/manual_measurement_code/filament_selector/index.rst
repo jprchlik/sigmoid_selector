@@ -1,4 +1,4 @@
-.. _filament_selector
+.. _filament_selector:
 
 filament_selector
 =================
