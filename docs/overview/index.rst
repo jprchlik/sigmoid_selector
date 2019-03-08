@@ -116,7 +116,7 @@ Downloading Flare Files
 ---------------------
 
 After running the flare assocication, you may begin downloading all flares associated with a particular sigmoid. This flare correlation includes anytime the region was on disk, not only when the region is sigmoidal.
- Note this flare association will only work for sigmoid's with ARs,
+Note this flare association will only work for sigmoid's with ARs,
 unless you turn on the region association in :ref:`flare_cme_sigcat_csv`. This program uses a hacked version of `rjrlib <http://www.staff.science.uu.nl/~rutte101/rridl/>`_,
 which is available at the `github <https://github.com/jprchlik/sigmoid_selector>`_ page for this program suite. Note the downloading program, :ref:`get_aia_files_cutout`, 
 will only download files which do not have movies created for them. This step was added because JSOC may be a bit touchy from time to time, and you do not want to redownload all 50 
