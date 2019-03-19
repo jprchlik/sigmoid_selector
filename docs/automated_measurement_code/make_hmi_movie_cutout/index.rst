@@ -28,9 +28,9 @@ USAGE
 
 INPUTS
     times      -   A csv file containing times to analyze sigmoid filaments
-                   CSV format must be as follows:
-                   formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
-                   readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+CSV format must be as follows:
+formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
                    length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
     hmi_arch   -   Directory to output the HMI files to (Default = 'hmi_arch/')
     cad        -   Cadence to get HMI files in seconds (Default = 30.*60)
