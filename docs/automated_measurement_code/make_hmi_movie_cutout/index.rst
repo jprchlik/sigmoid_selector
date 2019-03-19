@@ -35,7 +35,7 @@ INPUTS
     hmi_arch   -   Directory to output the HMI files to (Default = 'hmi_arch/')
     cad        -   Cadence to get HMI files in seconds (Default = 30.*60)
     out_arch   -   Where to put the output movies and save files (Default = 'hmi_movie_cutout/')
-    rebinv     -   Rebinning pixel value for median smoothing computationally effciently (Default = 8)
+    rebinv     -   Rebinning pixel value for median smoothing computationally effciently (Default = 16)
     man_thres  -   A keyword to use the manually selected threshold value over the one currently selected by fft
     
 
