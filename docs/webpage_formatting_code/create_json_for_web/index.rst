@@ -43,3 +43,21 @@ then you will need to run the following command before re-running create_json_fo
  sswidl>free_lun,33
 
 This command with free the file unit used in writing json.txt.
+
+
+NAME:
+    create_json_for_web
+
+INPUTS
+    times      -   A csv file containing times to analyze sigmoid filaments CSV format must be as follows: formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F' readcol, times, dum, ID, NOAA, AR, AR_START, X, Y, AR_END, SIG_START, SIG_END, lifetime, TBEST, tobs, ORIENTATION, HEMISPHERE,  length_171, length_304, length, trail_length, lead_length, aspect_ratio, fwhm, height, format=formats
+    hmi_arch   -  Directory containing HMI/MDI magnetic field movies and observations
+    aia_arch   -  Directory containing sigmoid evolution AIA/Hinode-XRT movies
+    flr_arch   -  Directory containing AIA flare movies associated with a particular sigmoid
+    out_arch   -  Output directory for all movies and plots
+
+
+OUTPUTS
+    A JSON formatted text file for use with the XRT sigmiod webpage at 'sigmoid_webpage/json.txt'.
+
+EXAMPLE
+    create_json_for_web,times,hmi_arch='hmi_movie_cutout/',aia_arch='aia_movie/',flr_arch='aia_arch_cutout/',out_arch='combined_movies/'
