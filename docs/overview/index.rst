@@ -121,7 +121,7 @@ unless you turn on the region association in :ref:`flare_cme_sigcat_csv`. This p
 which is available at the `github <https://github.com/jprchlik/sigmoid_selector>`_ page for this program suite. Note the downloading program, :ref:`get_aia_files_cutout`, 
 will only download files which do not have movies created for them. This step was added because JSOC may be a bit touchy from time to time, and you do not want to redownload all 50 
 flares associated with a particular sigmoid. Therefore, I suggest that if downloading fails for any reason to create flare movies, then delete the flare movies that do not 
-contain any observations of the flare (discussed more below). Also note, claims to not allow more than 10 connections from a single IP address at a time; however, I can only
+contain any observations of the flare (discussed more below). Also note, JSOC claims to not allow more than 10 connections from a single IP address at a time; however, I can only
 download 3 flares at a time before JSOC starts refusing my http requests.
 This program will not download flares over the limb because rotating a given coordinate over the limb gives the coordinate -9999,-9999, which is meaningless to a JSOC request.
 As such, you may notice the last flare in a few (around 5) sigmoids does not have a movie.
@@ -131,9 +131,9 @@ You can get around that by creating an alias to wget as "curl -O" in your .*rc f
 Creating Flare movies
 --------------------
 
-Use :ref:`make_aia_flare_movies` to create movies for each flare associated with the sigmoid. The program needs a slightly hacked version of aia_mkmovie to work. That hack is needed because the file 
+Use :ref:`make_aia_flare_movies` to create movies for each flare associated with the sigmoid. The program needs a slightly hacked version of `aia_mkmovie <https://github.com/jprchlik/sigmoid_selector/blob/master/aia_mkmovie_testbed.zip>` to work. That hack is needed because the file 
 format of the SDO/AIA files from JSOC are not what aia_mkmovie expects. Instead, the hacked aia_mkmovie reads the information from the fits headers. The program tries, and fails to match high cadence
-observations of Hinode-XRT observerations. I am unsure why this failure is true because the sigmoid evolution videos do this same task successfully. You should very this program created all the movies
+observations of Hinode-XRT observerations. I am unsure why this failure is true because the sigmoid evolution videos do this same task successfully. You should verify this program created all the movies
 you wanted it to because the movies are how the sigmoid catalog counts the number of flares associated with each region. While this way of counting the flares seems nonintuitive, it is really
 useful if you use the region, not AR, flare association in :ref:`flare_cme_sigcat_csv`. As such, you may delete the files that are not associated with a give sigmoid after visiual inspection.
 This way of count also means it is better to have a blank movie of a flare than no movie referencing a flare.
