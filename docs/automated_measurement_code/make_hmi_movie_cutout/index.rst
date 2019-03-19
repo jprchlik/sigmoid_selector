@@ -14,30 +14,30 @@ and creates a movie with the ROI overplotted. Both the filenames and the output 
 
 
 
-NAME: :raw-html:`<br />`
-    make_hmi_movie_cutout :raw-html:`<br />`
- :raw-html:`<br />`
-PURPOSE :raw-html:`<br />`
-    Creates hmi movie for each sigmoid :raw-html:`<br />`
- :raw-html:`<br />`
-CATEGORY: :raw-html:`<br />`
-    Program, movie creation :raw-html:`<br />`
- :raw-html:`<br />`
-USAGE :raw-html:`<br />`
-    make_hmi_movie_cutout,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=16,man_thres=man_thres :raw-html:`<br />`
- :raw-html:`<br />`
-INPUTS :raw-html:`<br />`
-    times      -   A csv file containing times to analyze sigmoid filaments :raw-html:`<br />`
-                   CSV format must be as follows: :raw-html:`<br />`
-                   formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F' :raw-html:`<br />`
-                   readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $ :raw-html:`<br />`
-                   length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats :raw-html:`<br />`
-    hmi_arch   -   Directory to output the HMI files to (Default = 'hmi_arch/') :raw-html:`<br />`
-    cad        -   Cadence to get HMI files in seconds (Default = 30.*60) :raw-html:`<br />`
-    out_arch   -   Where to put the output movies and save files (Default = 'hmi_movie_cutout/') :raw-html:`<br />`
-    rebinv     -   Rebinning pixel value for median smoothing computationally effciently (Default = 8) :raw-html:`<br />`
-    man_thres  -   A keyword to use the manually selected threshold value over the one currently selected by fft :raw-html:`<br />`
-     :raw-html:`<br />`
- :raw-html:`<br />`
-OUTPUTS :raw-html:`<br />`
-    HMI movie and sav files in hmi_arc :raw-html:`<br />`
+NAME:
+    make_hmi_movie_cutout
+
+PURPOSE
+    Creates hmi movie for each sigmoid
+
+CATEGORY:
+    Program, movie creation
+
+USAGE
+    make_hmi_movie_cutout,times,hmi_arch='hmi_arch/',out_arch='hmi_movie/',rebinv=16,man_thres=man_thres
+
+INPUTS
+    times      -   A csv file containing times to analyze sigmoid filaments
+                   CSV format must be as follows:
+                   formats = 'LL,LL,A,A,A,A,F,F,A,A,F,A,A,A,A,A,F,F,f,F,F'
+                   readcol,times,dum,ID,NOAA,AR,AR_START,X,Y,AR_END,SIG_START,SIG_END,lifetime,TBEST,tobs,ORIENTATION,HEMISPHERE, $
+                   length_171,length_304,length,trail_length,lead_length,aspect_ratio,fwhm,height,format=formats
+    hmi_arch   -   Directory to output the HMI files to (Default = 'hmi_arch/')
+    cad        -   Cadence to get HMI files in seconds (Default = 30.*60)
+    out_arch   -   Where to put the output movies and save files (Default = 'hmi_movie_cutout/')
+    rebinv     -   Rebinning pixel value for median smoothing computationally effciently (Default = 8)
+    man_thres  -   A keyword to use the manually selected threshold value over the one currently selected by fft
+    
+
+OUTPUTS
+    HMI movie and sav files in hmi_arc
