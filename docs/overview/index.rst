@@ -131,7 +131,7 @@ You can get around that by creating an alias to wget as "curl -O" in your .*rc f
 Creating Flare movies
 --------------------
 
-Use :ref:`make_aia_flare_movies` to create movies for each flare associated with the sigmoid. The program needs a slightly hacked version of `aia_mkmovie <https://github.com/jprchlik/sigmoid_selector/blob/master/aia_mkmovie_testbed.zip>` to work. That hack is needed because the file 
+Use :ref:`make_aia_flare_movies` to create movies for each flare associated with the sigmoid. The program needs a slightly hacked version of `aia_mkmovie <https://github.com/jprchlik/sigmoid_selector/blob/master/aia_mkmovie_testbed.zip>`_ to work. That hack is needed because the file 
 format of the SDO/AIA files from JSOC are not what aia_mkmovie expects. Instead, the hacked aia_mkmovie reads the information from the fits headers. The program tries, and fails to match high cadence
 observations of Hinode-XRT observerations. I am unsure why this failure is true because the sigmoid evolution videos do this same task successfully. You should verify this program created all the movies
 you wanted it to because the movies are how the sigmoid catalog counts the number of flares associated with each region. While this way of counting the flares seems nonintuitive, it is really
@@ -171,7 +171,39 @@ Create Magnetic Field Movies and Measure Evolution
 :ref:`make_hmi_movie_cutout` both creates magnetic field evolution movies and measures the magnetic field evolution. The process for measuring the magnetic field is complex, thus will be described in
 depth in the linked documentation. The code works on both HMI and MDI observations. Like many of the other program, :ref:`make_hmi_movie_cutout` primarily only requires the final csv file for input.
 However, I strongly encourage the /man_thres keyword is set, which requires you to set a threshold for magnetic field feature detection for each sigmoid.
+Before you run this program with the man_thres keyword set, you need to run :ref:`make_hmi_movie_cutout_man_thres`. 
+Once this program is complete, 
+you will have measurements of the magnetic field evolution and movies of the evolution.
 
+
+Manual Threshold
+~~~~~~~~~~~~~~~~
+I made several attempts to automatically define a threshold level for measuring the magnetic field evolution under a sigmoid,
+but I was unable to find a technique that worked for the myriad of magnetic field configurations present in the observations.
+Perhaps, the best automated techinque used a 2D FFT, but it was not good enough in all cases.
+As such, I resorted to using a manually defined threshold for the Difference of Gaussian (DoG) technique used to extract magnetic field features.
+The program :ref:`make_hmi_movie_cutout_man_thres` is the solution to setting a manual threshold. 
+It works by doing the exactly the same image reduction as :ref:`make_hmi_movie_cutout`, 
+except at the end it asks for a threshold value. 
+A good first guess is between 0.1 and 0.5, usually.
+Then the program shows you an image with that threshold value. 
+You should vary the threshold until you see a good separation between the magnetic field you are interested in and the surrounding magnetic fields.
+It then stores the values in a text file, which will be called in :ref:`make_hmi_movie_cutout` when the man_thres keyword is set.
+
+
+Create Directory Structure for Webpage
+-------------------------------------
+Now that all the movies are made and the initial analysis is complete,
+you will want all the movies and information in a nicely formatted directory structure.
+:ref:`create_combined_movies` accomplishes this neat directory structure and also creates plots of the magnetic field evolution using :ref:`create_flux_plot`.
+
+
+Create JSON Object for Webpage
+------------------------------
+Finally, you need to create a JSON object, which contains all the information displayed in the sigmoid catalog.
+For this end, you need to run :ref:`create_json_for_web`, which will created the sigmoid json object needed for the sigmoid catalog. 
+In addition to creating the json object,
+the program also calls :ref:`get_solarmonitor_links_dirty` to get the best EUV, LoS magnetic field, H alpha, and Hinde/XRT solarmonitor images.
 
 
 

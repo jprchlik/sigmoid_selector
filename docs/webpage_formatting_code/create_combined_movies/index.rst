@@ -1,3 +1,6 @@
+.. _create_combined_movies:
+
+
 create_combined_movies
 ======================
 

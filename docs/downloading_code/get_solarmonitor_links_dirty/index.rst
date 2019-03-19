@@ -1,3 +1,5 @@
+.. _get_solarmonitor_links_dirty:
+
 get_solarmonitor_links_dirty
 ============================
 This code "queries" `solarmonitor.org <https://www.solarmonitor.org>`_ for four different full sun images 
