@@ -12,4 +12,24 @@ Normally, get_solarmonitor_links_dirty runs from within `create_json_for_web <..
 but may also run independently.
 An example of the code is below downloads all files not currently stored locally in output_dir/ and stores the path to all local files in links, even if they were previously downloaded.
 
- sswidl>get_solarmonitor_links_dirty,'2019/01/04','output_dir/',links
+
+NAME:
+   get_solarmonitor_links_dirty
+
+DESCRIPTION
+    Returns links to full Sun images on Solarmonitor.org for the following observations: LOS Magnetic Fields, X-ray, H alpha, and SDO/AIA 171 or SWAP 174
+
+USAGE
+    get_solarmonitor_links_dirty,date,outdir,links
+
+INPUT
+    date -- Date formated in YYYYMMDD to get solarmonitor
+    full sun images
+    outdir -- Output directory of solarmonitor png file
+
+OUTPUT
+    links -- An array of links to the solar monitor website
+
+
+EXAMPLE
+    get_solarmonitor_links_dirty,'2019/01/04','output_dir/',links
