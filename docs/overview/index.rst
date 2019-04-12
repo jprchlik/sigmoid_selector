@@ -206,4 +206,12 @@ In addition to creating the json object,
 the program also calls :ref:`get_solarmonitor_links_dirty` to get the best EUV, LoS magnetic field, H alpha, and Hinde/XRT solarmonitor images.
 
 
+Syncing Updates to the Web
+--------------------------
+Once you are satisfied with the state of the local sigmoid catalog,
+you will want to sync that information to the webserver. For this we have two scripts.
+Neither script is available online due to the sensitive nature of their contents and 
+both scripts need to be ran from the webserver account for XRT. The first script, 
+sync_folders_to_pub_html.csh, rsyncs the local web files to a public directory.
+The second script, sync_sigmoid_catalog.sh, rysncs files to a dev and public webpage.
 
