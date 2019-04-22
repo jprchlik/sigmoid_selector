@@ -25,7 +25,7 @@ Sigmoids are likely due to theoretically proposed flux ropes.
 As such, studying Sigmoids has practical and physical benefits.
 
 The initial sigmoid catalog `(Savcheva et al. 2014) <https://ui.adsabs.harvard.edu/?#abs/2014SoPh..289.3297S>`_
-contains 79 sigmoids discovered by searching twice daily synoptic Hinode X-ray Telescope (XRT) observations between 2007 and 2012 (`catalog webpage <http://aia.cfa.harvard.edu/sigmoid/>`_).
+contains 79 sigmoids discovered by searching twice daily synoptic Hinode X-ray Telescope (XRT) observations between 2007 and 2012 (`catalog webpage <http://aia.cfa.harvard.edu/sigmoid23-24/sigmoid_webpage/>`_).
 Version 2 of the catalog, of which the code is detailed here,
 expands the initial Sigmoid Catalog through 2017.
 This expansion creates a database of 295 sigmoids.
