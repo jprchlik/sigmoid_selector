@@ -26,7 +26,7 @@ Below are a list of columns and a brief explanation of their meaning and how to 
 
     #. Y --> The y-coordinate in arcseconds from the disk at T_best or T_obs. Check the description of X for more infromation.    
 
-    #. AR_START --> The end time of the magnetic fields in the region, which is not necessarily the AR end time. The time must be in YYYY-MM-DDTHH:MM:SS.MMM format.
+    #. AR_END --> The end time of the magnetic fields in the region, which is not necessarily the AR end time. The time must be in YYYY-MM-DDTHH:MM:SS.MMM format.
 
     #. SIG_START --> The start time of the sigmoid as seen in Hinode XRT syntopic images. The time must be in YYYY-MM-DDTHH:MM:SS.MMM format.
 
